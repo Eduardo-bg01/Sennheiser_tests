@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net9.0-windows</TargetFramework>
+		<UseWindowsForms>true</UseWindowsForms>
+		<AssemblyName>BluetoothHeadphoneTest</AssemblyName>
+		<RootNamespace>BluetoothHeadphoneTest</RootNamespace>
+		<Nullable>disable</Nullable>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="NAudio" Version="2.2.1" />
+	</ItemGroup>
+
+	<!-- Incluye TODOS los archivos de assets automáticamente como recurso embebido -->
+	<ItemGroup>
+		<EmbeddedResource Include="assets\**\*.*" />
+	</ItemGroup>
+
+</Project>
