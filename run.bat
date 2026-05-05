@@ -2,13 +2,16 @@ echo "Borrando archivos para empezar las pruebas"
 del Prueba_*
 del results.json
 del MicroTest_*
-del serial*
 del test_results*
 del hearingPass*
 del recorded*
 del final_results*
 del tiempo*
 del diferen*
+
+if not defined SKIP_SERIAL_PROMPT (
+    del serial*
+)
 
 if not exist bin\AskForSerial2.exe (
     echo Falta bin\AskForSerial2.exe. Ejecuta build-all.bat primero.
@@ -40,10 +43,17 @@ for /f %%i in ('powershell -command "[int64](Get-Date).ToUniversalTime().Subtrac
 echo %timestamp% > tiempo1.txt
 
 :GET_SERIAL
-    start /wait "" "bin\AskForSerial2.exe"
-    if not exist serial* (
-        echo AskForSerial2 no genero serial.txt. Debes ingresar un serial valido para continuar.
-        exit /b 1
+    if defined SKIP_SERIAL_PROMPT (
+        if not exist serial* (
+            echo Falta serial.txt y SKIP_SERIAL_PROMPT esta activo.
+            exit /b 1
+        )
+    ) else (
+        start /wait "" "bin\AskForSerial2.exe"
+        if not exist serial* (
+            echo AskForSerial2 no genero serial.txt. Debes ingresar un serial valido para continuar.
+            exit /b 1
+        )
     )
 
     if exist serial* (

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MicroTestCloud")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3fcc6b338897fd47b12dd18670fa60f44c4c6a8a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4b48638a590ebef71dad2cc1402aea7535e0999e")]
 [assembly: System.Reflection.AssemblyProductAttribute("MicroTestCloud")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MicroTestCloud")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
