@@ -1,0 +1,12 @@
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp1\BluetoothHeadphoneTest.exe
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp1\BluetoothHeadphoneTest.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp1\BluetoothHeadphoneTest.deps.json
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp1\BluetoothHeadphoneTest.runtimeconfig.json
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp1\BluetoothHeadphoneTest.pdb
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp1\NAudio.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp1\NAudio.Asio.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp1\NAudio.Core.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp1\NAudio.Midi.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp1\NAudio.Wasapi.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp1\NAudio.WinForms.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp1\NAudio.WinMM.dll

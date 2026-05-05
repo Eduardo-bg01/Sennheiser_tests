@@ -1,0 +1,6 @@
+﻿***BUGS POR ARREGLAR
+
+1-El programa no es responsivo , se desordena con las resoluciones pequeñas.
+2-El botón de reiniciar prueba no limpia el nombre del dispositivo previamente seleccionado, deberia de resetear todos los valores.
+3-Agregar un mensaje de error cuando el usuario seleccione un disitivo no pareado y de click en el botón de iniciar prueba. Actualmente continua con la prueba sin mostrar ningún mensaje de error.
+

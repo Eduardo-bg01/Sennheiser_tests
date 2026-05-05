@@ -1,0 +1,16 @@
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\MicroTestCloud.exe
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\PistaAudio\Prueba.mp3
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\MicroTestCloud.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\MicroTestCloud.deps.json
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\MicroTestCloud.runtimeconfig.json
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\MicroTestCloud.pdb
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\NAudio.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\NAudio.Asio.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\NAudio.Core.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\NAudio.Midi.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\NAudio.Wasapi.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\NAudio.WinForms.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\NAudio.WinMM.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\System.CodeDom.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\System.Management.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp2\runtimes\win\lib\net9.0\System.Management.dll
