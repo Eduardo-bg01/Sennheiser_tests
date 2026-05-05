@@ -41,6 +41,12 @@ if errorlevel 1 goto :fail
 move "%BIN_DIR%\temp4\AudioTest.exe" "%BIN_DIR%\" >nul 2>&1
 rmdir /s /q "%BIN_DIR%\temp4" >nul 2>&1
 
+echo Building LevelTest...
+%DOTNET% publish -c Release "%ROOT%apps\pruebasAudifonos\LevelTest\HeadPhoneTest2\HeadPhoneTest2.csproj" -o "%BIN_DIR%\temp5"
+if errorlevel 1 goto :fail
+move "%BIN_DIR%\temp5\LevelTest.exe" "%BIN_DIR%\" >nul 2>&1
+rmdir /s /q "%BIN_DIR%\temp5" >nul 2>&1
+
 echo.
 echo All builds completed successfully.
 echo Executables are in: %BIN_DIR%

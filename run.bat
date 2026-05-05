@@ -31,7 +31,8 @@ if not exist bin\MicroTestCloud.exe (
 )
 
 if not exist bin\LevelTest.exe (
-    echo Aviso: falta bin\LevelTest.exe. Se continuara sin la prueba de audifonos.
+    echo Falta bin\LevelTest.exe. Ejecuta build-all.bat primero.
+    exit /b 1
 )
 
 for /f %%i in ('powershell -command "[int64](Get-Date).ToUniversalTime().Subtract([datetime]\"1970-01-01\").TotalMilliseconds"') do set timestamp=%%i
@@ -40,6 +41,11 @@ echo %timestamp% > tiempo1.txt
 
 :GET_SERIAL
     start /wait "" "bin\AskForSerial2.exe"
+    if not exist serial* (
+        echo AskForSerial2 no genero serial.txt. Debes ingresar un serial valido para continuar.
+        exit /b 1
+    )
+
     if exist serial* (
         :TEST_AUDIO
             start /wait "" "bin\AudioTest.exe"
@@ -63,12 +69,10 @@ echo %timestamp% > tiempo1.txt
             )
 
         :TEST_LEVELS
-            if exist bin\LevelTest.exe (
-                start /wait "" "bin\LevelTest.exe"
-                if not exist results.json (
-                    powershell -command "Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('Hubo un error al realizar la prueba de audifonos, vuelva a intentarlo.')"
-                    goto TEST_LEVELS
-                )
+            start /wait "" "bin\LevelTest.exe"
+            if not exist results.json (
+                powershell -command "Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('Hubo un error al realizar la prueba de audifonos, vuelva a intentarlo.')"
+                goto TEST_LEVELS
             )
 
         python getFinalResults.py

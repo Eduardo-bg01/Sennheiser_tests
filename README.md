@@ -19,6 +19,7 @@ The first compiles all projects to `.exe` files in `bin/`. The second orchestrat
 - `apps/MicroTestCloud` - MicroTestCloud (microphone test)
 - `apps/pruebasAudifonos/AskForSerial2` - AskForSerial2 (device serial selection)
 - `apps/pruebasAudifonos/AudioTest` - AudioTest (audio playback and distortion test)
+- `apps/pruebasAudifonos/LevelTest` - LevelTest (recovered from `origin/LevelTest` as `HeadPhoneTest2`)
 
 ## Scripts
 
@@ -28,7 +29,7 @@ The first compiles all projects to `.exe` files in `bin/`. The second orchestrat
 
 ## Pending source
 
-- `apps/pruebasAudifonos/LevelTest` - Only `LevelTest.sln` exists in history; the matching `LevelTest.csproj` was not found. Reference in `run.bat` is present but will skip if `.exe` is missing.
+- `apps/pruebasAudifonos/LevelTest` - Recovered from `origin/LevelTest` under the `HeadPhoneTest2` project folder.
 
 ## Root solution
 
