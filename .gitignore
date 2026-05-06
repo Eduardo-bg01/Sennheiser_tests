@@ -29,3 +29,6 @@ diferencia_minutos.txt
 *.pdb
 *.deps.json
 *.runtimeconfig.json
+
+.venv/
+__pycache__/

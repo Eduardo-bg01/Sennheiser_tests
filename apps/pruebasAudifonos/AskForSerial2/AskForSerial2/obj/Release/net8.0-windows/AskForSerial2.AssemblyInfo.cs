@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AskForSerial2")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4b48638a590ebef71dad2cc1402aea7535e0999e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ed215a551c72e99853bf5cf2f827e9a606dbf17f")]
 [assembly: System.Reflection.AssemblyProductAttribute("AskForSerial2")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AskForSerial2")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

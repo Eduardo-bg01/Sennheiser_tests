@@ -5,30 +5,39 @@ def first_match(pattern):
     matches = glob.glob(pattern)
     return matches[0] if matches else None
 
+def read_text_file(path):
+    encodings = ["utf-8", "cp1252", "latin-1"]
+    for enc in encodings:
+        try:
+            with open(path, "r", encoding=enc) as f:
+                return f.read().lstrip("\ufeff")
+        except UnicodeDecodeError:
+            continue
+    with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        return f.read().lstrip("\ufeff")
+
 serialfile = first_match("serial*")
 
 final_results = {}
 
 if serialfile:
-    with open(serialfile,"r",encoding="utf-8") as f:
-        final_results["serial"] = f.read().strip()
+    final_results["serial"] = read_text_file(serialfile).strip()
 else:
     final_results["serial"] = ""
 
 audiofile = first_match("hearingPass*")
 if audiofile:
-    with open(audiofile,"r",encoding="utf-8") as f:
-        final_results["distorsion"] = f.read().strip()
-        if final_results["distorsion"]=="True":
-            final_results["distorsion"] = "PASS"
-        else:
-            final_results["distorsion"] = "FAIL"
+    final_results["distorsion"] = read_text_file(audiofile).strip()
+    if final_results["distorsion"]=="True":
+        final_results["distorsion"] = "PASS"
+    else:
+        final_results["distorsion"] = "FAIL"
 else:
     final_results["distorsion"] = "SKIPPED"
 
 if glob.glob("results.json"):
-    with open("results.json","r") as f:
-        results = json.load(f)
+    results_text = read_text_file("results.json").lstrip("\ufeff")
+    results = json.loads(results_text)
 
     for m in results["measurements"]:
         if m["channel"] == "Left":
@@ -61,37 +70,35 @@ else:
 
 btfile = first_match("Prueba_*")
 if btfile:
-    with open(btfile,"r",encoding="utf-8") as f:
-        for line in f:
-            if("Conexión Bluetooth" in line):
-                parts=line.split()
-                final_results["bluetooth"] = parts[2]
-            if("Play / Pausa" in line):
-                parts=line.split()
-                final_results["play_pausa"] = parts[3]
-            if("Anterior" in line):
-                parts = line.split()
-                final_results["anterior"] = parts[1]
-            if("Siguiente" in line):
-                parts = line.split()
-                final_results["siguiente"] = parts[1]
-            if("Subir Volumen" in line):
-                parts = line.split()
-                final_results["subir_volumen"] = parts[2]
-            if("Bajar Volumen" in line):
-                parts = line.split()
-                final_results["bajar_volumen"] = parts[2]
+    for line in read_text_file(btfile).splitlines():
+        if("Conexión Bluetooth" in line):
+            parts=line.split()
+            final_results["bluetooth"] = parts[2]
+        if("Play / Pausa" in line):
+            parts=line.split()
+            final_results["play_pausa"] = parts[3]
+        if("Anterior" in line):
+            parts = line.split()
+            final_results["anterior"] = parts[1]
+        if("Siguiente" in line):
+            parts = line.split()
+            final_results["siguiente"] = parts[1]
+        if("Subir Volumen" in line):
+            parts = line.split()
+            final_results["subir_volumen"] = parts[2]
+        if("Bajar Volumen" in line):
+            parts = line.split()
+            final_results["bajar_volumen"] = parts[2]
 
 micfile = first_match("MicroTest_*")
 if micfile:
-    with open(micfile,"r",encoding="utf-8") as f:
-        for line in f:
-            if "Resultado" in line:
-                parts = line.split()
-                if "PAS" in parts[2]:
-                    final_results["resultado_mic"] = "PASS"
-                else:
-                    final_results["resultado_mic"] = "FAIL"
+    for line in read_text_file(micfile).splitlines():
+        if "Resultado" in line:
+            parts = line.split()
+            if "PAS" in parts[2]:
+                final_results["resultado_mic"] = "PASS"
+            else:
+                final_results["resultado_mic"] = "FAIL"
 else:
     final_results["resultado_mic"] = "SKIPPED"
 

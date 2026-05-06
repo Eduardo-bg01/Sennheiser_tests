@@ -112,7 +112,17 @@ namespace AudioTest
         {
             StopAudio();
 
-            reader = new AudioFileReader(path);
+            string fullPath = path;
+            if (!File.Exists(fullPath))
+            {
+                fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
+            }
+            if (!File.Exists(fullPath))
+            {
+                throw new FileNotFoundException($"Audio file not found: {path}");
+            }
+
+            reader = new AudioFileReader(fullPath);
             output = new WaveOutEvent();
             output.DeviceNumber = inputIndex;
 

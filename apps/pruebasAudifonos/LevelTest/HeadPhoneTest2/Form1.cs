@@ -238,7 +238,13 @@ namespace HeadPhoneTest2
             if(audioTitle=="audioSweep.wav")
             outputDevice.PlaybackStopped += stopActions;
 
-            audioFile = new AudioFileReader("audio/" + audioTitle);
+            string audioPath = Path.Combine("audio", audioTitle);
+            if (!File.Exists(audioPath))
+            {
+                audioPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "audio", audioTitle);
+            }
+
+            audioFile = new AudioFileReader(audioPath);
             outputDevice.Init(audioFile);
             outputDevice.Play();
         }
@@ -386,7 +392,7 @@ namespace HeadPhoneTest2
                     timer.Stop();
                 }
 
-                // detener audio y grabación por seguridad
+                // detener audio y grabaciï¿½n por seguridad
                 stopAudio();
                 try { stopRecording(); } catch { }
 
@@ -414,7 +420,7 @@ namespace HeadPhoneTest2
                 lblCountdown.Text = "";
                 lblPlay.Text = "";
 
-                // imágenes de resultados
+                // imï¿½genes de resultados
                 balanceImg.Image = null;
                 levelImg.Image = null;
                 clippingImg.Image = null;

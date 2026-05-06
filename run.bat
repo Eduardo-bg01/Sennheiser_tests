@@ -1,16 +1,22 @@
+@echo off
+setlocal EnableDelayedExpansion
+
+if not defined MAX_RETRIES set MAX_RETRIES=5
+if not defined RETRY_DELAY set RETRY_DELAY=2
+
 echo "Borrando archivos para empezar las pruebas"
-del Prueba_*
-del results.json
-del MicroTest_*
-del test_results*
-del hearingPass*
-del recorded*
-del final_results*
-del tiempo*
-del diferen*
+del /q Prueba_* >nul 2>&1
+del /q results.json >nul 2>&1
+del /q MicroTest_* >nul 2>&1
+del /q test_results* >nul 2>&1
+del /q hearingPass* >nul 2>&1
+del /q recorded* >nul 2>&1
+del /q final_results* >nul 2>&1
+del /q tiempo* >nul 2>&1
+del /q diferen* >nul 2>&1
 
 if not defined SKIP_SERIAL_PROMPT (
-    del serial*
+    del /q serial* >nul 2>&1
 )
 
 if not exist bin\AskForSerial2.exe (
@@ -56,41 +62,68 @@ echo %timestamp% > tiempo1.txt
         )
     )
 
-    if exist serial.txt (
-        :TEST_AUDIO
-            start /wait "" "bin\AudioTest.exe"
-            timeout /t 2 /nobreak
-            if not exist hearingPass*.txt (
-                echo [AUDIO TEST FAILED] Reintentando...
-                goto TEST_AUDIO
-            )
+if not exist serial.txt (
+    echo No se encontro serial.txt despues de AskForSerial2.
+    exit /b 1
+)
 
-        :TEST_CONTROLS
-            start /wait "" "bin\BluetoothHeadphoneTest.exe"
-            timeout /t 2 /nobreak
-            if not exist Prueba_*.txt (
-                echo [CONTROLS TEST FAILED] Reintentando...
-                goto TEST_CONTROLS
-            )
-
-        :TEST_MICROPHONE
-            start /wait "" "bin\MicroTestCloud.exe"
-            timeout /t 2 /nobreak
-            if not exist MicroTest_*.txt (
-                echo [MICROPHONE TEST FAILED] Reintentando...
-                goto TEST_MICROPHONE
-            )
-
-        :TEST_LEVELS
-            start /wait "" "bin\LevelTest.exe"
-            timeout /t 2 /nobreak
-            if not exist results.json (
-                echo [LEVELS TEST FAILED] Reintentando...
-                goto TEST_LEVELS
-            )
-
-        python getFinalResults.py
+set /a AUDIO_ATTEMPTS=0
+:TEST_AUDIO
+    set /a AUDIO_ATTEMPTS+=1
+    start /wait "" "bin\AudioTest.exe"
+    timeout /t %RETRY_DELAY% /nobreak >nul
+    if not exist hearingPass*.txt (
+        if !AUDIO_ATTEMPTS! GEQ %MAX_RETRIES% (
+            echo [AUDIO TEST FAILED] Alcanzado maximo de intentos ^(!AUDIO_ATTEMPTS!/%MAX_RETRIES%^).
+            exit /b 2
+        )
+        echo [AUDIO TEST FAILED] Reintentando ^(!AUDIO_ATTEMPTS!/%MAX_RETRIES%^)...
+        goto TEST_AUDIO
     )
+
+set /a CONTROLS_ATTEMPTS=0
+:TEST_CONTROLS
+    set /a CONTROLS_ATTEMPTS+=1
+    start /wait "" "bin\BluetoothHeadphoneTest.exe"
+    timeout /t %RETRY_DELAY% /nobreak >nul
+    if not exist Prueba_*.txt (
+        if !CONTROLS_ATTEMPTS! GEQ %MAX_RETRIES% (
+            echo [CONTROLS TEST FAILED] Alcanzado maximo de intentos ^(!CONTROLS_ATTEMPTS!/%MAX_RETRIES%^).
+            exit /b 3
+        )
+        echo [CONTROLS TEST FAILED] Reintentando ^(!CONTROLS_ATTEMPTS!/%MAX_RETRIES%^)...
+        goto TEST_CONTROLS
+    )
+
+set /a MIC_ATTEMPTS=0
+:TEST_MICROPHONE
+    set /a MIC_ATTEMPTS+=1
+    start /wait "" "bin\MicroTestCloud.exe"
+    timeout /t %RETRY_DELAY% /nobreak >nul
+    if not exist MicroTest_*.txt (
+        if !MIC_ATTEMPTS! GEQ %MAX_RETRIES% (
+            echo [MICROPHONE TEST FAILED] Alcanzado maximo de intentos ^(!MIC_ATTEMPTS!/%MAX_RETRIES%^).
+            exit /b 4
+        )
+        echo [MICROPHONE TEST FAILED] Reintentando ^(!MIC_ATTEMPTS!/%MAX_RETRIES%^)...
+        goto TEST_MICROPHONE
+    )
+
+set /a LEVELS_ATTEMPTS=0
+:TEST_LEVELS
+    set /a LEVELS_ATTEMPTS+=1
+    start /wait "" "bin\LevelTest.exe"
+    timeout /t %RETRY_DELAY% /nobreak >nul
+    if not exist results.json (
+        if !LEVELS_ATTEMPTS! GEQ %MAX_RETRIES% (
+            echo [LEVELS TEST FAILED] Alcanzado maximo de intentos ^(!LEVELS_ATTEMPTS!/%MAX_RETRIES%^).
+            exit /b 5
+        )
+        echo [LEVELS TEST FAILED] Reintentando ^(!LEVELS_ATTEMPTS!/%MAX_RETRIES%^)...
+        goto TEST_LEVELS
+    )
+
+python getFinalResults.py
 
 for /f %%i in ('powershell -command "[int64](Get-Date).ToUniversalTime().Subtract([datetime]\"1970-01-01\").TotalMilliseconds"') do set timestamp=%%i
 
