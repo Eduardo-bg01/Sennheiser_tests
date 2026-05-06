@@ -4,14 +4,34 @@ Unified workspace for the Bluetooth headphone test apps recovered from the branc
 
 ## Quick start
 
-After installing the .NET 9 SDK, run from the repo root:
+### On your computer (or USB stick)
 
-```powershell
-build-all.bat
-run.bat
-```
+1. **Install .NET 9 SDK** from https://aka.ms/dotnet/download if you haven't already.
+2. **Build all projects** from the repo root:
+   ```powershell
+   build-all.bat
+   ```
+   This compiles all 5 test apps to `.exe` files in `bin/`.
+3. **Run all tests in sequence**:
+   ```powershell
+   run-auto.bat
+   ```
+   This runs the tests without requiring you to manually enter a serial number. If you want to use a custom serial, edit `serial.txt` before running, or use `run.bat` instead.
 
-The first compiles all projects to `.exe` files in `bin/`. The second orchestrates running them in order and aggregates results into `final_results.json`.
+### On USB stick setup
+
+If you copy the repo to a USB stick:
+1. The source code will be there, but **you must rebuild**.
+2. Open PowerShell on the destination machine, navigate to the repo root, and run:
+   ```powershell
+   build-all.bat
+   ```
+3. Then execute:
+   ```powershell
+   run-auto.bat
+   ```
+
+The `.gitignore` ensures only source code is tracked, so you won't have outdated `.exe` files from different machines.
 
 ## Included apps
 
