@@ -44,44 +44,48 @@ echo %timestamp% > tiempo1.txt
 
 :GET_SERIAL
     if defined SKIP_SERIAL_PROMPT (
-        if not exist serial* (
+        if not exist serial.txt (
             echo Falta serial.txt y SKIP_SERIAL_PROMPT esta activo.
             exit /b 1
         )
     ) else (
         start /wait "" "bin\AskForSerial2.exe"
-        if not exist serial* (
+        if not exist serial.txt (
             echo AskForSerial2 no genero serial.txt. Debes ingresar un serial valido para continuar.
             exit /b 1
         )
     )
 
-    if exist serial* (
+    if exist serial.txt (
         :TEST_AUDIO
             start /wait "" "bin\AudioTest.exe"
-            if not exist hearingPass* (
-                powershell -command "Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('Hubo un error al realizar la prueba de audio, vuelva a intentarlo.')"
+            timeout /t 2 /nobreak
+            if not exist hearingPass*.txt (
+                echo [AUDIO TEST FAILED] Reintentando...
                 goto TEST_AUDIO
             )
 
         :TEST_CONTROLS
             start /wait "" "bin\BluetoothHeadphoneTest.exe"
-            if not exist Prueba_* (
-                powershell -command "Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('Hubo un error al realizar la prueba de controles, vuelva a intentarlo.')"
+            timeout /t 2 /nobreak
+            if not exist Prueba_*.txt (
+                echo [CONTROLS TEST FAILED] Reintentando...
                 goto TEST_CONTROLS
             )
 
         :TEST_MICROPHONE
             start /wait "" "bin\MicroTestCloud.exe"
-            if not exist MicroTest_* (
-                powershell -command "Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('Hubo un error al realizar la prueba de microfono, vuelva a intentarlo.')"
+            timeout /t 2 /nobreak
+            if not exist MicroTest_*.txt (
+                echo [MICROPHONE TEST FAILED] Reintentando...
                 goto TEST_MICROPHONE
             )
 
         :TEST_LEVELS
             start /wait "" "bin\LevelTest.exe"
+            timeout /t 2 /nobreak
             if not exist results.json (
-                powershell -command "Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('Hubo un error al realizar la prueba de audifonos, vuelva a intentarlo.')"
+                echo [LEVELS TEST FAILED] Reintentando...
                 goto TEST_LEVELS
             )
 
