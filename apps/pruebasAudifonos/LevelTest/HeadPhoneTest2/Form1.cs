@@ -45,6 +45,7 @@ namespace HeadPhoneTest2
         {
             InitializeComponent();
             ApplyCohesiveTheme();
+            Resize += (_, _) => ApplyProfessionalLayout();
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
@@ -84,6 +85,7 @@ namespace HeadPhoneTest2
         {
             LoadInputDevices();
             LoadOutputDevices();
+            ApplyProfessionalLayout();
         }
 
         private void btnNext_Click(object sender, EventArgs e)
@@ -522,6 +524,7 @@ namespace HeadPhoneTest2
             StyleHeadline(label6);
             lblCountdown.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
             lblPlay.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
+            ApplyProfessionalLayout();
         }
 
         private void ApplyThemeToControlTree(Control root)
@@ -576,6 +579,24 @@ namespace HeadPhoneTest2
             if (sender is not Panel panel) return;
             using var pen = new Pen(Border, 1f);
             e.Graphics.DrawRectangle(pen, 0, 0, panel.Width - 1, panel.Height - 1);
+        }
+
+        private void ApplyProfessionalLayout()
+        {
+            foreach (var panel in new[] { content1, content2, content3, content4, content5, content6 })
+            {
+                panel.Padding = new Padding(34, 26, 34, 24);
+            }
+
+            tableLayoutPanel3.Height = 260;
+            comboBoxIn.Dock = DockStyle.Top;
+            comboBoxOut.Dock = DockStyle.Top;
+
+            buttonContainer.Height = 92;
+            panel2.Padding = new Padding(20, 16, 20, 16);
+            panel3.Padding = new Padding(20, 16, 20, 16);
+            btnCancel.Dock = DockStyle.Fill;
+            btnNext.Dock = DockStyle.Fill;
         }
     }
 }

@@ -29,6 +29,7 @@ namespace AudioTest
         {
             InitializeComponent();
             ApplyCohesiveTheme();
+            Resize += (_, _) => ApplyProfessionalLayout();
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
@@ -86,6 +87,7 @@ namespace AudioTest
         private void Form1_Shown(object sender, EventArgs e)
         {
             loadOutputDevices();
+            ApplyProfessionalLayout();
         }
 
         private void loadOutputDevices()
@@ -189,6 +191,7 @@ namespace AudioTest
             comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
             comboBox1.Font = new Font("Segoe UI", 16F, FontStyle.Regular);
             comboBox1.Height = 46;
+            ApplyProfessionalLayout();
         }
 
         private void ApplyThemeToControlTree(Control root)
@@ -248,6 +251,34 @@ namespace AudioTest
             if (sender is not Panel panel) return;
             using var pen = new Pen(Border, 1f);
             e.Graphics.DrawRectangle(pen, 0, 0, panel.Width - 1, panel.Height - 1);
+        }
+
+        private void ApplyProfessionalLayout()
+        {
+            int pad = 40;
+            int maxW = Math.Min(960, panelContainer.Width - (pad * 2));
+
+            foreach (var panel in new[] { content1, content2, content3 })
+            {
+                panel.Padding = new Padding(pad, 30, pad, 24);
+            }
+
+            label1.Height = 70;
+            label2.Height = 70;
+            label3.Height = 70;
+            label1.TextAlign = ContentAlignment.MiddleCenter;
+            label2.TextAlign = ContentAlignment.MiddleCenter;
+            label3.TextAlign = ContentAlignment.MiddleCenter;
+
+            comboBox1.Dock = DockStyle.None;
+            comboBox1.Width = maxW;
+            comboBox1.Location = new Point((content1.Width - comboBox1.Width) / 2, 110);
+
+            tableLayoutPanel3.Height = 130;
+            btnFail.Dock = DockStyle.Fill;
+            btnPass.Dock = DockStyle.Fill;
+            panel1.Padding = new Padding(26, 10, 26, 10);
+            panel4.Padding = new Padding(26, 10, 26, 10);
         }
     }
 }

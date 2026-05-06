@@ -15,11 +15,12 @@ namespace AskForSerial2
         {
             InitializeComponent();
             ApplyCohesiveTheme();
+            Resize += (_, _) => ApplyProfessionalLayout();
         }
 
         private void Form1_Shown(object sender, EventArgs e)
         {
-            CenterContainer();
+            ApplyProfessionalLayout();
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
@@ -55,7 +56,7 @@ namespace AskForSerial2
             panel1.BackColor = BgCard;
             panel1.Padding = new Padding(40, 24, 40, 24);
             panel1.Paint += PaintCardBorder;
-            panel1.Resize += (_, _) => CenterContainer();
+            panel1.Resize += (_, _) => ApplyProfessionalLayout();
 
             container.BackColor = Color.Transparent;
             container.MaximumSize = new Size(980, 320);
@@ -77,12 +78,29 @@ namespace AskForSerial2
 
             StylePrimaryButton(button1, "Siguiente");
             StyleSecondaryButton(btnCancel, "Cancelar");
+            ApplyProfessionalLayout();
         }
 
-        private void CenterContainer()
+        private void ApplyProfessionalLayout()
         {
+            int contentWidth = Math.Min(920, panel1.Width - 80);
+            int contentHeight = 260;
+            container.Size = new Size(contentWidth, contentHeight);
             container.Top = (panel1.Height - container.Height) / 2;
             container.Left = (panel1.Width - container.Width) / 2;
+
+            label1.Dock = DockStyle.Top;
+            label1.Height = 84;
+            label1.TextAlign = ContentAlignment.MiddleCenter;
+
+            textBox1.Dock = DockStyle.Top;
+            textBox1.Height = 56;
+            textBox1.Margin = new Padding(0, 12, 0, 0);
+
+            panel2.Padding = new Padding(12, 18, 12, 18);
+            panel3.Padding = new Padding(12, 18, 12, 18);
+            btnCancel.Dock = DockStyle.Fill;
+            button1.Dock = DockStyle.Fill;
         }
 
         private static void StylePrimaryButton(Button button, string text)
