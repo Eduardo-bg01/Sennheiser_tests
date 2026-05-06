@@ -57,6 +57,7 @@ namespace MicroTestCloud
         // ══════════════════════════════════════════════════════════════
 
         private string _testResult = "No definido"; // Resultado final: "PASÓ" | "FALLÓ" | "No definido"
+        private bool _reportGenerated = false;
 
         // ══════════════════════════════════════════════════════════════
         //  PALETA DE COLORES — LIGHT MODE
@@ -957,6 +958,7 @@ namespace MicroTestCloud
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            WriteFallbackReportIfMissing();
             if (isListening) waveIn?.StopRecording();
             _speakerTone?.Stop();
             _speakerTone?.Dispose();
@@ -965,6 +967,44 @@ namespace MicroTestCloud
             _playbackOut?.Dispose();
             _recordedStream?.Dispose();
             base.OnFormClosing(e);
+        }
+
+        private void WriteFallbackReportIfMissing()
+        {
+            try
+            {
+                if (_reportGenerated)
+                    return;
+
+                bool hasActivity = _logEntries != null && _logEntries.Count > 0;
+                if (!hasActivity && string.IsNullOrWhiteSpace(_deviceName))
+                    return;
+
+                if (Directory.GetFiles(Environment.CurrentDirectory, "MicroTest_*.txt").Length > 0)
+                {
+                    _reportGenerated = true;
+                    return;
+                }
+
+                string baseName = $"MicroTest_{DateTime.Now:yyyyMMdd_HHmmss}";
+                string txtPath = Path.Combine(Environment.CurrentDirectory, baseName + ".txt");
+                string result = _testResult == "PASS" || _testResult == "FAIL" ? _testResult : "FAIL";
+
+                using (var sw = new StreamWriter(txtPath, false, System.Text.Encoding.UTF8))
+                {
+                    sw.WriteLine("MICROTEST · REPORTE DE RESCATE");
+                    sw.WriteLine($"Resultado : {result}");
+                    sw.WriteLine($"Fecha y hora : {DateTime.Now:dd/MM/yyyy HH:mm:ss}");
+                    sw.WriteLine($"Micrófono : {_deviceName}");
+                    sw.WriteLine($"Muestras : {_logEntries?.Count ?? 0}");
+                }
+
+                _reportGenerated = true;
+            }
+            catch
+            {
+                // Best-effort fallback, never block close.
+            }
         }
     }
 

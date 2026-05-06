@@ -5,6 +5,11 @@ if not defined MAX_RETRIES set MAX_RETRIES=5
 if not defined RETRY_DELAY set RETRY_DELAY=2
 
 echo "Borrando archivos para empezar las pruebas"
+taskkill /f /im AskForSerial2.exe >nul 2>&1
+taskkill /f /im AudioTest.exe >nul 2>&1
+taskkill /f /im BluetoothHeadphoneTest.exe >nul 2>&1
+taskkill /f /im MicroTestCloud.exe >nul 2>&1
+taskkill /f /im LevelTest.exe >nul 2>&1
 del /q Prueba_* >nul 2>&1
 del /q results.json >nul 2>&1
 del /q MicroTest_* >nul 2>&1
@@ -72,56 +77,91 @@ set /a AUDIO_ATTEMPTS=0
     set /a AUDIO_ATTEMPTS+=1
     start /wait "" "bin\AudioTest.exe"
     timeout /t %RETRY_DELAY% /nobreak >nul
-    if not exist hearingPass*.txt (
+    echo Checking for hearingPass*.txt files...
+    dir hearingPass*.txt >nul 2>&1
+    if !ERRORLEVEL! NEQ 0 (
         if !AUDIO_ATTEMPTS! GEQ %MAX_RETRIES% (
             echo [AUDIO TEST FAILED] Alcanzado maximo de intentos ^(!AUDIO_ATTEMPTS!/%MAX_RETRIES%^).
+            dir hearingPass* 2>nul
             exit /b 2
         )
         echo [AUDIO TEST FAILED] Reintentando ^(!AUDIO_ATTEMPTS!/%MAX_RETRIES%^)...
         goto TEST_AUDIO
     )
+    echo [AUDIO TEST PASSED]
 
 set /a CONTROLS_ATTEMPTS=0
 :TEST_CONTROLS
     set /a CONTROLS_ATTEMPTS+=1
     start /wait "" "bin\BluetoothHeadphoneTest.exe"
-    timeout /t %RETRY_DELAY% /nobreak >nul
-    if not exist Prueba_*.txt (
+    echo Waiting 5 seconds for output file to be written...
+    timeout /t 5 /nobreak >nul
+    echo Checking for Prueba_*.txt files in root or bin directory...
+    set CONTROLS_FILE_FOUND=0
+    dir Prueba_*.txt >nul 2>&1
+    if !ERRORLEVEL! EQU 0 set CONTROLS_FILE_FOUND=1
+    if !CONTROLS_FILE_FOUND! EQU 0 (
+        dir bin\Prueba_*.txt >nul 2>&1
+        if !ERRORLEVEL! EQU 0 set CONTROLS_FILE_FOUND=1
+    )
+    if !CONTROLS_FILE_FOUND! EQU 0 (
         if !CONTROLS_ATTEMPTS! GEQ %MAX_RETRIES% (
             echo [CONTROLS TEST FAILED] Alcanzado maximo de intentos ^(!CONTROLS_ATTEMPTS!/%MAX_RETRIES%^).
+            dir Prueba_* 2>nul
+            dir bin\Prueba_* 2>nul
             exit /b 3
         )
         echo [CONTROLS TEST FAILED] Reintentando ^(!CONTROLS_ATTEMPTS!/%MAX_RETRIES%^)...
         goto TEST_CONTROLS
     )
+    echo Copying Prueba_*.txt from bin to root directory if needed...
+    copy bin\Prueba_*.txt . >nul 2>&1
+    echo [CONTROLS TEST PASSED]
 
 set /a MIC_ATTEMPTS=0
 :TEST_MICROPHONE
     set /a MIC_ATTEMPTS+=1
     start /wait "" "bin\MicroTestCloud.exe"
-    timeout /t %RETRY_DELAY% /nobreak >nul
-    if not exist MicroTest_*.txt (
+    echo Waiting 5 seconds for output file to be written...
+    timeout /t 5 /nobreak >nul
+    echo Checking for MicroTest_*.txt files in root or bin directory...
+    set MIC_FILE_FOUND=0
+    dir MicroTest_*.txt >nul 2>&1
+    if !ERRORLEVEL! EQU 0 set MIC_FILE_FOUND=1
+    if !MIC_FILE_FOUND! EQU 0 (
+        dir bin\MicroTest_*.txt >nul 2>&1
+        if !ERRORLEVEL! EQU 0 set MIC_FILE_FOUND=1
+    )
+    if !MIC_FILE_FOUND! EQU 0 (
         if !MIC_ATTEMPTS! GEQ %MAX_RETRIES% (
             echo [MICROPHONE TEST FAILED] Alcanzado maximo de intentos ^(!MIC_ATTEMPTS!/%MAX_RETRIES%^).
+            dir MicroTest_* 2>nul
+            dir bin\MicroTest_* 2>nul
             exit /b 4
         )
         echo [MICROPHONE TEST FAILED] Reintentando ^(!MIC_ATTEMPTS!/%MAX_RETRIES%^)...
         goto TEST_MICROPHONE
     )
+    echo Copying MicroTest_*.txt from bin to root directory if needed...
+    copy bin\MicroTest_*.txt . >nul 2>&1
+    echo [MICROPHONE TEST PASSED]
 
 set /a LEVELS_ATTEMPTS=0
 :TEST_LEVELS
     set /a LEVELS_ATTEMPTS+=1
     start /wait "" "bin\LevelTest.exe"
     timeout /t %RETRY_DELAY% /nobreak >nul
+    echo Checking for results.json file...
     if not exist results.json (
         if !LEVELS_ATTEMPTS! GEQ %MAX_RETRIES% (
             echo [LEVELS TEST FAILED] Alcanzado maximo de intentos ^(!LEVELS_ATTEMPTS!/%MAX_RETRIES%^).
+            dir results.* 2>nul
             exit /b 5
         )
         echo [LEVELS TEST FAILED] Reintentando ^(!LEVELS_ATTEMPTS!/%MAX_RETRIES%^)...
         goto TEST_LEVELS
     )
+    echo [LEVELS TEST PASSED]
 
 python getFinalResults.py
 

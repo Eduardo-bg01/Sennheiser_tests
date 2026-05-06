@@ -249,8 +249,9 @@ namespace BluetoothHeadphoneTest
         {
             try
             {
-                string folder = AppDomain.CurrentDomain.BaseDirectory;
-                string fileName = $"Prueba_{session.SelectedDevice?.Name ?? "BT"}_{session.StartTime:yyyyMMdd_HHmm}.txt";
+                string folder = Environment.CurrentDirectory;
+                string deviceName = SanitizeFileNamePart(session.SelectedDevice?.Name ?? "BT");
+                string fileName = $"Prueba_{deviceName}_{session.StartTime:yyyyMMdd_HHmm}.txt";
                 string filePath = Path.Combine(folder, fileName);
 
                 var sb = new System.Text.StringBuilder();
@@ -279,6 +280,19 @@ namespace BluetoothHeadphoneTest
                 File.WriteAllText(filePath, sb.ToString(), System.Text.Encoding.UTF8);
             }
             catch { /* Si falla el guardado, continuar sin interrumpir */ }
+        }
+
+        private static string SanitizeFileNamePart(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return "BT";
+
+            foreach (char c in Path.GetInvalidFileNameChars())
+            {
+                value = value.Replace(c, '_');
+            }
+
+            return value.Trim();
         }
     }
 }

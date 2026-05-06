@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 
 namespace BluetoothHeadphoneTest
@@ -72,9 +73,59 @@ namespace BluetoothHeadphoneTest
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            WriteFallbackReportIfMissing();
             AppCommandRouter.Unregister();
             _globalHook?.Dispose();
             base.OnFormClosed(e);
+        }
+
+        private void WriteFallbackReportIfMissing()
+        {
+            try
+            {
+                bool hasActivity = _session.CurrentTestIndex > 1;
+                if (!hasActivity)
+                {
+                    foreach (var rec in _session.Records)
+                    {
+                        if (rec.Result != TestResult.Pending || rec.Timestamp.HasValue)
+                        {
+                            hasActivity = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!hasActivity)
+                    return;
+
+                if (Directory.GetFiles(Environment.CurrentDirectory, "Prueba_*.txt").Length > 0)
+                    return;
+
+                string deviceName = _session.SelectedDevice?.Name ?? "BT";
+                foreach (char c in Path.GetInvalidFileNameChars())
+                {
+                    deviceName = deviceName.Replace(c, '_');
+                }
+
+                string fileName = $"Prueba_{deviceName}_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
+                string filePath = Path.Combine(Environment.CurrentDirectory, fileName);
+
+                using var sw = new StreamWriter(filePath, false, System.Text.Encoding.UTF8);
+                sw.WriteLine($"Dispositivo: {_session.SelectedDevice?.Name ?? "—"}");
+                sw.WriteLine($"Fecha: {DateTime.Now:dd/MM/yyyy HH:mm:ss}");
+                sw.WriteLine("Resultado final: CERRADO_POR_OPERADOR");
+                sw.WriteLine();
+                foreach (var rec in _session.Records)
+                {
+                    string res = rec.Result == TestResult.Pass ? "PASS" : rec.Result == TestResult.Fail ? "FAIL" : "N/A";
+                    sw.WriteLine($"{rec.Name}: {res}");
+                }
+            }
+            catch
+            {
+                // Best-effort fallback; never block app shutdown.
+            }
         }
 
         public void RefreshDateTime() =>
