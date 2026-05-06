@@ -161,20 +161,34 @@ namespace AudioTest
         private void ApplyCohesiveTheme()
         {
             BackColor = BgApp;
+            MinimumSize = new Size(1080, 700);
             tableLayoutPanel1.BackColor = BgApp;
+            tableLayoutPanel1.Padding = new Padding(24, 18, 24, 18);
+            tableLayoutPanel1.RowStyles[0] = new RowStyle(SizeType.Absolute, 36F);
+            tableLayoutPanel1.RowStyles[1] = new RowStyle(SizeType.Percent, 100F);
+            tableLayoutPanel1.RowStyles[2] = new RowStyle(SizeType.Absolute, 96F);
+
             panelContainer.BackColor = BgApp;
             tableLayoutPanel2.BackColor = BgApp;
+            tableLayoutPanel2.Margin = new Padding(0);
+            tableLayoutPanel2.Padding = new Padding(0);
 
             ApplyThemeToControlTree(this);
             StyleButton(btnNext, Accent, Color.White);
             StyleButton(btnCancel, Color.FromArgb(232, 238, 248), TextPrimary);
             StyleButton(btnPass, Success, Color.White);
             StyleButton(btnFail, Danger, Color.White);
+            StyleHeadline(label1);
+            StyleHeadline(label2);
+            StyleHeadline(label3);
+            label4.Font = new Font("Segoe UI", 24F, FontStyle.Bold);
 
             comboBox1.BackColor = Color.White;
             comboBox1.ForeColor = TextPrimary;
             comboBox1.FlatStyle = FlatStyle.Flat;
             comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboBox1.Font = new Font("Segoe UI", 16F, FontStyle.Regular);
+            comboBox1.Height = 46;
         }
 
         private void ApplyThemeToControlTree(Control root)
@@ -220,6 +234,13 @@ namespace AudioTest
             button.ForeColor = foreColor;
             button.FlatStyle = FlatStyle.Flat;
             button.FlatAppearance.BorderSize = 0;
+            button.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            button.Height = 56;
+        }
+
+        private static void StyleHeadline(Label label)
+        {
+            label.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
         }
 
         private void PaintCardBorder(object? sender, PaintEventArgs e)

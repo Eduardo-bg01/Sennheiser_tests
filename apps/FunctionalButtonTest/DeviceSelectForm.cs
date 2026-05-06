@@ -45,6 +45,7 @@ namespace BluetoothHeadphoneTest
             BackColor = BgDark;
             ForeColor = TextPrimary;
             Font = new Font("Segoe UI", 10f);
+            MinimumSize = new Size(1080, 700);
             MaximizeBox = false;
 
             // ── Header (Dock=Top, altura fija) ──────────────────────
@@ -57,8 +58,8 @@ namespace BluetoothHeadphoneTest
 
             var lblTitle = new Label
             {
-                Text = "🔵  SELECCIÓN DE DISPOSITIVO",
-                Font = new Font("Segoe UI", 14f, FontStyle.Bold),
+                Text = "SELECCION DE DISPOSITIVO",
+                Font = new Font("Segoe UI", 15f, FontStyle.Bold),
                 ForeColor = AccentCyan,
                 AutoSize = false,
                 Dock = DockStyle.None,
@@ -127,12 +128,12 @@ namespace BluetoothHeadphoneTest
             // ── Botones ─────────────────────────────────────────────
             btnRefresh = new Button
             {
-                Text = "↺  Actualizar",
-                Size = new Size(160, 44),
+                Text = "Actualizar",
+                Size = new Size(170, 50),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = ColorTranslator.FromHtml("#E8EEF8"),
                 ForeColor = ColorTranslator.FromHtml("#1A2640"),
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
             btnRefresh.FlatAppearance.BorderSize = 0;
@@ -140,12 +141,12 @@ namespace BluetoothHeadphoneTest
 
             btnStart = new Button
             {
-                Text = "▶  Iniciar Pruebas",
-                Size = new Size(200, 44),
+                Text = "Iniciar pruebas",
+                Size = new Size(220, 50),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = ColorTranslator.FromHtml("#C8D4E8"),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 Cursor = Cursors.Hand,
                 Enabled = false
             };
@@ -165,7 +166,7 @@ namespace BluetoothHeadphoneTest
         private void RelayoutControls()
         {
             // Ancho de contenido: centrado, máximo 600 px, con márgen de 40 px mínimo
-            int contentW = Math.Min(600, ClientSize.Width - 80);
+            int contentW = Math.Min(760, ClientSize.Width - 100);
             int startX = (ClientSize.Width - contentW) / 2;
 
             // El header tiene Dock=Top (90 px) — el área libre empieza en Y=90
@@ -176,7 +177,7 @@ namespace BluetoothHeadphoneTest
             y += 34;
 
             // Lista: altura restante hasta los botones (reservar ~140 px abajo)
-            int listH = Math.Max(120, ClientSize.Height - y - 140);
+            int listH = Math.Max(180, ClientSize.Height - y - 160);
             listDevices.Location = new Point(startX, y);
             listDevices.Size = new Size(contentW, listH);
             y += listH + 12;
@@ -187,7 +188,7 @@ namespace BluetoothHeadphoneTest
 
             // Botones: Actualizar a la izquierda, Iniciar a la derecha del bloque
             btnRefresh.Location = new Point(startX, y);
-            btnStart.Location = new Point(startX + contentW - 200, y);
+            btnStart.Location = new Point(startX + contentW - 220, y);
         }
 
         private void LoadDevices()

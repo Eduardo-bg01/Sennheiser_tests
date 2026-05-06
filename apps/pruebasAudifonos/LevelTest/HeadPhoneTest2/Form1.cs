@@ -461,8 +461,8 @@ namespace HeadPhoneTest2
                 btnFail.Enabled = false;
                 btnPass.Enabled = false;
 
-                btnNext.BackColor = Color.FromArgb(255, SystemColors.InactiveCaption);
-                btnCancel.BackColor = Color.FromArgb(255, SystemColors.InactiveCaption);
+                btnNext.BackColor = Accent;
+                btnCancel.BackColor = Color.FromArgb(232, 238, 248);
                 btnFail.BackColor = Color.FromArgb(130, Danger);
                 btnPass.BackColor = Color.FromArgb(130, Success);
 
@@ -481,9 +481,17 @@ namespace HeadPhoneTest2
         private void ApplyCohesiveTheme()
         {
             BackColor = BgApp;
+            MinimumSize = new Size(1120, 740);
             tableLayoutPanel1.BackColor = BgApp;
+            tableLayoutPanel1.Padding = new Padding(24, 18, 24, 18);
+            tableLayoutPanel1.RowStyles[0] = new RowStyle(SizeType.Absolute, 36F);
+            tableLayoutPanel1.RowStyles[1] = new RowStyle(SizeType.Percent, 100F);
+            tableLayoutPanel1.RowStyles[2] = new RowStyle(SizeType.Absolute, 96F);
+
             panelContainer.BackColor = BgApp;
             buttonContainer.BackColor = BgApp;
+            buttonContainer.Margin = new Padding(0);
+            buttonContainer.Padding = new Padding(0);
 
             ApplyThemeToControlTree(this);
             StyleButton(btnNext, Accent, Color.White);
@@ -500,10 +508,20 @@ namespace HeadPhoneTest2
             comboBoxOut.FlatStyle = FlatStyle.Flat;
             comboBoxIn.DropDownStyle = ComboBoxStyle.DropDownList;
             comboBoxOut.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboBoxIn.Font = new Font("Segoe UI", 14F, FontStyle.Regular);
+            comboBoxOut.Font = new Font("Segoe UI", 14F, FontStyle.Regular);
+            comboBoxIn.Height = 42;
+            comboBoxOut.Height = 42;
 
             lblStatus.ForeColor = TextMuted;
             lblCountdown.ForeColor = TextPrimary;
             lblPlay.ForeColor = TextPrimary;
+            StyleHeadline(label1);
+            StyleHeadline(label4);
+            StyleHeadline(label5);
+            StyleHeadline(label6);
+            lblCountdown.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
+            lblPlay.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
         }
 
         private void ApplyThemeToControlTree(Control root)
@@ -544,6 +562,13 @@ namespace HeadPhoneTest2
             button.ForeColor = foreColor;
             button.FlatStyle = FlatStyle.Flat;
             button.FlatAppearance.BorderSize = 0;
+            button.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            button.Height = 56;
+        }
+
+        private static void StyleHeadline(Label label)
+        {
+            label.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
         }
 
         private void PaintCardBorder(object? sender, PaintEventArgs e)

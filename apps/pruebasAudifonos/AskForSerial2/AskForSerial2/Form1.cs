@@ -7,9 +7,7 @@ namespace AskForSerial2
         private static readonly Color Border = ColorTranslator.FromHtml("#D7E1F0");
         private static readonly Color Accent = ColorTranslator.FromHtml("#0099BB");
         private static readonly Color AccentMuted = ColorTranslator.FromHtml("#EAF1FA");
-        private static readonly Color Danger = ColorTranslator.FromHtml("#CC2222");
         private static readonly Color TextPrimary = ColorTranslator.FromHtml("#1A2640");
-        private static readonly Color TextMuted = ColorTranslator.FromHtml("#5A6F90");
 
         public string serial;
 
@@ -21,8 +19,7 @@ namespace AskForSerial2
 
         private void Form1_Shown(object sender, EventArgs e)
         {
-            container.Top = (panel1.Height - container.Height) / 2;
-            container.Left = (panel1.Width - container.Width) / 2;
+            CenterContainer();
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
@@ -48,21 +45,31 @@ namespace AskForSerial2
         private void ApplyCohesiveTheme()
         {
             BackColor = BgApp;
+            MinimumSize = new Size(1024, 640);
             tableLayoutPanel1.BackColor = BgApp;
+            tableLayoutPanel1.Padding = new Padding(28, 20, 28, 20);
+            tableLayoutPanel1.RowStyles[0] = new RowStyle(SizeType.Absolute, 40F);
+            tableLayoutPanel1.RowStyles[1] = new RowStyle(SizeType.Percent, 100F);
+            tableLayoutPanel1.RowStyles[2] = new RowStyle(SizeType.Absolute, 96F);
+
             panel1.BackColor = BgCard;
-            panel1.Padding = new Padding(24);
+            panel1.Padding = new Padding(40, 24, 40, 24);
             panel1.Paint += PaintCardBorder;
+            panel1.Resize += (_, _) => CenterContainer();
 
             container.BackColor = Color.Transparent;
+            container.MaximumSize = new Size(980, 320);
+            container.Width = Math.Min(panel1.Width - 80, 980);
+            container.Height = 220;
 
             label1.ForeColor = TextPrimary;
-            label1.Font = new Font("Segoe UI", 28F, FontStyle.Bold);
-            label1.Text = "Ingrese el numero de serie";
+            label1.Font = new Font("Segoe UI", 24F, FontStyle.Bold);
+            label1.Text = "Ingrese el numero de serie del producto";
 
             textBox1.BorderStyle = BorderStyle.FixedSingle;
             textBox1.BackColor = Color.White;
             textBox1.ForeColor = TextPrimary;
-            textBox1.Font = new Font("Segoe UI", 22F, FontStyle.Regular);
+            textBox1.Font = new Font("Segoe UI", 20F, FontStyle.Regular);
 
             tableLayoutPanel2.BackColor = BgApp;
             panel2.BackColor = BgApp;
@@ -70,6 +77,12 @@ namespace AskForSerial2
 
             StylePrimaryButton(button1, "Siguiente");
             StyleSecondaryButton(btnCancel, "Cancelar");
+        }
+
+        private void CenterContainer()
+        {
+            container.Top = (panel1.Height - container.Height) / 2;
+            container.Left = (panel1.Width - container.Width) / 2;
         }
 
         private static void StylePrimaryButton(Button button, string text)

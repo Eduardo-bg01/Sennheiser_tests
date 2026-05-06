@@ -134,12 +134,13 @@ namespace MicroTestCloud
             this.BackColor = BgDark;
             this.ForeColor = TextPrimary;
             this.AutoScroll = true;
+            this.MinimumSize = new Size(1200, 760);
 
             int SW = Screen.PrimaryScreen.Bounds.Width;
             int SH = Screen.PrimaryScreen.Bounds.Height;
-            int colW = Math.Min(860, SW - 80);
+            int colW = Math.Min(940, SW - 96);
             int colX = (SW - colW) / 2;
-            int titleH = 52;
+            int titleH = 58;
 
             // ── Barra de título ────────────────────────────────────────
             var titleBar = new Panel
@@ -160,7 +161,7 @@ namespace MicroTestCloud
             var lblAppTitle = new Label
             {
                 Text = "MICROTEST  ·  AUDIO DIAGNOSTICS",
-                Font = new Font("Consolas", 11, FontStyle.Bold),
+                Font = new Font("Segoe UI", 12, FontStyle.Bold),
                 ForeColor = AccentCyan,
                 Location = new Point(colX + 20, 15),
                 AutoSize = true,
@@ -210,8 +211,8 @@ namespace MicroTestCloud
 
             // ── Layout ────────────────────────────────────────────────
             int y = titleH + 36;
-            int gap = 20;
-            int cardPad = 24;
+            int gap = 22;
+            int cardPad = 28;
 
             // ── Tarjeta: Nivel de señal ────────────────────────────────
             int cardVolH = 150;
@@ -243,7 +244,7 @@ namespace MicroTestCloud
             }
 
             lblVolumePct = MakeLabel("0%", cardPad, 86, 0, AccentCyan);
-            lblVolumePct.Font = new Font("Consolas", 28, FontStyle.Bold);
+            lblVolumePct.Font = new Font("Segoe UI", 30, FontStyle.Bold);
             lblVolumePct.TextAlign = ContentAlignment.MiddleLeft;
             lblVolumePct.Size = new Size(160, 44);
 
@@ -276,7 +277,7 @@ namespace MicroTestCloud
             lblStatusIcon.BackColor = Color.Transparent;
 
             lblStatus = MakeLabel("Inactivo — selecciona un micrófono y presiona Iniciar", cardPad + 62, 42, 0, TextMuted);
-            lblStatus.Font = new Font("Segoe UI", 10f);
+            lblStatus.Font = new Font("Segoe UI", 11f);
             lblStatus.Size = new Size(colW - cardPad - 70, 48);
 
             cardStatus.Controls.AddRange(new Control[] { lblStateLabel, panelIndicator, lblStatusIcon, lblStatus });
@@ -287,10 +288,10 @@ namespace MicroTestCloud
             int btnH = 54;
             int btnW = (colW - gap) / 2;
 
-            btnStart = MakeButton("▶  INICIAR TEST", colX, y, btnW, btnH, AccentCyan, BgDark);
+            btnStart = MakeButton("INICIAR TEST", colX, y, btnW, btnH, AccentCyan, BgDark);
             btnStart.Click += BtnStart_Click;
 
-            btnStop = MakeButton("■  DETENER", colX + btnW + gap, y, btnW, btnH, AccentRed, BgDark);
+            btnStop = MakeButton("DETENER", colX + btnW + gap, y, btnW, btnH, AccentRed, BgDark);
             btnStop.Enabled = false;
             btnStop.Click += BtnStop_Click;
 
@@ -318,11 +319,11 @@ namespace MicroTestCloud
             // ── Botones: Reproducir / Parar ────────────────────────────
             int btn2H = 46;
 
-            btnPlayback = MakeButton("▶  REPRODUCIR AUDIO", colX, y, btnW, btn2H, AccentGreen, BgDark);
+            btnPlayback = MakeButton("REPRODUCIR AUDIO", colX, y, btnW, btn2H, AccentGreen, BgDark);
             btnPlayback.Enabled = false;
             btnPlayback.Click += BtnPlayback_Click;
 
-            btnStopPlayback = MakeButton("■  PARAR", colX + btnW + gap, y, btnW, btn2H, AccentOrange, BgDark);
+            btnStopPlayback = MakeButton("PARAR", colX + btnW + gap, y, btnW, btn2H, AccentOrange, BgDark);
             btnStopPlayback.Enabled = false;
             btnStopPlayback.Click += BtnStopPlayback_Click;
 
@@ -340,7 +341,7 @@ namespace MicroTestCloud
             y += btn2H + gap;
 
             // ── Botón: Siguiente prueba ────────────────────────────────
-            var btnSiguiente = MakeButton("▶▶  PASAR A LA SIGUIENTE PRUEBA", colX, y, colW, 48, AccentCyan, BgDark);
+            var btnSiguiente = MakeButton("PASAR A LA SIGUIENTE PRUEBA", colX, y, colW, 52, AccentCyan, BgDark);
             btnSiguiente.Click += (s, e) => Application.Exit();
             this.Controls.Add(btnSiguiente);
             y += 48 + (gap + 80);

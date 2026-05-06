@@ -53,25 +53,26 @@ namespace BluetoothHeadphoneTest
             this.BackColor = ColorTranslator.FromHtml("#F4F7FC");
             this.ForeColor = Color.White;
             this.Font = new Font("Segoe UI", 10f);
+            this.MinimumSize = new Size(1080, 700);
             this.Load += MainForm_Load;
 
             // ── HEADER ────────────────────────────────────────────
             panelHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 64,
+                Height = 72,
                 BackColor = ColorTranslator.FromHtml("#E8EEF8"),
-                Padding = new Padding(20, 0, 20, 0)
+                Padding = new Padding(28, 0, 28, 0)
             };
 
             labelTitle = new Label
             {
-                Text = "⬡  SISTEMA DE PRUEBA — AUDÍFONOS BLUETOOTH",
-                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
+                Text = "SISTEMA DE PRUEBA - AUDIFONOS BLUETOOTH",
+                Font = new Font("Segoe UI", 15f, FontStyle.Bold),
                 ForeColor = ColorTranslator.FromHtml("#0099BB"),
                 AutoSize = false,
-                Size = new Size(580, 40),
-                Location = new Point(20, 12),
+                Size = new Size(680, 44),
+                Location = new Point(28, 14),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
@@ -79,17 +80,17 @@ namespace BluetoothHeadphoneTest
             labelDateTime = new Label
             {
                 Text = DateTime.Now.ToString("dd/MMM/yyyy  HH:mm"),
-                Font = new Font("Segoe UI", 9f),
+                Font = new Font("Segoe UI", 10f),
                 ForeColor = ColorTranslator.FromHtml("#5A6F90"),
                 AutoSize = false,
-                Size = new Size(200, 40),
-                Location = new Point(panelHeader.Width - 220, 12),
+                Size = new Size(230, 44),
+                Location = new Point(panelHeader.Width - 250, 14),
                 TextAlign = ContentAlignment.MiddleRight,
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
 
             panelHeader.Resize += (s, e) =>
-                labelDateTime.Location = new Point(panelHeader.Width - 220, 12);
+                labelDateTime.Location = new Point(panelHeader.Width - 250, 14);
 
             panelHeader.Controls.AddRange(new Control[] { labelTitle, labelDateTime });
 
@@ -100,19 +101,19 @@ namespace BluetoothHeadphoneTest
             panelProgress = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 44,
+                Height = 50,
                 BackColor = ColorTranslator.FromHtml("#EAF0FA"),
-                Padding = new Padding(20, 8, 20, 8)
+                Padding = new Padding(28, 10, 28, 10)
             };
 
             labelProgress = new Label
             {
                 Text = "Prueba 1 de 6",
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = ColorTranslator.FromHtml("#0099BB"),
                 AutoSize = false,
-                Size = new Size(160, 28),
-                Location = new Point(20, 8),
+                Size = new Size(180, 30),
+                Location = new Point(28, 10),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
@@ -122,15 +123,15 @@ namespace BluetoothHeadphoneTest
                 Minimum = 0,
                 Maximum = 100,
                 Value = 0,
-                Size = new Size(400, 18),
-                Location = new Point(190, 13),
+                Size = new Size(400, 20),
+                Location = new Point(220, 14),
                 Style = ProgressBarStyle.Continuous,
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
 
             panelProgress.Resize += (s, e) =>
                 progressBarMain.Size = new Size(
-                    Math.Max(100, panelProgress.Width - 210), 18);
+                    Math.Max(120, panelProgress.Width - 248), 20);
 
             panelProgress.Controls.AddRange(new Control[] { labelProgress, progressBarMain });
 
@@ -139,7 +140,7 @@ namespace BluetoothHeadphoneTest
             {
                 Dock = DockStyle.Fill,
                 BackColor = ColorTranslator.FromHtml("#F4F7FC"),
-                Padding = new Padding(20)
+                Padding = new Padding(28, 22, 28, 22)
             };
 
             panelTestArea = new Panel
@@ -154,20 +155,20 @@ namespace BluetoothHeadphoneTest
             panelFooter = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 72,
+                Height = 88,
                 BackColor = ColorTranslator.FromHtml("#E8EEF8"),
-                Padding = new Padding(20, 10, 20, 10)
+                Padding = new Padding(28, 14, 28, 14)
             };
 
             btnPass = new Button
             {
                 Text = "✔  APROBADO",
-                Size = new Size(160, 46),
-                Location = new Point(20, 13),
+                Size = new Size(176, 54),
+                Location = new Point(28, 16),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = ColorTranslator.FromHtml("#00A85A"),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 Cursor = Cursors.Hand,
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Left
             };
@@ -177,12 +178,12 @@ namespace BluetoothHeadphoneTest
             btnFail = new Button
             {
                 Text = "✘  FALLIDO",
-                Size = new Size(160, 46),
-                Location = new Point(196, 13),
+                Size = new Size(176, 54),
+                Location = new Point(214, 16),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = ColorTranslator.FromHtml("#CC2222"),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 Cursor = Cursors.Hand,
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Left
             };
@@ -192,18 +193,18 @@ namespace BluetoothHeadphoneTest
             labelStatus = new Label
             {
                 Text = "Esperando inicio de prueba...",
-                Font = new Font("Segoe UI", 9f, FontStyle.Italic),
+                Font = new Font("Segoe UI", 10f, FontStyle.Italic),
                 ForeColor = ColorTranslator.FromHtml("#5A6F90"),
                 AutoSize = false,
-                Size = new Size(400, 46),
-                Location = new Point(20, 13),
+                Size = new Size(420, 54),
+                Location = new Point(28, 16),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
             };
 
             panelFooter.Resize += (s, e) =>
                 labelStatus.Size = new Size(
-                    Math.Max(200, panelFooter.Width - 420), 46);
+                    Math.Max(240, panelFooter.Width - 430), 54);
 
             panelFooter.Controls.AddRange(new Control[] { btnPass, btnFail, labelStatus });
 
