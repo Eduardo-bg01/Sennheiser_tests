@@ -8,6 +8,15 @@ namespace HeadPhoneTest2
 {
     public partial class Form1 : Form
     {
+        private static readonly Color BgApp = ColorTranslator.FromHtml("#F4F7FC");
+        private static readonly Color BgCard = ColorTranslator.FromHtml("#FFFFFF");
+        private static readonly Color Border = ColorTranslator.FromHtml("#D7E1F0");
+        private static readonly Color Accent = ColorTranslator.FromHtml("#0099BB");
+        private static readonly Color Success = ColorTranslator.FromHtml("#00A85A");
+        private static readonly Color Danger = ColorTranslator.FromHtml("#CC2222");
+        private static readonly Color TextPrimary = ColorTranslator.FromHtml("#1A2640");
+        private static readonly Color TextMuted = ColorTranslator.FromHtml("#5A6F90");
+
         public int inputIndex;
         public int outputIndex;
         public int step = 0;
@@ -35,6 +44,7 @@ namespace HeadPhoneTest2
         public Form1()
         {
             InitializeComponent();
+            ApplyCohesiveTheme();
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
@@ -144,8 +154,8 @@ namespace HeadPhoneTest2
                     timer.Stop();
                     btnFail.Enabled = true;
                     btnPass.Enabled = true;
-                    btnFail.BackColor = Color.FromArgb(255, Color.DarkSalmon);
-                    btnPass.BackColor = Color.FromArgb(255, Color.PaleGreen);
+                    btnFail.BackColor = Danger;
+                    btnPass.BackColor = Success;
                     lblCountdown.Text = "Escucha el audio de forma clara y sin distorsion?";
                 }
             }
@@ -170,15 +180,15 @@ namespace HeadPhoneTest2
         {
             hearing_pass = true;
             lblStatus.Text = "PASS";
-            lblStatus.ForeColor = Color.Green;
+            lblStatus.ForeColor = Success;
             activateButtons();
         }
 
         private void activateButtons()
         {
-            btnNext.BackColor = Color.FromArgb(255, SystemColors.InactiveCaption);
+            btnNext.BackColor = Accent;
             btnNext.Enabled = true;
-            btnCancel.BackColor = Color.FromArgb(255, SystemColors.InactiveCaption);
+            btnCancel.BackColor = Color.FromArgb(232, 238, 248);
             btnCancel.Enabled = true;
         }
 
@@ -186,7 +196,7 @@ namespace HeadPhoneTest2
         {
             hearing_pass = false;
             lblStatus.Text = "FAIL";
-            lblStatus.ForeColor = Color.Red;
+            lblStatus.ForeColor = Danger;
             activateButtons();
         }
 
@@ -453,8 +463,8 @@ namespace HeadPhoneTest2
 
                 btnNext.BackColor = Color.FromArgb(255, SystemColors.InactiveCaption);
                 btnCancel.BackColor = Color.FromArgb(255, SystemColors.InactiveCaption);
-                btnFail.BackColor = Color.FromArgb(80, Color.DarkSalmon);
-                btnPass.BackColor = Color.FromArgb(80, Color.PaleGreen);
+                btnFail.BackColor = Color.FromArgb(130, Danger);
+                btnPass.BackColor = Color.FromArgb(130, Success);
 
                 // labels
                 lblStatus.Text = "";
@@ -466,6 +476,81 @@ namespace HeadPhoneTest2
                 levelImg.Image = null;
                 clippingImg.Image = null;
             
+        }
+
+        private void ApplyCohesiveTheme()
+        {
+            BackColor = BgApp;
+            tableLayoutPanel1.BackColor = BgApp;
+            panelContainer.BackColor = BgApp;
+            buttonContainer.BackColor = BgApp;
+
+            ApplyThemeToControlTree(this);
+            StyleButton(btnNext, Accent, Color.White);
+            StyleButton(btnCancel, Color.FromArgb(232, 238, 248), TextPrimary);
+            StyleButton(btnPass, Color.FromArgb(130, Success), Color.White);
+            StyleButton(btnFail, Color.FromArgb(130, Danger), Color.White);
+            StyleButton(btnRepeat, Accent, Color.White);
+
+            comboBoxIn.BackColor = Color.White;
+            comboBoxOut.BackColor = Color.White;
+            comboBoxIn.ForeColor = TextPrimary;
+            comboBoxOut.ForeColor = TextPrimary;
+            comboBoxIn.FlatStyle = FlatStyle.Flat;
+            comboBoxOut.FlatStyle = FlatStyle.Flat;
+            comboBoxIn.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboBoxOut.DropDownStyle = ComboBoxStyle.DropDownList;
+
+            lblStatus.ForeColor = TextMuted;
+            lblCountdown.ForeColor = TextPrimary;
+            lblPlay.ForeColor = TextPrimary;
+        }
+
+        private void ApplyThemeToControlTree(Control root)
+        {
+            foreach (Control child in root.Controls)
+            {
+                switch (child)
+                {
+                    case Label label:
+                        if (label != lblStatus)
+                        {
+                            label.ForeColor = TextPrimary;
+                        }
+                        break;
+                    case Panel panel:
+                        if (panel == panelContainer || panel == panel2 || panel == panel3)
+                        {
+                            panel.BackColor = BgApp;
+                        }
+                        else
+                        {
+                            panel.BackColor = BgCard;
+                            panel.Paint += PaintCardBorder;
+                        }
+                        break;
+                }
+
+                if (child.HasChildren)
+                {
+                    ApplyThemeToControlTree(child);
+                }
+            }
+        }
+
+        private static void StyleButton(Button button, Color bgColor, Color foreColor)
+        {
+            button.BackColor = bgColor;
+            button.ForeColor = foreColor;
+            button.FlatStyle = FlatStyle.Flat;
+            button.FlatAppearance.BorderSize = 0;
+        }
+
+        private void PaintCardBorder(object? sender, PaintEventArgs e)
+        {
+            if (sender is not Panel panel) return;
+            using var pen = new Pen(Border, 1f);
+            e.Graphics.DrawRectangle(pen, 0, 0, panel.Width - 1, panel.Height - 1);
         }
     }
 }
