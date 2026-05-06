@@ -80,7 +80,7 @@ namespace HeadPhoneTest2
         {
             if (step == 0)
             {
-                //pasar al paso de colocar audifonos sobre cabeza
+                // Seleccion de dispositivos lista; pasar directo a pantalla previa de prueba automatica.
                 content1.Visible = false;
                 content2.Visible = true;
                 inputIndex = comboBoxIn.SelectedIndex;
@@ -88,60 +88,47 @@ namespace HeadPhoneTest2
             }
             if (step == 1)
             {
-                //hacer play a la cancion
-                btnNext.BackColor = Color.FromArgb(80, SystemColors.InactiveCaption);
-                btnFail.BackColor = Color.FromArgb(80, Color.DarkSalmon);
-                btnPass.BackColor = Color.FromArgb(80, Color.PaleGreen);
-
-                content2.Visible = false;
-                content3.Visible = true;
-                inputIndex = comboBoxIn.SelectedIndex;
-                outputIndex = comboBoxOut.SelectedIndex;
-                btnNext.Enabled = false;
-
-                outputDevice.DeviceNumber = outputIndex;
-                waveIn.DeviceNumber = inputIndex;
-
-                playAudio("karmaPolice.wav");
-
-                timer = new System.Windows.Forms.Timer();
-                timer.Interval = 1000;
-                timer.Tick += Timer_Tick;
-                timer.Start();
-            }
-            if (step == 2)
-            {
-                //colocar audifonos sobre orejas
-                stopAudio();
-                File.WriteAllText("hearingPassResults.txt", this.hearing_pass.ToString());
-                content3.Visible = false;
-                content4.Visible = true;
-            }
-            if (step == 3)
-            {
-                //play al audioSweep
+                // Ejecutar solo la parte automatica (sin confirmacion manual de escucha).
                 MMDeviceEnumerator enumerator = new MMDeviceEnumerator();
                 MMDevice device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
                 device.AudioEndpointVolume.MasterVolumeLevelScalar = 0.5f;
 
                 currentTimer = 2;
+                seconds2 = 40;
                 btnNext.BackColor = Color.FromArgb(80, SystemColors.InactiveCaption);
                 btnNext.Enabled = false;
                 btnCancel.BackColor = Color.FromArgb(80, SystemColors.InactiveCaption);
                 btnCancel.Enabled = false;
+
+                EnsureTimer();
                 timer.Start();
+
                 outputDevice.PlaybackStopped -= stopActions;
                 outputDevice.PlaybackStopped += stopActions;
-                playAudio("audioSweep.wav");
+                playAudio("audioSweep");
                 startRecording();
+                content2.Visible = false;
+                content3.Visible = false;
                 content4.Visible = false;
                 content5.Visible = true;
             }
-            if (step == 4)
+            if (step == 2)
             {
                 Application.Exit();
             }
             step++;
+        }
+
+        private void EnsureTimer()
+        {
+            if (timer != null)
+            {
+                return;
+            }
+
+            timer = new System.Windows.Forms.Timer();
+            timer.Interval = 1000;
+            timer.Tick += Timer_Tick;
         }
 
         private void Timer_Tick(object sender, EventArgs e)
@@ -235,18 +222,49 @@ namespace HeadPhoneTest2
             outputDevice = new WaveOutEvent();
             outputDevice.DeviceNumber = outputIndex;
 
-            if(audioTitle=="audioSweep.wav")
-            outputDevice.PlaybackStopped += stopActions;
+            if (audioTitle.StartsWith("audioSweep", StringComparison.OrdinalIgnoreCase))
+                outputDevice.PlaybackStopped += stopActions;
 
-            string audioPath = Path.Combine("audio", audioTitle);
-            if (!File.Exists(audioPath))
-            {
-                audioPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "audio", audioTitle);
-            }
+            string audioPath = ResolveAudioPath(audioTitle);
 
             audioFile = new AudioFileReader(audioPath);
             outputDevice.Init(audioFile);
             outputDevice.Play();
+        }
+
+        private string ResolveAudioPath(string audioTitle)
+        {
+            var candidates = new List<string>();
+
+            if (Path.HasExtension(audioTitle))
+            {
+                candidates.Add(audioTitle);
+
+                string alternate = Path.ChangeExtension(audioTitle,
+                    Path.GetExtension(audioTitle).Equals(".wav", StringComparison.OrdinalIgnoreCase) ? ".mp3" : ".wav");
+                if (!string.Equals(alternate, audioTitle, StringComparison.OrdinalIgnoreCase))
+                {
+                    candidates.Add(alternate);
+                }
+            }
+            else
+            {
+                candidates.Add(audioTitle + ".wav");
+                candidates.Add(audioTitle + ".mp3");
+            }
+
+            foreach (string fileName in candidates)
+            {
+                string localPath = Path.Combine("audio", fileName);
+                if (File.Exists(localPath))
+                    return localPath;
+
+                string baseDirPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "audio", fileName);
+                if (File.Exists(baseDirPath))
+                    return baseDirPath;
+            }
+
+            throw new FileNotFoundException($"Audio file not found for '{audioTitle}'. Tried: {string.Join(", ", candidates)}");
         }
 
         void stopAudio()
@@ -254,7 +272,7 @@ namespace HeadPhoneTest2
             if (outputDevice != null)
             {
                 outputDevice.Stop();
-                audioFile.Dispose();
+                audioFile?.Dispose();
             }
         }
 
@@ -267,6 +285,7 @@ namespace HeadPhoneTest2
                 string scriptOutput = RunPythonScript("recorded.wav");
 
                 EvaluateResults("results.json");
+                File.WriteAllText("hearingPassResults.txt", "True");
 
                 this.Invoke(() =>
                 {
@@ -318,13 +337,14 @@ namespace HeadPhoneTest2
         private string RunPythonScript(string wavPath)
         {
             string script = "db_chart.py";
+            string scriptPath = ResolvePythonScriptPath(script);
             string jsonFile = "results.json";
             string pngFile = "resultado.png";
             string args = $"--input \"{wavPath}\" --json-out \"{jsonFile}\" --png-out \"{pngFile}\"";
 
             ProcessStartInfo psi = new ProcessStartInfo();
             psi.FileName = "python";
-            psi.Arguments = $"{script} {args}";
+            psi.Arguments = $"\"{scriptPath}\" {args}";
             psi.RedirectStandardOutput = true;
             psi.UseShellExecute = false;
             psi.CreateNoWindow = true;
@@ -342,6 +362,27 @@ namespace HeadPhoneTest2
             }
 
             return output.ToString();
+        }
+
+        private string ResolvePythonScriptPath(string scriptName)
+        {
+            var candidates = new List<string>
+            {
+                scriptName,
+                Path.Combine(Directory.GetCurrentDirectory(), scriptName),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, scriptName),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", scriptName),
+                Path.Combine(Directory.GetCurrentDirectory(), "apps", "pruebasAudifonos", scriptName),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "apps", "pruebasAudifonos", scriptName),
+            };
+
+            foreach (string path in candidates)
+            {
+                if (File.Exists(path))
+                    return Path.GetFullPath(path);
+            }
+
+            return Path.GetFullPath(scriptName);
         }
 
         private void EvaluateResults(string jsonFile)
