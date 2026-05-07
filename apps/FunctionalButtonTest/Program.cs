@@ -21,9 +21,9 @@ namespace BluetoothHeadphoneTest
                 {
                     var device = connected[0];
                     DeviceAssets.DeviceName = device.Name;
-                    var mainForm = new MainForm();
-                    mainForm.Session.SelectedDevice = device;
-                    Application.Run(mainForm);
+                    var autoForm = new MainForm();
+                    autoForm.Session.SelectedDevice = device;
+                    Application.Run(autoForm);
                     return;
                 }
             }

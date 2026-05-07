@@ -22,7 +22,6 @@ namespace BluetoothHeadphoneTest
         public float       Volume   { get; private set; } = 0.7f;
 
         private WaveOutEvent     _waveOut;
-        private MixingSampleProvider _mixer;
         private SignalGenerator  _signal;
         private readonly object  _lock = new object();
 
