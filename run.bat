@@ -4,7 +4,7 @@ setlocal EnableDelayedExpansion
 if not defined MAX_RETRIES set MAX_RETRIES=5
 if not defined RETRY_DELAY set RETRY_DELAY=2
 
-echo "Borrando archivos para empezar las pruebas"
+echo Borrando archivos para empezar las pruebas...
 taskkill /f /im AskForSerial2.exe >nul 2>&1
 taskkill /f /im AudioTest.exe >nul 2>&1
 taskkill /f /im BluetoothHeadphoneTest.exe >nul 2>&1
@@ -77,7 +77,6 @@ set /a AUDIO_ATTEMPTS=0
     set /a AUDIO_ATTEMPTS+=1
     start /wait "" "bin\AudioTest.exe"
     timeout /t %RETRY_DELAY% /nobreak >nul
-    echo Checking for hearingPass*.txt files...
     dir hearingPass*.txt >nul 2>&1
     if !ERRORLEVEL! NEQ 0 (
         if !AUDIO_ATTEMPTS! GEQ %MAX_RETRIES% (
@@ -94,9 +93,7 @@ set /a CONTROLS_ATTEMPTS=0
 :TEST_CONTROLS
     set /a CONTROLS_ATTEMPTS+=1
     start /wait "" "bin\BluetoothHeadphoneTest.exe"
-    echo Waiting 5 seconds for output file to be written...
     timeout /t 5 /nobreak >nul
-    echo Checking for Prueba_*.txt files in root or bin directory...
     set CONTROLS_FILE_FOUND=0
     dir Prueba_*.txt >nul 2>&1
     if !ERRORLEVEL! EQU 0 set CONTROLS_FILE_FOUND=1
@@ -114,7 +111,6 @@ set /a CONTROLS_ATTEMPTS=0
         echo [CONTROLS TEST FAILED] Reintentando ^(!CONTROLS_ATTEMPTS!/%MAX_RETRIES%^)...
         goto TEST_CONTROLS
     )
-    echo Copying Prueba_*.txt from bin to root directory if needed...
     copy bin\Prueba_*.txt . >nul 2>&1
     echo [CONTROLS TEST PASSED]
 
@@ -122,9 +118,7 @@ set /a MIC_ATTEMPTS=0
 :TEST_MICROPHONE
     set /a MIC_ATTEMPTS+=1
     start /wait "" "bin\MicroTestCloud.exe"
-    echo Waiting 5 seconds for output file to be written...
     timeout /t 5 /nobreak >nul
-    echo Checking for MicroTest_*.txt files in root or bin directory...
     set MIC_FILE_FOUND=0
     dir MicroTest_*.txt >nul 2>&1
     if !ERRORLEVEL! EQU 0 set MIC_FILE_FOUND=1
@@ -142,7 +136,6 @@ set /a MIC_ATTEMPTS=0
         echo [MICROPHONE TEST FAILED] Reintentando ^(!MIC_ATTEMPTS!/%MAX_RETRIES%^)...
         goto TEST_MICROPHONE
     )
-    echo Copying MicroTest_*.txt from bin to root directory if needed...
     copy bin\MicroTest_*.txt . >nul 2>&1
     echo [MICROPHONE TEST PASSED]
 
@@ -151,7 +144,6 @@ set /a LEVELS_ATTEMPTS=0
     set /a LEVELS_ATTEMPTS+=1
     start /wait "" "bin\LevelTest.exe"
     timeout /t %RETRY_DELAY% /nobreak >nul
-    echo Checking for results.json file...
     if not exist results.json (
         if !LEVELS_ATTEMPTS! GEQ %MAX_RETRIES% (
             echo [LEVELS TEST FAILED] Alcanzado maximo de intentos ^(!LEVELS_ATTEMPTS!/%MAX_RETRIES%^).
@@ -183,10 +175,9 @@ if exist converter.py (
     echo converter.py not found, skipping conversion
 )
 
-:: Clean up Bluetooth devices (disconnect and remove all paired devices)
-echo Limpiando dispositivos Bluetooth...
-powershell -Command "Get-CimInstance -ClassName Win32_PnPDevice -Filter \"Name LIKE '%%Bluetooth%%'\" | ForEach-Object {$_.Disable()}" 2>nul
+:: Clean up paired Bluetooth devices so they do not auto-reconnect on the next run
+echo Limpiando dispositivos Bluetooth emparejados...
+powershell -NoProfile -Command "$ErrorActionPreference = 'SilentlyContinue'; $devices = Get-PnpDevice -Class Bluetooth | Where-Object { $_.FriendlyName -and $_.FriendlyName -notmatch 'Radio|Adapter|Enumerator|LE Enumerator|Microsoft Bluetooth|Intel(R) Wireless Bluetooth' }; foreach ($device in $devices) { pnputil /remove-device $device.InstanceId | Out-Null }" >nul 2>&1
 
-echo.
 echo Pruebas completadas. Resultados guardados.
 echo Dispositivos Bluetooth desconectados y limpiados.
