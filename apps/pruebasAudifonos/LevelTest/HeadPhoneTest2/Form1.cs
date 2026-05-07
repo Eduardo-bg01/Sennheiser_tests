@@ -12,6 +12,7 @@ namespace HeadPhoneTest2
         private static readonly Color BgCard = ColorTranslator.FromHtml("#FFFFFF");
         private static readonly Color Border = ColorTranslator.FromHtml("#D7E1F0");
         private static readonly Color Accent = ColorTranslator.FromHtml("#0099BB");
+        private static readonly Color AccentMuted = ColorTranslator.FromHtml("#EAF1FA");
         private static readonly Color Success = ColorTranslator.FromHtml("#00A85A");
         private static readonly Color Danger = ColorTranslator.FromHtml("#CC2222");
         private static readonly Color TextPrimary = ColorTranslator.FromHtml("#1A2640");
@@ -484,6 +485,7 @@ namespace HeadPhoneTest2
         {
             BackColor = BgApp;
             MinimumSize = new Size(1120, 740);
+            Font = new Font("Segoe UI", 10F, FontStyle.Regular);
             tableLayoutPanel1.BackColor = BgApp;
             tableLayoutPanel1.Padding = new Padding(24, 18, 24, 18);
             tableLayoutPanel1.RowStyles[0] = new RowStyle(SizeType.Absolute, 36F);
@@ -496,11 +498,11 @@ namespace HeadPhoneTest2
             buttonContainer.Padding = new Padding(0);
 
             ApplyThemeToControlTree(this);
-            StyleButton(btnNext, Accent, Color.White);
-            StyleButton(btnCancel, Color.FromArgb(232, 238, 248), TextPrimary);
-            StyleButton(btnPass, Color.FromArgb(130, Success), Color.White);
-            StyleButton(btnFail, Color.FromArgb(130, Danger), Color.White);
-            StyleButton(btnRepeat, Accent, Color.White);
+            StylePrimaryButton(btnNext, "Siguiente", Accent, Color.White);
+            StyleSecondaryButton(btnCancel, "Cancelar");
+            StylePrimaryButton(btnPass, "Si", Success, Color.White);
+            StylePrimaryButton(btnFail, "No", Danger, Color.White);
+            StylePrimaryButton(btnRepeat, "Repetir pruebas", Accent, Color.White);
 
             comboBoxIn.BackColor = Color.White;
             comboBoxOut.BackColor = Color.White;
@@ -510,10 +512,10 @@ namespace HeadPhoneTest2
             comboBoxOut.FlatStyle = FlatStyle.Flat;
             comboBoxIn.DropDownStyle = ComboBoxStyle.DropDownList;
             comboBoxOut.DropDownStyle = ComboBoxStyle.DropDownList;
-            comboBoxIn.Font = new Font("Segoe UI", 14F, FontStyle.Regular);
-            comboBoxOut.Font = new Font("Segoe UI", 14F, FontStyle.Regular);
-            comboBoxIn.Height = 42;
-            comboBoxOut.Height = 42;
+            comboBoxIn.Font = new Font("Segoe UI", 15F, FontStyle.Regular);
+            comboBoxOut.Font = new Font("Segoe UI", 15F, FontStyle.Regular);
+            comboBoxIn.Height = 48;
+            comboBoxOut.Height = 48;
 
             lblStatus.ForeColor = TextMuted;
             lblCountdown.ForeColor = TextPrimary;
@@ -523,7 +525,13 @@ namespace HeadPhoneTest2
             StyleHeadline(label5);
             StyleHeadline(label6);
             lblCountdown.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
-            lblPlay.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
+            lblPlay.Font = new Font("Segoe UI", 17F, FontStyle.Bold);
+            label7.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
+            label8.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
+            label9.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
+            balanceDetails.Font = new Font("Segoe UI", 16F, FontStyle.Regular);
+            levelDetails.Font = new Font("Segoe UI", 16F, FontStyle.Regular);
+            clippingDetails.Font = new Font("Segoe UI", 16F, FontStyle.Regular);
             ApplyProfessionalLayout();
         }
 
@@ -565,12 +573,33 @@ namespace HeadPhoneTest2
             button.ForeColor = foreColor;
             button.FlatStyle = FlatStyle.Flat;
             button.FlatAppearance.BorderSize = 0;
-            button.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            button.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
             button.Height = 56;
+            button.Margin = new Padding(8);
+        }
+
+        private static void StylePrimaryButton(Button button, string text, Color bgColor, Color foreColor)
+        {
+            button.Text = text;
+            StyleButton(button, bgColor, foreColor);
+        }
+
+        private static void StyleSecondaryButton(Button button, string text)
+        {
+            button.Text = text;
+            button.BackColor = AccentMuted;
+            button.ForeColor = TextPrimary;
+            button.FlatStyle = FlatStyle.Flat;
+            button.FlatAppearance.BorderSize = 1;
+            button.FlatAppearance.BorderColor = Border;
+            button.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            button.Height = 56;
+            button.Margin = new Padding(8);
         }
 
         private static void StyleHeadline(Label label)
         {
+            label.ForeColor = TextPrimary;
             label.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
         }
 

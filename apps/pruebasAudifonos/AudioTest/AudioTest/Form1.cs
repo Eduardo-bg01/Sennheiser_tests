@@ -8,6 +8,7 @@ namespace AudioTest
         private static readonly Color BgCard = ColorTranslator.FromHtml("#FFFFFF");
         private static readonly Color Border = ColorTranslator.FromHtml("#D7E1F0");
         private static readonly Color Accent = ColorTranslator.FromHtml("#0099BB");
+        private static readonly Color AccentMuted = ColorTranslator.FromHtml("#EAF1FA");
         private static readonly Color Success = ColorTranslator.FromHtml("#00A85A");
         private static readonly Color Danger = ColorTranslator.FromHtml("#CC2222");
         private static readonly Color TextPrimary = ColorTranslator.FromHtml("#1A2640");
@@ -164,6 +165,7 @@ namespace AudioTest
         {
             BackColor = BgApp;
             MinimumSize = new Size(1080, 700);
+            Font = new Font("Segoe UI", 10F, FontStyle.Regular);
             tableLayoutPanel1.BackColor = BgApp;
             tableLayoutPanel1.Padding = new Padding(24, 18, 24, 18);
             tableLayoutPanel1.RowStyles[0] = new RowStyle(SizeType.Absolute, 36F);
@@ -176,21 +178,21 @@ namespace AudioTest
             tableLayoutPanel2.Padding = new Padding(0);
 
             ApplyThemeToControlTree(this);
-            StyleButton(btnNext, Accent, Color.White);
-            StyleButton(btnCancel, Color.FromArgb(232, 238, 248), TextPrimary);
-            StyleButton(btnPass, Success, Color.White);
-            StyleButton(btnFail, Danger, Color.White);
+            StylePrimaryButton(btnNext, "Siguiente", Accent, Color.White);
+            StyleSecondaryButton(btnCancel, "Cancelar");
+            StylePrimaryButton(btnPass, "Si", Success, Color.White);
+            StylePrimaryButton(btnFail, "No", Danger, Color.White);
             StyleHeadline(label1);
             StyleHeadline(label2);
             StyleHeadline(label3);
-            label4.Font = new Font("Segoe UI", 24F, FontStyle.Bold);
+            label4.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
 
             comboBox1.BackColor = Color.White;
             comboBox1.ForeColor = TextPrimary;
             comboBox1.FlatStyle = FlatStyle.Flat;
             comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
-            comboBox1.Font = new Font("Segoe UI", 16F, FontStyle.Regular);
-            comboBox1.Height = 46;
+            comboBox1.Font = new Font("Segoe UI", 15F, FontStyle.Regular);
+            comboBox1.Height = 48;
             ApplyProfessionalLayout();
         }
 
@@ -237,13 +239,34 @@ namespace AudioTest
             button.ForeColor = foreColor;
             button.FlatStyle = FlatStyle.Flat;
             button.FlatAppearance.BorderSize = 0;
-            button.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            button.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
             button.Height = 56;
+            button.Margin = new Padding(8);
+        }
+
+        private static void StylePrimaryButton(Button button, string text, Color bgColor, Color foreColor)
+        {
+            button.Text = text;
+            StyleButton(button, bgColor, foreColor);
+        }
+
+        private static void StyleSecondaryButton(Button button, string text)
+        {
+            button.Text = text;
+            button.BackColor = AccentMuted;
+            button.ForeColor = TextPrimary;
+            button.FlatStyle = FlatStyle.Flat;
+            button.FlatAppearance.BorderSize = 1;
+            button.FlatAppearance.BorderColor = Border;
+            button.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            button.Height = 56;
+            button.Margin = new Padding(8);
         }
 
         private static void StyleHeadline(Label label)
         {
-            label.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
+            label.ForeColor = TextPrimary;
+            label.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
         }
 
         private void PaintCardBorder(object? sender, PaintEventArgs e)
@@ -260,25 +283,25 @@ namespace AudioTest
 
             foreach (var panel in new[] { content1, content2, content3 })
             {
-                panel.Padding = new Padding(pad, 30, pad, 24);
+                panel.Padding = new Padding(pad, 28, pad, 24);
             }
 
-            label1.Height = 70;
-            label2.Height = 70;
-            label3.Height = 70;
+            label1.Height = 66;
+            label2.Height = 66;
+            label3.Height = 66;
             label1.TextAlign = ContentAlignment.MiddleCenter;
             label2.TextAlign = ContentAlignment.MiddleCenter;
             label3.TextAlign = ContentAlignment.MiddleCenter;
 
             comboBox1.Dock = DockStyle.None;
             comboBox1.Width = maxW;
-            comboBox1.Location = new Point((content1.Width - comboBox1.Width) / 2, 110);
+            comboBox1.Location = new Point((content1.Width - comboBox1.Width) / 2, 104);
 
             tableLayoutPanel3.Height = 130;
             btnFail.Dock = DockStyle.Fill;
             btnPass.Dock = DockStyle.Fill;
-            panel1.Padding = new Padding(26, 10, 26, 10);
-            panel4.Padding = new Padding(26, 10, 26, 10);
+            panel1.Padding = new Padding(24, 10, 24, 10);
+            panel4.Padding = new Padding(24, 10, 24, 10);
         }
     }
 }

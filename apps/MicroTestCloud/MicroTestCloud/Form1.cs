@@ -161,7 +161,7 @@ namespace MicroTestCloud
             var lblAppTitle = new Label
             {
                 Text = "MICROTEST  ·  AUDIO DIAGNOSTICS",
-                Font = new Font("Segoe UI", 12, FontStyle.Bold),
+                Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
                 ForeColor = AccentCyan,
                 Location = new Point(colX + 20, 15),
                 AutoSize = true,
@@ -171,7 +171,7 @@ namespace MicroTestCloud
             var btnClose = new Button
             {
                 Text = "✕",
-                Font = new Font("Segoe UI", 10),
+                Font = new Font("Segoe UI", 11f),
                 Size = new Size(52, titleH),
                 Location = new Point(SW - 52, 0),
                 FlatStyle = FlatStyle.Flat,
@@ -189,7 +189,7 @@ namespace MicroTestCloud
             var btnMin = new Button
             {
                 Text = "─",
-                Font = new Font("Segoe UI", 10),
+                Font = new Font("Segoe UI", 11f),
                 Size = new Size(52, titleH),
                 Location = new Point(SW - 104, 0),
                 FlatStyle = FlatStyle.Flat,
@@ -219,7 +219,7 @@ namespace MicroTestCloud
             var cardVolume = MakeCard(colX, y, colW, cardVolH);
 
             var lblVolLabel = MakeLabel("NIVEL DE SEÑAL", cardPad, 14, 0, TextMuted, true);
-            lblVolLabel.Font = new Font("Consolas", 8f, FontStyle.Bold);
+            lblVolLabel.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
 
             int barW2 = colW - cardPad * 2;
             progressVolume = new CustomProgressBar
@@ -239,17 +239,17 @@ namespace MicroTestCloud
             {
                 int xPos = cardPad + (int)(i * barW2 / 4.0) - (i == 4 ? 20 : 0);
                 var lbl = MakeLabel(scaleMarks[i], xPos, 66, 0, TextMuted);
-                lbl.Font = new Font("Consolas", 7.5f);
+                lbl.Font = new Font("Segoe UI", 7.5f);
                 cardVolume.Controls.Add(lbl);
             }
 
             lblVolumePct = MakeLabel("0%", cardPad, 86, 0, AccentCyan);
-            lblVolumePct.Font = new Font("Segoe UI", 30, FontStyle.Bold);
+            lblVolumePct.Font = new Font("Segoe UI", 28, FontStyle.Bold);
             lblVolumePct.TextAlign = ContentAlignment.MiddleLeft;
             lblVolumePct.Size = new Size(160, 44);
 
             lblVolumeText = MakeLabel("sin señal", cardPad + 165, 100, 0, TextMuted);
-            lblVolumeText.Font = new Font("Segoe UI", 10f, FontStyle.Italic);
+            lblVolumeText.Font = new Font("Segoe UI", 10.5f, FontStyle.Italic);
 
             cardVolume.Controls.AddRange(new Control[] { lblVolLabel, progressVolume, lblVolumePct, lblVolumeText });
             this.Controls.Add(cardVolume);
@@ -260,7 +260,7 @@ namespace MicroTestCloud
             var cardStatus = MakeCard(colX, y, colW, cardStatH);
 
             var lblStateLabel = MakeLabel("ESTADO DEL TEST", cardPad, 14, 0, TextMuted, true);
-            lblStateLabel.Font = new Font("Consolas", 8f, FontStyle.Bold);
+            lblStateLabel.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
 
             panelIndicator = new Panel
             {
@@ -271,13 +271,13 @@ namespace MicroTestCloud
             panelIndicator.Paint += PanelIndicator_Paint;
 
             lblStatusIcon = MakeLabel("◉", cardPad, 38, 0, TextMuted);
-            lblStatusIcon.Font = new Font("Segoe UI", 22f);
+            lblStatusIcon.Font = new Font("Segoe UI", 21f);
             lblStatusIcon.Size = new Size(48, 48);
             lblStatusIcon.TextAlign = ContentAlignment.MiddleCenter;
             lblStatusIcon.BackColor = Color.Transparent;
 
             lblStatus = MakeLabel("Inactivo — selecciona un micrófono y presiona Iniciar", cardPad + 62, 42, 0, TextMuted);
-            lblStatus.Font = new Font("Segoe UI", 11f);
+            lblStatus.Font = new Font("Segoe UI", 10.5f);
             lblStatus.Size = new Size(colW - cardPad - 70, 48);
 
             cardStatus.Controls.AddRange(new Control[] { lblStateLabel, panelIndicator, lblStatusIcon, lblStatus });
@@ -305,7 +305,7 @@ namespace MicroTestCloud
             var lblRevisarTitle = new Label
             {
                 Text = "🔍  REVISAR PRUEBA",
-                Font = new Font("Consolas", 11f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = AccentCyan,
                 Location = new Point(cardPad, 12),
                 AutoSize = true,
@@ -317,7 +317,7 @@ namespace MicroTestCloud
             y += cardRevisarH + gap;
 
             // ── Botones: Reproducir / Parar ────────────────────────────
-            int btn2H = 46;
+            int btn2H = 48;
 
             btnPlayback = MakeButton("REPRODUCIR AUDIO", colX, y, btnW, btn2H, AccentGreen, BgDark);
             btnPlayback.Enabled = false;
@@ -341,7 +341,7 @@ namespace MicroTestCloud
             y += btn2H + gap;
 
             // ── Botón: Siguiente prueba ────────────────────────────────
-            var btnSiguiente = MakeButton("PASAR A LA SIGUIENTE PRUEBA", colX, y, colW, 52, AccentCyan, BgDark);
+            var btnSiguiente = MakeButton("PASAR A LA SIGUIENTE PRUEBA", colX, y, colW, 54, AccentCyan, BgDark);
             btnSiguiente.Click += (s, e) => Application.Exit();
             this.Controls.Add(btnSiguiente);
             y += 48 + (gap + 80);
@@ -353,7 +353,7 @@ namespace MicroTestCloud
             var lblConfigTitle = new Label
             {
                 Text = "⚙  CONFIGURACIÓN",
-                Font = new Font("Consolas", 11f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = AccentCyan,
                 Location = new Point(cardPad, 12),
                 AutoSize = true,
@@ -369,7 +369,7 @@ namespace MicroTestCloud
             var cardDevice = MakeCard(colX, y, colW, cardDevH);
 
             var lblDevLabel = MakeLabel("DISPOSITIVO DE ENTRADA", cardPad, 14, 0, TextMuted, true);
-            lblDevLabel.Font = new Font("Consolas", 8f, FontStyle.Bold);
+            lblDevLabel.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
 
             cmbDevices = new ComboBox
             {
@@ -384,7 +384,7 @@ namespace MicroTestCloud
             cmbDevices.DrawItem += CmbDevices_DrawItem;
 
             var lblOutLabel = MakeLabel("DISPOSITIVO DE SALIDA", cardPad, 80, 0, TextMuted, true);
-            lblOutLabel.Font = new Font("Consolas", 8f, FontStyle.Bold);
+            lblOutLabel.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
 
             cmbOutputDevices = new ComboBox
             {
@@ -404,7 +404,7 @@ namespace MicroTestCloud
             var cardModo = MakeCard(colX, y, colW, cardModoH);
 
             var lblModoLabel = MakeLabel("MODO DE PRUEBA", cardPad, 14, 0, TextMuted, true);
-            lblModoLabel.Font = new Font("Consolas", 8f, FontStyle.Bold);
+            lblModoLabel.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
 
             rbVoz = new RadioButton
             {
@@ -517,7 +517,7 @@ namespace MicroTestCloud
             var btn = new Button
             {
                 Text = text,
-                Font = new Font("Consolas", 10.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 Location = new Point(x, y),
                 Size = new Size(w, h),
                 BackColor = BgCard,

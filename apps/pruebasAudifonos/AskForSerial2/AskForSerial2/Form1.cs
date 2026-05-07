@@ -7,6 +7,7 @@ namespace AskForSerial2
         private static readonly Color Border = ColorTranslator.FromHtml("#D7E1F0");
         private static readonly Color Accent = ColorTranslator.FromHtml("#0099BB");
         private static readonly Color AccentMuted = ColorTranslator.FromHtml("#EAF1FA");
+        private static readonly Color TextMuted = ColorTranslator.FromHtml("#5A6F90");
         private static readonly Color TextPrimary = ColorTranslator.FromHtml("#1A2640");
 
         public string serial;
@@ -47,6 +48,7 @@ namespace AskForSerial2
         {
             BackColor = BgApp;
             MinimumSize = new Size(1024, 640);
+            Font = new Font("Segoe UI", 10F, FontStyle.Regular);
             tableLayoutPanel1.BackColor = BgApp;
             tableLayoutPanel1.Padding = new Padding(28, 20, 28, 20);
             tableLayoutPanel1.RowStyles[0] = new RowStyle(SizeType.Absolute, 40F);
@@ -64,13 +66,13 @@ namespace AskForSerial2
             container.Height = 220;
 
             label1.ForeColor = TextPrimary;
-            label1.Font = new Font("Segoe UI", 24F, FontStyle.Bold);
+            label1.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
             label1.Text = "Ingrese el numero de serie del producto";
 
             textBox1.BorderStyle = BorderStyle.FixedSingle;
             textBox1.BackColor = Color.White;
             textBox1.ForeColor = TextPrimary;
-            textBox1.Font = new Font("Segoe UI", 20F, FontStyle.Regular);
+            textBox1.Font = new Font("Segoe UI", 18F, FontStyle.Regular);
 
             tableLayoutPanel2.BackColor = BgApp;
             panel2.BackColor = BgApp;
@@ -90,15 +92,15 @@ namespace AskForSerial2
             container.Left = (panel1.Width - container.Width) / 2;
 
             label1.Dock = DockStyle.Top;
-            label1.Height = 84;
+            label1.Height = 74;
             label1.TextAlign = ContentAlignment.MiddleCenter;
 
             textBox1.Dock = DockStyle.Top;
-            textBox1.Height = 56;
-            textBox1.Margin = new Padding(0, 12, 0, 0);
+            textBox1.Height = 54;
+            textBox1.Margin = new Padding(0, 14, 0, 0);
 
-            panel2.Padding = new Padding(12, 18, 12, 18);
-            panel3.Padding = new Padding(12, 18, 12, 18);
+            panel2.Padding = new Padding(12, 16, 12, 16);
+            panel3.Padding = new Padding(12, 16, 12, 16);
             btnCancel.Dock = DockStyle.Fill;
             button1.Dock = DockStyle.Fill;
         }
@@ -110,7 +112,7 @@ namespace AskForSerial2
             button.ForeColor = Color.White;
             button.FlatStyle = FlatStyle.Flat;
             button.FlatAppearance.BorderSize = 0;
-            button.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
+            button.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
             button.Height = 56;
             button.Margin = new Padding(8);
         }
@@ -123,7 +125,7 @@ namespace AskForSerial2
             button.FlatStyle = FlatStyle.Flat;
             button.FlatAppearance.BorderSize = 1;
             button.FlatAppearance.BorderColor = Border;
-            button.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
+            button.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
             button.Height = 56;
             button.Margin = new Padding(8);
         }

@@ -7,6 +7,15 @@ namespace BluetoothHeadphoneTest
 {
     public partial class MainForm : Form
     {
+        private static readonly Color BgApp = ColorTranslator.FromHtml("#F4F7FC");
+        private static readonly Color BgHeader = ColorTranslator.FromHtml("#E8EEF8");
+        private static readonly Color BgSubtle = ColorTranslator.FromHtml("#EAF0FA");
+        private static readonly Color Accent = ColorTranslator.FromHtml("#0099BB");
+        private static readonly Color Success = ColorTranslator.FromHtml("#00A85A");
+        private static readonly Color Danger = ColorTranslator.FromHtml("#CC2222");
+        private static readonly Color TextPrimary = ColorTranslator.FromHtml("#1A2640");
+        private static readonly Color TextMuted = ColorTranslator.FromHtml("#5A6F90");
+
         private TestSession _session;
         public TestStepManager stepManager;
 
@@ -19,6 +28,7 @@ namespace BluetoothHeadphoneTest
             _session = new TestSession();
             stepManager = new TestStepManager(this);
             StartPosition = FormStartPosition.CenterScreen;
+            ApplyCohesiveTheme();
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -132,5 +142,36 @@ namespace BluetoothHeadphoneTest
             labelDateTime.Text = DateTime.Now.ToString("dd/MMM/yyyy  HH:mm");
 
         public TestSession Session => _session;
+
+        private void ApplyCohesiveTheme()
+        {
+            BackColor = BgApp;
+            Font = new Font("Segoe UI", 10f, FontStyle.Regular);
+
+            panelHeader.BackColor = BgHeader;
+            panelProgress.BackColor = BgSubtle;
+            panelContent.BackColor = BgApp;
+            panelFooter.BackColor = BgHeader;
+
+            labelTitle.Font = new Font("Segoe UI", 14f, FontStyle.Bold);
+            labelTitle.ForeColor = Accent;
+
+            labelDateTime.Font = new Font("Segoe UI", 10f, FontStyle.Regular);
+            labelDateTime.ForeColor = TextMuted;
+
+            labelProgress.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            labelProgress.ForeColor = Accent;
+
+            labelStatus.Font = new Font("Segoe UI", 10f, FontStyle.Italic);
+            labelStatus.ForeColor = TextMuted;
+
+            btnPass.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+            btnPass.BackColor = Success;
+            btnPass.ForeColor = Color.White;
+
+            btnFail.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+            btnFail.BackColor = Danger;
+            btnFail.ForeColor = Color.White;
+        }
     }
 }
