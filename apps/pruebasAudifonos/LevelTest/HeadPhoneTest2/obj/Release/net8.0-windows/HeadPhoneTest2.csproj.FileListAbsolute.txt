@@ -27,3 +27,4 @@ C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests
 C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\pruebasAudifonos\LevelTest\HeadPhoneTest2\obj\Release\net8.0-windows\LevelTest.pdb
 C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\pruebasAudifonos\LevelTest\HeadPhoneTest2\obj\Release\net8.0-windows\HeadPhoneTest2.genruntimeconfig.cache
 C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\pruebasAudifonos\LevelTest\HeadPhoneTest2\obj\Release\net8.0-windows\ref\LevelTest.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\pruebasAudifonos\LevelTest\HeadPhoneTest2\bin\Release\net8.0-windows\Resources\miniDSP-headphones.jpg

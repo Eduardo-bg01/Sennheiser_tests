@@ -107,6 +107,7 @@ namespace HeadPhoneTest2
                 var candidates = new List<string>
                 {
                     Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "miniDSP-headphones.jpg"),
+                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miniDSP-headphones.jpg"),
                     Path.Combine(Directory.GetCurrentDirectory(), "Resources", "miniDSP-headphones.jpg"),
                     Path.Combine("Resources", "miniDSP-headphones.jpg")
                 };
@@ -116,8 +117,11 @@ namespace HeadPhoneTest2
                     if (!File.Exists(imagePath))
                         continue;
 
-                    pictureBox1.BackgroundImage = Image.FromFile(imagePath);
-                    pictureBox1.BackgroundImageLayout = ImageLayout.Zoom;
+                    using var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    using var tempImage = Image.FromStream(fs);
+                    pictureBox1.BackgroundImage = null;
+                    pictureBox1.Image = new Bitmap(tempImage);
+                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
                     return;
                 }
             }
