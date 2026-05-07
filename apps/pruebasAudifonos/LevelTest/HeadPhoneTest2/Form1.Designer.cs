@@ -555,7 +555,7 @@
             label4.Name = "label4";
             label4.Size = new Size(1153, 47);
             label4.TabIndex = 1;
-            label4.Text = "Coloque los audifonos sobre sus orejas";
+            label4.Text = "Coloque los audifonos sobre el dispositivo E.A.R.S.";
             label4.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // content1
