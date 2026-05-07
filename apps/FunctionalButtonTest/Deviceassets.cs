@@ -27,12 +27,22 @@ namespace BluetoothHeadphoneTest
         // ── Imagen del dispositivo ───────────────────────────────────────────
         public static Image LoadDeviceImage()
         {
-            if (string.IsNullOrWhiteSpace(DeviceName)) return null;
+            if (string.IsNullOrWhiteSpace(DeviceName))
+                return FindResource(null, new[] { "miniDSP-headphones.jpg" });
 
             // Busca cualquier archivo llamado device.* dentro de una carpeta
             // cuyo segmento coincida con el nombre del dispositivo (ignora mayúsculas).
             // No importa cómo el SDK transformó los espacios — comparamos segmento a segmento.
-            return FindResource(DeviceName, new[] { "device.jpg", "device.png", "device.jpeg" });
+            var image = FindResource(DeviceName, new[] { "device.jpg", "device.png", "device.jpeg" });
+            if (image != null)
+                return image;
+
+            // Fallback final: miniDSP-headphones.jpg
+            image = FindResource(null, new[] { "miniDSP-headphones.jpg" });
+            if (image != null)
+                return image;
+
+            return null;
         }
 
         // ── GIFs de prueba ───────────────────────────────────────────────────

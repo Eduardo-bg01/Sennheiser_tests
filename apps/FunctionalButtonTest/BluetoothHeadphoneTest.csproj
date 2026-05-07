@@ -18,6 +18,7 @@
 	<!-- Incluye TODOS los archivos de assets automáticamente como recurso embebido -->
 	<ItemGroup>
 		<EmbeddedResource Include="assets\**\*.*" />
+		<EmbeddedResource Include="..\pruebasAudifonos\LevelTest\HeadPhoneTest2\Resources\miniDSP-headphones.jpg" Link="assets\miniDSP-headphones.jpg" />
 	</ItemGroup>
 
 </Project>

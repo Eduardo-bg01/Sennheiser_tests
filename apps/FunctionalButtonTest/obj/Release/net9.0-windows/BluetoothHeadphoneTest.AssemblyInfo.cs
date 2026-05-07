@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BluetoothHeadphoneTest")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ed215a551c72e99853bf5cf2f827e9a606dbf17f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b3827ee4d956e8cb9682c8dfcba905130940044f")]
 [assembly: System.Reflection.AssemblyProductAttribute("BluetoothHeadphoneTest")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BluetoothHeadphoneTest")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
