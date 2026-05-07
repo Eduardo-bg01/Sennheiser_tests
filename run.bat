@@ -177,7 +177,7 @@ if exist converter.py (
 
 :: Clean up paired Bluetooth devices so they do not auto-reconnect on the next run
 echo Limpiando dispositivos Bluetooth emparejados...
-powershell -NoProfile -Command "$ErrorActionPreference = 'SilentlyContinue'; $devices = Get-PnpDevice -Class Bluetooth | Where-Object { $_.FriendlyName -and $_.FriendlyName -notmatch 'Radio|Adapter|Enumerator|LE Enumerator|Microsoft Bluetooth|Intel(R) Wireless Bluetooth' }; foreach ($device in $devices) { pnputil /remove-device $device.InstanceId | Out-Null }" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference = 'SilentlyContinue'; $devices = Get-PnpDevice -Class Bluetooth | Where-Object { $_.FriendlyName -and $_.FriendlyName -notmatch 'Radio|Adapter|Enumerator|LE Enumerator|Microsoft|Intel|Qualcomm|Broadcom' }; foreach ($device in $devices) { $device | Remove-PnpDevice -Confirm:$false -Force }" >nul 2>&1
 
 echo Pruebas completadas. Resultados guardados.
 echo Dispositivos Bluetooth desconectados y limpiados.

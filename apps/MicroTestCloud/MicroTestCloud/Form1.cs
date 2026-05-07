@@ -617,10 +617,9 @@ namespace MicroTestCloud
             {
                 string name = WaveIn.GetCapabilities(i).ProductName;
                 cmbDevices.Items.Add(name);
-                // Prefer Bluetooth device (MOMENTUM, E.A.R.S, etc.)
+                // Prefer Bluetooth headphones (MOMENTUM, etc.) — NOT E.A.R.S (cable-connected)
                 if (btIndex == -1 && (name.IndexOf("Bluetooth", StringComparison.OrdinalIgnoreCase) >= 0 
-                    || name.IndexOf("MOMENTUM", StringComparison.OrdinalIgnoreCase) >= 0
-                    || name.IndexOf("E.A.R.S", StringComparison.OrdinalIgnoreCase) >= 0))
+                    || name.IndexOf("MOMENTUM", StringComparison.OrdinalIgnoreCase) >= 0))
                     btIndex = i;
             }
 
