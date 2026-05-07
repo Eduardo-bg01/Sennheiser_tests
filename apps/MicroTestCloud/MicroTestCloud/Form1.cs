@@ -88,7 +88,6 @@ namespace MicroTestCloud
         private Label lblVolumePct;
         private Panel panelIndicator;
         private Label lblStatus;
-        private Label lblStatusIcon;
         private CheckBox chkPlayback;
         private RadioButton rbVoz;
         private RadioButton rbBocina;
@@ -133,14 +132,13 @@ namespace MicroTestCloud
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = BgDark;
             this.ForeColor = TextPrimary;
-            this.AutoScroll = true;
-            this.MinimumSize = new Size(1200, 760);
+            this.AutoScroll = false;
+            this.MinimumSize = new Size(1280, 760);
 
             int SW = Screen.PrimaryScreen.Bounds.Width;
             int SH = Screen.PrimaryScreen.Bounds.Height;
-            int colW = Math.Min(940, SW - 96);
-            int colX = (SW - colW) / 2;
             int titleH = 58;
+            int pad = 20;
 
             // ── Barra de título ────────────────────────────────────────
             var titleBar = new Panel
@@ -153,7 +151,7 @@ namespace MicroTestCloud
             var dot = new Panel
             {
                 Size = new Size(10, 10),
-                Location = new Point(colX, 21),
+                Location = new Point(pad, 21),
                 BackColor = AccentCyan
             };
             dot.Region = RoundRegion(10, 10, 5);
@@ -163,7 +161,7 @@ namespace MicroTestCloud
                 Text = "MICROTEST  ·  AUDIO DIAGNOSTICS",
                 Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
                 ForeColor = AccentCyan,
-                Location = new Point(colX + 20, 15),
+                Location = new Point(pad + 20, 15),
                 AutoSize = true,
                 BackColor = Color.Transparent
             };
@@ -209,209 +207,85 @@ namespace MicroTestCloud
             lblAppTitle.MouseDown += DragForm;
             this.Controls.Add(titleBar);
 
-            // ── Layout ────────────────────────────────────────────────
-            int y = titleH + 16;
-            int gap = 10;
-            int cardPad = 28;
+            // ════════════════════════════════════════════════════════════
+            // ── TWO-COLUMN LAYOUT ──────────────────────────────────────
+            // ════════════════════════════════════════════════════════════
 
-            // ── Tarjeta: Nivel de señal ────────────────────────────────
-            int cardVolH = 120;
-            var cardVolume = MakeCard(colX, y, colW, cardVolH);
+            int contentY = titleH + pad;
+            int contentH = SH - titleH - pad * 2;
+            int leftColW = 360;
+            int rightColW = SW - leftColW - pad * 3;
+            int leftColX = pad;
+            int rightColX = pad * 2 + leftColW;
 
-            var lblVolLabel = MakeLabel("NIVEL DE SEÑAL", cardPad, 14, 0, TextMuted, true);
-            lblVolLabel.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
-
-            int barW2 = colW - cardPad * 2;
-            progressVolume = new CustomProgressBar
-            {
-                Location = new Point(cardPad, 38),
-                Size = new Size(barW2, 22),
-                Minimum = 0,
-                Maximum = 100,
-                Value = 0,
-                BarColor = AccentCyan,
-                BgColor = ColorTranslator.FromHtml("#DDE5F0"),
-                CornerRadius = 11
-            };
-
-            string[] scaleMarks = { "0", "25", "50", "75", "100" };
-            for (int i = 0; i < scaleMarks.Length; i++)
-            {
-                int xPos = cardPad + (int)(i * barW2 / 4.0) - (i == 4 ? 20 : 0);
-                var lbl = MakeLabel(scaleMarks[i], xPos, 66, 0, TextMuted);
-                lbl.Font = new Font("Segoe UI", 7.5f);
-                cardVolume.Controls.Add(lbl);
-            }
-
-            lblVolumePct = MakeLabel("0%", cardPad, 86, 0, AccentCyan);
-            lblVolumePct.Font = new Font("Segoe UI", 28, FontStyle.Bold);
-            lblVolumePct.TextAlign = ContentAlignment.MiddleLeft;
-            lblVolumePct.Size = new Size(160, 44);
-
-            lblVolumeText = MakeLabel("sin señal", cardPad + 165, 100, 0, TextMuted);
-            lblVolumeText.Font = new Font("Segoe UI", 10.5f, FontStyle.Italic);
-
-            cardVolume.Controls.AddRange(new Control[] { lblVolLabel, progressVolume, lblVolumePct, lblVolumeText });
-            this.Controls.Add(cardVolume);
-            y += cardVolH + gap;
-
-            // ── Tarjeta: Estado del test ───────────────────────────────
-            int cardStatH = 120;
-            var cardStatus = MakeCard(colX, y, colW, cardStatH);
-
-            var lblStateLabel = MakeLabel("ESTADO DEL TEST", cardPad, 14, 0, TextMuted, true);
-            lblStateLabel.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
-
-            panelIndicator = new Panel
-            {
-                Location = new Point(cardPad, 38),
-                Size = new Size(48, 48),
-                BackColor = Color.Transparent
-            };
-            panelIndicator.Paint += PanelIndicator_Paint;
-
-            lblStatusIcon = MakeLabel("◉", cardPad, 38, 0, TextMuted);
-            lblStatusIcon.Font = new Font("Segoe UI", 21f);
-            lblStatusIcon.Size = new Size(48, 48);
-            lblStatusIcon.TextAlign = ContentAlignment.MiddleCenter;
-            lblStatusIcon.BackColor = Color.Transparent;
-
-            lblStatus = MakeLabel("Inactivo — selecciona un micrófono y presiona Iniciar", cardPad + 62, 42, 0, TextMuted);
-            lblStatus.Font = new Font("Segoe UI", 10.5f);
-            lblStatus.Size = new Size(colW - cardPad - 70, 48);
-
-            cardStatus.Controls.AddRange(new Control[] { lblStateLabel, panelIndicator, lblStatusIcon, lblStatus });
-            this.Controls.Add(cardStatus);
-            y += cardStatH + gap;
-
-            // ── Botones: Iniciar / Detener ─────────────────────────────
-            int btnH = 54;
-            int btnW = (colW - gap) / 2;
-
-            btnStart = MakeButton("INICIAR TEST", colX, y, btnW, btnH, AccentCyan, BgDark);
-            btnStart.Click += BtnStart_Click;
-
-            btnStop = MakeButton("DETENER", colX + btnW + gap, y, btnW, btnH, AccentRed, BgDark);
-            btnStop.Enabled = false;
-            btnStop.Click += BtnStop_Click;
-
-            this.Controls.AddRange(new Control[] { btnStart, btnStop });
-            y += btnH + (gap + 20);
-
-            // ── Sección: Revisar Prueba ────────────────────────────────
-            int cardRevisarH = 46;
-            var cardRevisar = MakeCard(colX, y, colW, cardRevisarH);
-
-            var lblRevisarTitle = new Label
-            {
-                Text = "🔍  REVISAR PRUEBA",
-                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
-                ForeColor = AccentCyan,
-                Location = new Point(cardPad, 12),
-                AutoSize = true,
-                BackColor = Color.Transparent
-            };
-
-            cardRevisar.Controls.Add(lblRevisarTitle);
-            this.Controls.Add(cardRevisar);
-            y += cardRevisarH + gap;
-
-            // ── Botones: Reproducir / Parar ────────────────────────────
-            int btn2H = 48;
-
-            btnPlayback = MakeButton("REPRODUCIR AUDIO", colX, y, btnW, btn2H, AccentGreen, BgDark);
-            btnPlayback.Enabled = false;
-            btnPlayback.Click += BtnPlayback_Click;
-
-            btnStopPlayback = MakeButton("PARAR", colX + btnW + gap, y, btnW, btn2H, AccentOrange, BgDark);
-            btnStopPlayback.Enabled = false;
-            btnStopPlayback.Click += BtnStopPlayback_Click;
-
-            this.Controls.AddRange(new Control[] { btnPlayback, btnStopPlayback });
-
-            this.Paint += (s, e) =>
-            {
-                using var pen = new Pen(BorderColor, 1);
-                e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
-            };
-
-            timerUI = new System.Windows.Forms.Timer { Interval = 40 };
-            timerUI.Tick += TimerUI_Tick;
-
-            y += btn2H + gap;
-
-            // ── Botón: Siguiente prueba ────────────────────────────────
-            var btnSiguiente = MakeButton("PASAR A LA SIGUIENTE PRUEBA", colX, y, colW, 54, AccentCyan, BgDark);
-            btnSiguiente.Click += (s, e) => Application.Exit();
-            this.Controls.Add(btnSiguiente);
-            y += 48 + (gap + 20);
-
-            // ── Sección: Configuración ─────────────────────────────────
-            int cardConfigH = 46;
-            var cardConfig = MakeCard(colX, y, colW, cardConfigH);
-
-            var lblConfigTitle = new Label
-            {
-                Text = "⚙  CONFIGURACIÓN",
-                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
-                ForeColor = AccentCyan,
-                Location = new Point(cardPad, 12),
-                AutoSize = true,
-                BackColor = Color.Transparent
-            };
-
-            cardConfig.Controls.Add(lblConfigTitle);
-            this.Controls.Add(cardConfig);
-            y += cardConfigH + gap;
+            // ════ LEFT COLUMN: CONFIGURACIÓN ════════════════════════════
 
             // ── Tarjeta: Dispositivos ──────────────────────────────────
-            int cardDevH = 160;
-            var cardDevice = MakeCard(colX, y, colW, cardDevH);
-
-            var lblDevLabel = MakeLabel("DISPOSITIVO DE ENTRADA", cardPad, 14, 0, TextMuted, true);
-            lblDevLabel.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            var cardDevice = MakeCard(leftColX, contentY, leftColW, 135);
+            var lblDevLabel = new Label
+            {
+                Text = "ENTRADA",
+                Font = new Font("Segoe UI", 7.5f, FontStyle.Bold),
+                ForeColor = TextMuted,
+                Location = new Point(12, 10),
+                AutoSize = true,
+                BackColor = Color.Transparent
+            };
 
             cmbDevices = new ComboBox
             {
-                Location = new Point(cardPad, 36),
-                Size = new Size(colW - cardPad * 2, 30),
+                Location = new Point(12, 28),
+                Size = new Size(leftColW - 24, 28),
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                Font = new Font("Segoe UI", 10.5f),
+                Font = new Font("Segoe UI", 10f),
                 FlatStyle = FlatStyle.Flat,
                 DrawMode = DrawMode.OwnerDrawFixed,
-                ItemHeight = 26
+                ItemHeight = 24
             };
             cmbDevices.DrawItem += CmbDevices_DrawItem;
 
-            var lblOutLabel = MakeLabel("DISPOSITIVO DE SALIDA", cardPad, 80, 0, TextMuted, true);
-            lblOutLabel.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            var lblOutLabel = new Label
+            {
+                Text = "SALIDA",
+                Font = new Font("Segoe UI", 7.5f, FontStyle.Bold),
+                ForeColor = TextMuted,
+                Location = new Point(12, 66),
+                AutoSize = true,
+                BackColor = Color.Transparent
+            };
 
             cmbOutputDevices = new ComboBox
             {
-                Location = new Point(cardPad, 102),
-                Size = new Size(colW - cardPad * 2, 30),
+                Location = new Point(12, 84),
+                Size = new Size(leftColW - 24, 28),
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                Font = new Font("Segoe UI", 10.5f),
+                Font = new Font("Segoe UI", 10f),
                 FlatStyle = FlatStyle.Flat
             };
 
             cardDevice.Controls.AddRange(new Control[] { lblDevLabel, cmbDevices, lblOutLabel, cmbOutputDevices });
             this.Controls.Add(cardDevice);
-            y += cardDevH + gap;
 
             // ── Tarjeta: Modo de prueba ────────────────────────────────
-            int cardModoH = 56;
-            var cardModo = MakeCard(colX, y, colW, cardModoH);
+            int modoY = contentY + 135 + pad;
+            var cardModo = MakeCard(leftColX, modoY, leftColW, 100);
 
-            var lblModoLabel = MakeLabel("MODO DE PRUEBA", cardPad, 14, 0, TextMuted, true);
-            lblModoLabel.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            var lblModoLabel = new Label
+            {
+                Text = "MODO",
+                Font = new Font("Segoe UI", 7.5f, FontStyle.Bold),
+                ForeColor = TextMuted,
+                Location = new Point(12, 10),
+                AutoSize = true,
+                BackColor = Color.Transparent
+            };
 
             rbVoz = new RadioButton
             {
-                Text = "  Voz del operador",
-                Font = new Font("Segoe UI", 10.5f),
-                Location = new Point(cardPad, 36),
-                Size = new Size(220, 26),
+                Text = "Voz del operador",
+                Font = new Font("Segoe UI", 10f),
+                Location = new Point(12, 32),
+                Size = new Size(leftColW - 24, 24),
                 ForeColor = AccentCyan,
                 BackColor = Color.Transparent,
                 Checked = true,
@@ -420,10 +294,10 @@ namespace MicroTestCloud
 
             rbBocina = new RadioButton
             {
-                Text = "  Bocina  (Pista)",
-                Font = new Font("Segoe UI", 10.5f),
-                Location = new Point(cardPad + 240, 36),
-                Size = new Size(240, 26),
+                Text = "Bocina (Pista)",
+                Font = new Font("Segoe UI", 10f),
+                Location = new Point(12, 60),
+                Size = new Size(leftColW - 24, 24),
                 ForeColor = TextMuted,
                 BackColor = Color.Transparent,
                 Checked = false,
@@ -446,18 +320,17 @@ namespace MicroTestCloud
 
             cardModo.Controls.AddRange(new Control[] { lblModoLabel, rbVoz, rbBocina });
             this.Controls.Add(cardModo);
-            y += cardModoH + gap;
 
-            // ── Tarjeta: Playback en tiempo real ──────────────────────
-            int cardChkH = 58;
-            var cardPlaybackCheck = MakeCard(colX, y, colW, cardChkH);
+            // ── Tarjeta: Opciones ──────────────────────────────────────
+            int optY = modoY + 100 + pad;
+            var cardOpt = MakeCard(leftColX, optY, leftColW, 70);
 
             chkPlayback = new CheckBox
             {
-                Text = "  Escuchar en tiempo real  (playback)",
-                Font = new Font("Segoe UI", 10.5f),
-                Location = new Point(cardPad, 16),
-                Size = new Size(380, 28),
+                Text = "Escuchar en tiempo real",
+                Font = new Font("Segoe UI", 9.5f),
+                Location = new Point(12, 14),
+                Size = new Size(leftColW - 24, 22),
                 ForeColor = TextMuted,
                 BackColor = Color.Transparent,
                 Cursor = Cursors.Hand
@@ -465,9 +338,160 @@ namespace MicroTestCloud
             chkPlayback.CheckedChanged += (s, e) =>
                 chkPlayback.ForeColor = chkPlayback.Checked ? AccentCyan : TextMuted;
 
-            cardPlaybackCheck.Controls.Add(chkPlayback);
-            this.Controls.Add(cardPlaybackCheck);
-            y += cardChkH + (gap + 80);
+            cardOpt.Controls.Add(chkPlayback);
+            this.Controls.Add(cardOpt);
+
+            // ════ RIGHT COLUMN: MONITOREO Y CONTROLES ═══════════════════
+
+            // ── Tarjeta PRINCIPAL: Nivel de señal ──────────────────────
+            var cardVolume = MakeCard(rightColX, contentY, rightColW, 260);
+
+            var lblVolTitle = new Label
+            {
+                Text = "NIVEL DE SEÑAL",
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = TextMuted,
+                Location = new Point(20, 12),
+                AutoSize = true,
+                BackColor = Color.Transparent
+            };
+
+            lblVolumePct = new Label
+            {
+                Text = "0%",
+                Font = new Font("Segoe UI", 72, FontStyle.Bold),
+                ForeColor = AccentCyan,
+                TextAlign = ContentAlignment.MiddleRight,
+                Location = new Point(20, 36),
+                Size = new Size(rightColW - 160, 100),
+                BackColor = Color.Transparent
+            };
+
+            lblVolumeText = new Label
+            {
+                Text = "sin señal",
+                Font = new Font("Segoe UI", 11f, FontStyle.Italic),
+                ForeColor = TextMuted,
+                TextAlign = ContentAlignment.BottomRight,
+                Location = new Point(20, 120),
+                Size = new Size(rightColW - 160, 40),
+                BackColor = Color.Transparent
+            };
+
+            int barW = rightColW - 40;
+            progressVolume = new CustomProgressBar
+            {
+                Location = new Point(20, 158),
+                Size = new Size(barW, 26),
+                Minimum = 0,
+                Maximum = 100,
+                Value = 0,
+                BarColor = AccentCyan,
+                BgColor = ColorTranslator.FromHtml("#DDE5F0"),
+                CornerRadius = 13
+            };
+
+            string[] scaleMarks = { "0", "25", "50", "75", "100" };
+            for (int i = 0; i < scaleMarks.Length; i++)
+            {
+                int xPos = 20 + (int)(i * barW / 4.0) - (i == 4 ? 16 : 0);
+                var lbl = new Label
+                {
+                    Text = scaleMarks[i],
+                    Font = new Font("Segoe UI", 8f),
+                    ForeColor = TextMuted,
+                    Location = new Point(xPos, 188),
+                    AutoSize = true,
+                    BackColor = Color.Transparent
+                };
+                cardVolume.Controls.Add(lbl);
+            }
+
+            cardVolume.Controls.AddRange(new Control[] { lblVolTitle, lblVolumePct, lblVolumeText, progressVolume });
+            this.Controls.Add(cardVolume);
+
+            // ── Tarjeta: Estado ────────────────────────────────────────
+            int statusY = contentY + 260 + pad;
+            var cardStatus = MakeCard(rightColX, statusY, rightColW, 130);
+
+            var lblStateLabel = new Label
+            {
+                Text = "ESTADO",
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = TextMuted,
+                Location = new Point(20, 12),
+                AutoSize = true,
+                BackColor = Color.Transparent
+            };
+
+            panelIndicator = new Panel
+            {
+                Location = new Point(20, 36),
+                Size = new Size(60, 60),
+                BackColor = Color.Transparent
+            };
+            panelIndicator.Paint += PanelIndicator_Paint;
+
+            lblStatus = new Label
+            {
+                Text = "Inactivo — selecciona dispositivo",
+                Font = new Font("Segoe UI", 10.5f),
+                ForeColor = TextMuted,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Location = new Point(92, 36),
+                Size = new Size(rightColW - 112, 60),
+                BackColor = Color.Transparent
+            };
+
+            cardStatus.Controls.AddRange(new Control[] { lblStateLabel, panelIndicator, lblStatus });
+            this.Controls.Add(cardStatus);
+
+            // ── Botones: Iniciar / Detener ────────────────────────────
+            int btnY = statusY + 130 + pad;
+            int btnW = (rightColW - pad) / 2;
+            int btnH = 56;
+
+            btnStart = MakeButton("INICIAR TEST", rightColX, btnY, btnW, btnH, AccentCyan, BgDark);
+            btnStart.Click += BtnStart_Click;
+            btnStart.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+
+            btnStop = MakeButton("DETENER", rightColX + btnW + pad, btnY, btnW, btnH, AccentRed, BgDark);
+            btnStop.Enabled = false;
+            btnStop.Click += BtnStop_Click;
+            btnStop.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+
+            this.Controls.AddRange(new Control[] { btnStart, btnStop });
+
+            // ── Botones: Reproducir / Parar ────────────────────────────
+            int playY = btnY + btnH + pad;
+
+            btnPlayback = MakeButton("REPRODUCIR", rightColX, playY, btnW, btnH, AccentGreen, BgDark);
+            btnPlayback.Enabled = false;
+            btnPlayback.Click += BtnPlayback_Click;
+            btnPlayback.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+
+            btnStopPlayback = MakeButton("PARAR", rightColX + btnW + pad, playY, btnW, btnH, AccentOrange, BgDark);
+            btnStopPlayback.Enabled = false;
+            btnStopPlayback.Click += BtnStopPlayback_Click;
+            btnStopPlayback.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+
+            this.Controls.AddRange(new Control[] { btnPlayback, btnStopPlayback });
+
+            // ── Botón: Siguiente prueba ────────────────────────────────
+            int nextY = playY + btnH + pad;
+            var btnSiguiente = MakeButton("PASAR A LA SIGUIENTE PRUEBA", rightColX, nextY, rightColW, btnH, AccentCyan, BgDark);
+            btnSiguiente.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+            btnSiguiente.Click += (s, e) => Application.Exit();
+            this.Controls.Add(btnSiguiente);
+
+            this.Paint += (s, e) =>
+            {
+                using var pen = new Pen(BorderColor, 1);
+                e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+            };
+
+            timerUI = new System.Windows.Forms.Timer { Interval = 40 };
+            timerUI.Tick += TimerUI_Tick;
         }
 
         // ══════════════════════════════════════════════════════════════
@@ -704,7 +728,6 @@ namespace MicroTestCloud
 
             panelIndicator.Tag = AccentYellow;
             panelIndicator.Invalidate();
-            lblStatusIcon.ForeColor = AccentYellow;
 
             if (_modoBocina)
                 SetStatus("▶  Reproduciendo pista — grabando micrófono...", AccentCyan);
@@ -774,7 +797,6 @@ namespace MicroTestCloud
 
                 panelIndicator.Tag = TextMuted;
                 panelIndicator.Invalidate();
-                lblStatusIcon.ForeColor = TextMuted;
 
                 btnStart.Enabled = true;
                 btnStop.Enabled = false;
@@ -835,7 +857,6 @@ namespace MicroTestCloud
             lblVolumeText.ForeColor = barColor;
             panelIndicator.Tag = indicatorColor;
             panelIndicator.Invalidate();
-            lblStatusIcon.ForeColor = indicatorColor;
 
             if (!_modoBocina)
                 SetStatus(statusText, indicatorColor);
