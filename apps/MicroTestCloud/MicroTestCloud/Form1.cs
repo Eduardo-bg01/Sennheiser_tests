@@ -144,7 +144,7 @@ namespace MicroTestCloud
             var titleBar = new Panel
             {
                 Size = new Size(SW, titleH),
-                Location = new Point(0, 0),
+                btnStart = MakeButton("INICIAR TEST", rightColX, btnY, btnW, btnH, AccentCyan, BgDark);
                 BackColor = BgCard
             };
 
@@ -466,12 +466,12 @@ namespace MicroTestCloud
             int playY = btnY + btnH + pad;
 
             btnPlayback = MakeButton("REPRODUCIR", rightColX, playY, btnW, btnH, AccentGreen, BgDark);
-            btnPlayback.Enabled = false;
+            btnPlayback.Visible = false;
             btnPlayback.Click += BtnPlayback_Click;
             btnPlayback.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
 
             btnStopPlayback = MakeButton("PARAR", rightColX + btnW + pad, playY, btnW, btnH, AccentOrange, BgDark);
-            btnStopPlayback.Enabled = false;
+            btnStopPlayback.Visible = false;
             btnStopPlayback.Click += BtnStopPlayback_Click;
             btnStopPlayback.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
 
@@ -787,7 +787,12 @@ namespace MicroTestCloud
                 isListening = false;
 
                 if (_recordedStream != null && _recordedStream.Length > 0)
+                {
+                    btnPlayback.Visible = true;
                     btnPlayback.Enabled = true;
+                    btnStopPlayback.Visible = false;
+                    btnStopPlayback.Enabled = false;
+                }
 
                 progressVolume.Value = 0;
                 progressVolume.BarColor = AccentCyan;
@@ -893,6 +898,8 @@ namespace MicroTestCloud
                     this.Invoke((Action)(() =>
                     {
                         _isPlayingBack = false;
+                        btnPlayback.Visible = true;
+                        btnStopPlayback.Visible = false;
                         btnPlayback.Enabled = true;
                         btnStopPlayback.Enabled = false;
                         btnStart.Enabled = true;
@@ -903,6 +910,8 @@ namespace MicroTestCloud
 
                 _playbackOut.Play();
                 _isPlayingBack = true;
+                btnPlayback.Visible = false;
+                btnStopPlayback.Visible = true;
                 btnPlayback.Enabled = false;
                 btnStopPlayback.Enabled = true;
                 btnStart.Enabled = false;
@@ -921,6 +930,8 @@ namespace MicroTestCloud
             _playbackOut?.Dispose();
             _playbackOut = null;
             _isPlayingBack = false;
+            btnPlayback.Visible = true;
+            btnStopPlayback.Visible = false;
             btnPlayback.Enabled = true;
             btnStopPlayback.Enabled = false;
             btnStart.Enabled = true;
@@ -1154,7 +1165,6 @@ public class FormResultado : Form
     // ── Botones ───────────────────────────────────────────────────────
     private Button _btnPaso;
     private Button _btnFallo;
-    private Button _btnGuardar;
     private Button _btnCancelar;
 
     // ── Datos recibidos ───────────────────────────────────────────────
@@ -1270,6 +1280,7 @@ public class FormResultado : Form
             // Auto-save and close immediately
             SaveReport();
             this.Close();
+            Application.Exit();
         };
 
         _btnFallo.Click += (s, e) =>
@@ -1284,29 +1295,14 @@ public class FormResultado : Form
 
         this.Controls.AddRange(new Control[] { _btnPaso, _btnFallo });
 
-        // ── Botones Guardar / Cancelar ─────────────────────────────────
-        _btnGuardar = MakeBtn("💾  Guardar reporte", pad, 178, 220, 50, AccentGreen);
+        // ── Botón Cancelar ───────────────────────────────────────────
         _btnCancelar = MakeBtn("✖  Cancelar", pad + 340, 178, 180, 50, AccentRed);
-
-        _btnGuardar.Click += (s, e) =>
-        {
-            if (TestResult == "No definido")
-            {
-                MessageBox.Show("Selecciona PASS o FAIL antes de guardar.",
-                    "Resultado requerido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            SaveReport();
-            this.Close();
-        };
-
         _btnCancelar.Click += (s, e) =>
         {
             TestResult = "No definido";
             this.Close();
         };
-
-        this.Controls.AddRange(new Control[] { _btnGuardar, _btnCancelar });
+        this.Controls.Add(_btnCancelar);
 
         // ── Borde exterior ─────────────────────────────────────────────
         this.Paint += (s, e) =>
