@@ -1267,6 +1267,9 @@ public class FormResultado : Form
             TestResult = "PASS";
             _btnPaso.BackColor = Color.FromArgb(60, AccentGreen);
             _btnFallo.BackColor = BgCard;
+            // Auto-save and close immediately
+            SaveReport();
+            this.Close();
         };
 
         _btnFallo.Click += (s, e) =>
@@ -1274,6 +1277,9 @@ public class FormResultado : Form
             TestResult = "FAIL";
             _btnFallo.BackColor = Color.FromArgb(60, AccentRed);
             _btnPaso.BackColor = BgCard;
+            // Auto-save and close immediately
+            SaveReport();
+            this.Close();
         };
 
         this.Controls.AddRange(new Control[] { _btnPaso, _btnFallo });
