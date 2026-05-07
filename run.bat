@@ -163,13 +163,22 @@ set /a LEVELS_ATTEMPTS=0
     )
     echo [LEVELS TEST PASSED]
 
-python getFinalResults.py
 
 for /f %%i in ('powershell -command "[int64](Get-Date).ToUniversalTime().Subtract([datetime]\"1970-01-01\").TotalMilliseconds"') do set timestamp=%%i
 
 echo %timestamp% > tiempo2.txt
 
+:: Build final_results.json now that tiempo2 is available
+python getFinalResults.py
+
 for /f "delims=" %%i in ('powershell -command "$t1 = Get-Content tiempo1.txt; $t2 = Get-Content tiempo2.txt; [math]::Round(($t2 - $t1)/60000,2)"') do set diff_min=%%i
 
 echo %diff_min% > diferencia_minutos.txt
 echo Tiempo total (min): %diff_min%
+
+:: Convert to XML and optionally upload using converter.py
+if exist converter.py (
+    python converter.py
+) else (
+    echo converter.py not found, skipping conversion
+)

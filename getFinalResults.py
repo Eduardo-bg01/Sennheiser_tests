@@ -103,4 +103,27 @@ else:
     final_results["resultado_mic"] = "SKIPPED"
 
 with open("final_results.json","w") as f:
+    # Attach StartTime/EndTime from tiempo files if available (ms since epoch -> UTC)
+    try:
+        def read_ms_file(p):
+            import os
+            if os.path.exists(p):
+                with open(p,'r') as tf:
+                    txt = tf.read().strip()
+                    if txt.isdigit():
+                        return int(txt)
+            return None
+
+        t1 = read_ms_file('tiempo1.txt')
+        t2 = read_ms_file('tiempo2.txt')
+        if t1 is not None:
+            from datetime import datetime
+            final_results['StartTime'] = datetime.utcfromtimestamp(t1/1000.0).strftime('%Y-%m-%d %H:%M:%S')
+        if t2 is not None:
+            from datetime import datetime
+            final_results['EndTime'] = datetime.utcfromtimestamp(t2/1000.0).strftime('%Y-%m-%d %H:%M:%S')
+    except Exception:
+        # best-effort; if anything fails, leave StartTime/EndTime absent
+        pass
+
     json.dump(final_results,f,indent=4)
