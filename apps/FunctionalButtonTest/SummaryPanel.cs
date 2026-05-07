@@ -174,7 +174,7 @@ namespace BluetoothHeadphoneTest
 
             // ── Buttons ──────────────────────────────────────────────────────
             var btnNew = MakeButton("↺  NUEVA PRUEBA", ColorTranslator.FromHtml("#0099BB"), 20, y, 190, 44);
-            var btnClose = MakeButton("✖  CERRAR", ColorTranslator.FromHtml("#CC2222"), 224, y, 160, 44);
+            var btnClose = MakeButton("↓  SIGUIENTE PRUEBA", ColorTranslator.FromHtml("#00A85A"), 224, y, 160, 44);
             btnNew.Click += (s, e) =>
             {
                 var btn = (Control)s;

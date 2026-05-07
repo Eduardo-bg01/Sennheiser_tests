@@ -612,10 +612,19 @@ namespace MicroTestCloud
                 return;
             }
 
+            int btIndex = -1;
             for (int i = 0; i < count; i++)
-                cmbDevices.Items.Add(WaveIn.GetCapabilities(i).ProductName);
+            {
+                string name = WaveIn.GetCapabilities(i).ProductName;
+                cmbDevices.Items.Add(name);
+                // Prefer Bluetooth device (MOMENTUM, E.A.R.S, etc.)
+                if (btIndex == -1 && (name.IndexOf("Bluetooth", StringComparison.OrdinalIgnoreCase) >= 0 
+                    || name.IndexOf("MOMENTUM", StringComparison.OrdinalIgnoreCase) >= 0
+                    || name.IndexOf("E.A.R.S", StringComparison.OrdinalIgnoreCase) >= 0))
+                    btIndex = i;
+            }
 
-            cmbDevices.SelectedIndex = 0;
+            cmbDevices.SelectedIndex = btIndex >= 0 ? btIndex : 0;
         }
 
         private void LoadOutputDevices()
@@ -630,13 +639,17 @@ namespace MicroTestCloud
                 return;
             }
 
+            int speakersIndex = -1;
             for (int i = 0; i < count; i++)
             {
                 var caps = WaveOut.GetCapabilities(i);
                 cmbOutputDevices.Items.Add(caps.ProductName);
+                // Prefer Speakers
+                if (speakersIndex == -1 && caps.ProductName.IndexOf("Speaker", StringComparison.OrdinalIgnoreCase) >= 0)
+                    speakersIndex = i;
             }
 
-            cmbOutputDevices.SelectedIndex = 0;
+            cmbOutputDevices.SelectedIndex = speakersIndex >= 0 ? speakersIndex : 0;
         }
 
         // ══════════════════════════════════════════════════════════════

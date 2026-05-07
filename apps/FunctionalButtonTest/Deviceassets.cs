@@ -46,7 +46,17 @@ namespace BluetoothHeadphoneTest
             }
 
             // Fallback: GIF genérico en la raíz de assets (sin subcarpeta)
-            return FindResource(null, new[] { gifName });
+            var genericImg = FindResource(null, new[] { gifName });
+            if (genericImg != null) return genericImg;
+
+            // Fallback final: usar Momentum 4 como GIF por defecto para modelos no identificados
+            if (DeviceName != "Momentum 4")
+            {
+                var defaultImg = FindResource("Momentum 4", new[] { gifName });
+                if (defaultImg != null) return defaultImg;
+            }
+
+            return null;
         }
 
         // ────────────────────────────────────────────────────────────────────

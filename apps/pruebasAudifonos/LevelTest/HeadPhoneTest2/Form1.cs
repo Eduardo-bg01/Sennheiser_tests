@@ -58,35 +58,73 @@ namespace HeadPhoneTest2
         {
             comboBoxIn.Items.Clear();
 
+            int earsIndex = -1;
             for (int i = 0; i < WaveIn.DeviceCount; i++)
             {
                 var deviceInfo = WaveIn.GetCapabilities(i);
                 comboBoxIn.Items.Add(deviceInfo.ProductName);
+                // Prefer E.A.R.S microphone
+                if (earsIndex == -1 && deviceInfo.ProductName.IndexOf("E.A.R.S", StringComparison.OrdinalIgnoreCase) >= 0)
+                    earsIndex = i;
             }
 
             if (comboBoxIn.Items.Count > 0)
-                comboBoxIn.SelectedIndex = 0;
+                comboBoxIn.SelectedIndex = earsIndex >= 0 ? earsIndex : 0;
         }
 
         private void LoadOutputDevices()
         {
             comboBoxOut.Items.Clear();
 
+            int btIndex = -1;
             for (int i = 0; i < WaveOut.DeviceCount; i++)
             {
                 var deviceInfo = WaveOut.GetCapabilities(i);
                 comboBoxOut.Items.Add(deviceInfo.ProductName);
+                // Prefer Bluetooth headphones (MOMENTUM, E.A.R.S, etc.)
+                if (btIndex == -1 && (deviceInfo.ProductName.IndexOf("Bluetooth", StringComparison.OrdinalIgnoreCase) >= 0
+                    || deviceInfo.ProductName.IndexOf("MOMENTUM", StringComparison.OrdinalIgnoreCase) >= 0
+                    || deviceInfo.ProductName.IndexOf("E.A.R.S", StringComparison.OrdinalIgnoreCase) >= 0))
+                    btIndex = i;
             }
 
             if (comboBoxOut.Items.Count > 0)
-                comboBoxOut.SelectedIndex = 0;
+                comboBoxOut.SelectedIndex = btIndex >= 0 ? btIndex : 0;
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
             LoadInputDevices();
             LoadOutputDevices();
+            ApplyInstructionImage();
             ApplyProfessionalLayout();
+        }
+
+        private void ApplyInstructionImage()
+        {
+            try
+            {
+                var candidates = new List<string>
+                {
+                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "miniDSP-headphones.jpg"),
+                    Path.Combine(Directory.GetCurrentDirectory(), "Resources", "miniDSP-headphones.jpg"),
+                    Path.Combine("Resources", "miniDSP-headphones.jpg")
+                };
+
+                foreach (var imagePath in candidates)
+                {
+                    if (!File.Exists(imagePath))
+                        continue;
+
+                    pictureBox1.BackgroundImage = Image.FromFile(imagePath);
+                    pictureBox1.BackgroundImageLayout = ImageLayout.Zoom;
+                    return;
+                }
+            }
+            catch
+            {
+                // Keep existing designer image if custom file load fails.
+            }
         }
 
         private void btnNext_Click(object sender, EventArgs e)

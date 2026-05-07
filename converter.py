@@ -6,10 +6,26 @@ import argparse
 from datetime import datetime
 import os
 from pathlib import Path
+import subprocess
 
 API_ENDPOINT = "https://usengprod-functionapp.azurewebsites.net/api/DataWipeResult?code=qaITPGBWPv55-nnUoXunopRqJIZeyHQwSbo0F0-aYOBTAzFua5QkRg=="
+
+def get_windows_username():
+    """Extract the current Windows username from $env:USERNAME"""
+    try:
+        result = subprocess.run(
+            ['powershell', '-Command', '$env:USERNAME'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        username = result.stdout.strip()
+        return username if username else "tester1"
+    except Exception:
+        return "tester1"
+
 DEFAULTS = {
-    "Username": "tester1",
+    "Username": get_windows_username(),
     "StartTime": None,
     "EndTime": None,
     "Contract": "10083",

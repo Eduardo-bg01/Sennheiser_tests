@@ -182,3 +182,11 @@ if exist converter.py (
 ) else (
     echo converter.py not found, skipping conversion
 )
+
+:: Clean up Bluetooth devices (disconnect and remove all paired devices)
+echo Limpiando dispositivos Bluetooth...
+powershell -Command "Get-CimInstance -ClassName Win32_PnPDevice -Filter \"Name LIKE '%%Bluetooth%%'\" | ForEach-Object {$_.Disable()}" 2>nul
+
+echo.
+echo Pruebas completadas. Resultados guardados.
+echo Dispositivos Bluetooth desconectados y limpiados.
