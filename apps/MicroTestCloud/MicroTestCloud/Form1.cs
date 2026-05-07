@@ -210,12 +210,12 @@ namespace MicroTestCloud
             this.Controls.Add(titleBar);
 
             // ── Layout ────────────────────────────────────────────────
-            int y = titleH + 36;
-            int gap = 22;
+            int y = titleH + 16;
+            int gap = 10;
             int cardPad = 28;
 
             // ── Tarjeta: Nivel de señal ────────────────────────────────
-            int cardVolH = 150;
+            int cardVolH = 120;
             var cardVolume = MakeCard(colX, y, colW, cardVolH);
 
             var lblVolLabel = MakeLabel("NIVEL DE SEÑAL", cardPad, 14, 0, TextMuted, true);
@@ -256,7 +256,7 @@ namespace MicroTestCloud
             y += cardVolH + gap;
 
             // ── Tarjeta: Estado del test ───────────────────────────────
-            int cardStatH = 150;
+            int cardStatH = 120;
             var cardStatus = MakeCard(colX, y, colW, cardStatH);
 
             var lblStateLabel = MakeLabel("ESTADO DEL TEST", cardPad, 14, 0, TextMuted, true);
@@ -296,7 +296,7 @@ namespace MicroTestCloud
             btnStop.Click += BtnStop_Click;
 
             this.Controls.AddRange(new Control[] { btnStart, btnStop });
-            y += btnH + (gap + 80);
+            y += btnH + (gap + 20);
 
             // ── Sección: Revisar Prueba ────────────────────────────────
             int cardRevisarH = 46;
@@ -344,7 +344,7 @@ namespace MicroTestCloud
             var btnSiguiente = MakeButton("PASAR A LA SIGUIENTE PRUEBA", colX, y, colW, 54, AccentCyan, BgDark);
             btnSiguiente.Click += (s, e) => Application.Exit();
             this.Controls.Add(btnSiguiente);
-            y += 48 + (gap + 80);
+            y += 48 + (gap + 20);
 
             // ── Sección: Configuración ─────────────────────────────────
             int cardConfigH = 46;
@@ -365,7 +365,7 @@ namespace MicroTestCloud
             y += cardConfigH + gap;
 
             // ── Tarjeta: Dispositivos ──────────────────────────────────
-            int cardDevH = 196;
+            int cardDevH = 160;
             var cardDevice = MakeCard(colX, y, colW, cardDevH);
 
             var lblDevLabel = MakeLabel("DISPOSITIVO DE ENTRADA", cardPad, 14, 0, TextMuted, true);
@@ -400,7 +400,7 @@ namespace MicroTestCloud
             y += cardDevH + gap;
 
             // ── Tarjeta: Modo de prueba ────────────────────────────────
-            int cardModoH = 78;
+            int cardModoH = 56;
             var cardModo = MakeCard(colX, y, colW, cardModoH);
 
             var lblModoLabel = MakeLabel("MODO DE PRUEBA", cardPad, 14, 0, TextMuted, true);

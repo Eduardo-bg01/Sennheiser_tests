@@ -555,7 +555,6 @@ namespace HeadPhoneTest2
                         else
                         {
                             panel.BackColor = BgCard;
-                            panel.Paint += PaintCardBorder;
                         }
                         break;
                 }
@@ -603,12 +602,7 @@ namespace HeadPhoneTest2
             label.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
         }
 
-        private void PaintCardBorder(object? sender, PaintEventArgs e)
-        {
-            if (sender is not Panel panel) return;
-            using var pen = new Pen(Border, 1f);
-            e.Graphics.DrawRectangle(pen, 0, 0, panel.Width - 1, panel.Height - 1);
-        }
+
 
         private void ApplyProfessionalLayout()
         {
