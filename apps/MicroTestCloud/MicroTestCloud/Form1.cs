@@ -144,7 +144,6 @@ namespace MicroTestCloud
             var titleBar = new Panel
             {
                 Size = new Size(SW, titleH),
-                btnStart = MakeButton("INICIAR TEST", rightColX, btnY, btnW, btnH, AccentCyan, BgDark);
                 BackColor = BgCard
             };
 
