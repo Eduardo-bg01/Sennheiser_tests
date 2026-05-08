@@ -42,7 +42,7 @@ namespace AudioTest
         {
             if (step == 1)
             {
-                inputIndex = comboBox1.SelectedIndex;
+                inputIndex = listBox1.SelectedIndex;
                 content1.Visible = false;
                 content2.Visible = true;
             }
@@ -93,15 +93,15 @@ namespace AudioTest
 
         private void loadOutputDevices()
         {
-            comboBox1.Items.Clear();
+            listBox1.Items.Clear();
             for (int i = 0; i < WaveOut.DeviceCount; i++)
             {
                 var info = WaveOut.GetCapabilities(i);
-                comboBox1.Items.Add(info.ProductName);
+                listBox1.Items.Add(info.ProductName);
             }
             if (WaveOut.DeviceCount > 0)
             {
-                comboBox1.SelectedIndex = 0;
+                listBox1.SelectedIndex = 0;
             }
         }
 
@@ -187,12 +187,10 @@ namespace AudioTest
             StyleHeadline(label3);
             label4.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
 
-            comboBox1.BackColor = Color.White;
-            comboBox1.ForeColor = TextPrimary;
-            comboBox1.FlatStyle = FlatStyle.Flat;
-            comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
-            comboBox1.Font = new Font("Segoe UI", 15F, FontStyle.Regular);
-            comboBox1.Height = 48;
+            listBox1.BackColor = Color.White;
+            listBox1.ForeColor = TextPrimary;
+            listBox1.Font = new Font("Segoe UI", 14F, FontStyle.Regular);
+            listBox1.BorderStyle = BorderStyle.FixedSingle;
             ApplyProfessionalLayout();
         }
 

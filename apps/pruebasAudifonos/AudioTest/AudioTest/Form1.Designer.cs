@@ -251,7 +251,7 @@
             // content1
             // 
             content1.BackColor = Color.White;
-            content1.Controls.Add(comboBox1);
+            content1.Controls.Add(listBox1);
             content1.Controls.Add(label1);
             content1.Dock = DockStyle.Fill;
             content1.Location = new Point(0, 0);
@@ -260,15 +260,17 @@
             content1.Size = new Size(1163, 519);
             content1.TabIndex = 0;
             // 
-            // comboBox1
+            // listBox1
             // 
-            comboBox1.Dock = DockStyle.Top;
-            comboBox1.Font = new Font("Segoe UI", 19.8000011F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            comboBox1.FormattingEnabled = true;
-            comboBox1.Location = new Point(10, 82);
-            comboBox1.Name = "comboBox1";
-            comboBox1.Size = new Size(1143, 53);
-            comboBox1.TabIndex = 1;
+            listBox1.Dock = DockStyle.Fill;
+            listBox1.Font = new Font("Segoe UI", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            listBox1.FormattingEnabled = true;
+            listBox1.Location = new Point(10, 82);
+            listBox1.Name = "listBox1";
+            listBox1.Size = new Size(1143, 427);
+            listBox1.TabIndex = 1;
+            listBox1.BorderStyle = BorderStyle.FixedSingle;
+            listBox1.ItemHeight = 30;
             // 
             // label1
             // 
@@ -384,7 +386,7 @@
         private Button btnNext;
         private Panel panel2;
         private Button btnCancel;
-        private ComboBox comboBox1;
+        private ListBox listBox1;
         private Panel panelContainer;
         private Panel content3;
         private Label label2;
