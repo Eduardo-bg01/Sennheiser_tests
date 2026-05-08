@@ -44,7 +44,7 @@
             pictureBox1 = new PictureBox();
             label3 = new Label();
             content1 = new Panel();
-            comboBox1 = new ComboBox();
+            listBox1 = new ListBox();
             label1 = new Label();
             tableLayoutPanel2 = new TableLayoutPanel();
             panel3 = new Panel();

@@ -1,5 +1,12 @@
 @echo off
 setlocal EnableDelayedExpansion
+set "ROOT=%~dp0"
+pushd "%ROOT%"
+
+set "APP_DIR=%ROOT%bin\"
+if exist "%ROOT%AskForSerial2.exe" (
+    set "APP_DIR=%ROOT%"
+)
 
 if not defined MAX_RETRIES set MAX_RETRIES=5
 if not defined RETRY_DELAY set RETRY_DELAY=2
@@ -24,28 +31,28 @@ if not defined SKIP_SERIAL_PROMPT (
     del /q serial* >nul 2>&1
 )
 
-if not exist bin\AskForSerial2.exe (
-    echo Falta bin\AskForSerial2.exe. Ejecuta build-all.bat primero.
+if not exist "%APP_DIR%AskForSerial2.exe" (
+    echo Falta AskForSerial2.exe. Ejecuta build-all.bat primero.
     exit /b 1
 )
 
-if not exist bin\AudioTest.exe (
-    echo Falta bin\AudioTest.exe. Ejecuta build-all.bat primero.
+if not exist "%APP_DIR%AudioTest.exe" (
+    echo Falta AudioTest.exe. Ejecuta build-all.bat primero.
     exit /b 1
 )
 
-if not exist bin\BluetoothHeadphoneTest.exe (
-    echo Falta bin\BluetoothHeadphoneTest.exe. Ejecuta build-all.bat primero.
+if not exist "%APP_DIR%BluetoothHeadphoneTest.exe" (
+    echo Falta BluetoothHeadphoneTest.exe. Ejecuta build-all.bat primero.
     exit /b 1
 )
 
-if not exist bin\MicroTestCloud.exe (
-    echo Falta bin\MicroTestCloud.exe. Ejecuta build-all.bat primero.
+if not exist "%APP_DIR%MicroTestCloud.exe" (
+    echo Falta MicroTestCloud.exe. Ejecuta build-all.bat primero.
     exit /b 1
 )
 
-if not exist bin\LevelTest.exe (
-    echo Falta bin\LevelTest.exe. Ejecuta build-all.bat primero.
+if not exist "%APP_DIR%LevelTest.exe" (
+    echo Falta LevelTest.exe. Ejecuta build-all.bat primero.
     exit /b 1
 )
 
@@ -60,7 +67,7 @@ echo %timestamp% > tiempo1.txt
             exit /b 1
         )
     ) else (
-        start /wait "" "bin\AskForSerial2.exe"
+        start /wait "" "%APP_DIR%AskForSerial2.exe"
         if not exist serial.txt (
             echo AskForSerial2 no genero serial.txt. Debes ingresar un serial valido para continuar.
             exit /b 1
@@ -75,7 +82,7 @@ if not exist serial.txt (
 set /a AUDIO_ATTEMPTS=0
 :TEST_AUDIO
     set /a AUDIO_ATTEMPTS+=1
-    start /wait "" "bin\AudioTest.exe"
+    start /wait "" "%APP_DIR%AudioTest.exe"
     timeout /t %RETRY_DELAY% /nobreak >nul
     dir hearingPass*.txt >nul 2>&1
     if !ERRORLEVEL! NEQ 0 (
@@ -92,57 +99,57 @@ set /a AUDIO_ATTEMPTS=0
 set /a CONTROLS_ATTEMPTS=0
 :TEST_CONTROLS
     set /a CONTROLS_ATTEMPTS+=1
-    start /wait "" "bin\BluetoothHeadphoneTest.exe"
+    start /wait "" "%APP_DIR%BluetoothHeadphoneTest.exe"
     timeout /t 5 /nobreak >nul
     set CONTROLS_FILE_FOUND=0
     dir Prueba_*.txt >nul 2>&1
     if !ERRORLEVEL! EQU 0 set CONTROLS_FILE_FOUND=1
     if !CONTROLS_FILE_FOUND! EQU 0 (
-        dir bin\Prueba_*.txt >nul 2>&1
+        dir "%APP_DIR%Prueba_*.txt" >nul 2>&1
         if !ERRORLEVEL! EQU 0 set CONTROLS_FILE_FOUND=1
     )
     if !CONTROLS_FILE_FOUND! EQU 0 (
         if !CONTROLS_ATTEMPTS! GEQ %MAX_RETRIES% (
             echo [CONTROLS TEST FAILED] Alcanzado maximo de intentos ^(!CONTROLS_ATTEMPTS!/%MAX_RETRIES%^).
             dir Prueba_* 2>nul
-            dir bin\Prueba_* 2>nul
+            dir "%APP_DIR%Prueba_*" 2>nul
             exit /b 3
         )
         echo [CONTROLS TEST FAILED] Reintentando ^(!CONTROLS_ATTEMPTS!/%MAX_RETRIES%^)...
         goto TEST_CONTROLS
     )
-    copy bin\Prueba_*.txt . >nul 2>&1
+    copy "%APP_DIR%Prueba_*.txt" . >nul 2>&1
     echo [CONTROLS TEST PASSED]
 
 set /a MIC_ATTEMPTS=0
 :TEST_MICROPHONE
     set /a MIC_ATTEMPTS+=1
-    start /wait "" "bin\MicroTestCloud.exe"
+    start /wait "" "%APP_DIR%MicroTestCloud.exe"
     timeout /t 5 /nobreak >nul
     set MIC_FILE_FOUND=0
     dir MicroTest_*.txt >nul 2>&1
     if !ERRORLEVEL! EQU 0 set MIC_FILE_FOUND=1
     if !MIC_FILE_FOUND! EQU 0 (
-        dir bin\MicroTest_*.txt >nul 2>&1
+        dir "%APP_DIR%MicroTest_*.txt" >nul 2>&1
         if !ERRORLEVEL! EQU 0 set MIC_FILE_FOUND=1
     )
     if !MIC_FILE_FOUND! EQU 0 (
         if !MIC_ATTEMPTS! GEQ %MAX_RETRIES% (
             echo [MICROPHONE TEST FAILED] Alcanzado maximo de intentos ^(!MIC_ATTEMPTS!/%MAX_RETRIES%^).
             dir MicroTest_* 2>nul
-            dir bin\MicroTest_* 2>nul
+            dir "%APP_DIR%MicroTest_*" 2>nul
             exit /b 4
         )
         echo [MICROPHONE TEST FAILED] Reintentando ^(!MIC_ATTEMPTS!/%MAX_RETRIES%^)...
         goto TEST_MICROPHONE
     )
-    copy bin\MicroTest_*.txt . >nul 2>&1
+    copy "%APP_DIR%MicroTest_*.txt" . >nul 2>&1
     echo [MICROPHONE TEST PASSED]
 
 set /a LEVELS_ATTEMPTS=0
 :TEST_LEVELS
     set /a LEVELS_ATTEMPTS+=1
-    start /wait "" "bin\LevelTest.exe"
+    start /wait "" "%APP_DIR%LevelTest.exe"
     timeout /t %RETRY_DELAY% /nobreak >nul
     if not exist results.json (
         if !LEVELS_ATTEMPTS! GEQ %MAX_RETRIES% (
@@ -161,7 +168,11 @@ for /f %%i in ('powershell -command "[int64](Get-Date).ToUniversalTime().Subtrac
 echo %timestamp% > tiempo2.txt
 
 :: Build final_results.json now that tiempo2 is available
-python getFinalResults.py
+if exist "%ROOT%getFinalResults.exe" (
+    "%ROOT%getFinalResults.exe"
+) else (
+    python "%ROOT%getFinalResults.py"
+)
 
 for /f "delims=" %%i in ('powershell -command "$t1 = Get-Content tiempo1.txt; $t2 = Get-Content tiempo2.txt; [math]::Round(($t2 - $t1)/60000,2)"') do set diff_min=%%i
 
@@ -169,8 +180,10 @@ echo %diff_min% > diferencia_minutos.txt
 echo Tiempo total (min): %diff_min%
 
 :: Convert to XML and optionally upload using converter.py
-if exist converter.py (
-    python converter.py
+if exist "%ROOT%converter.exe" (
+    "%ROOT%converter.exe"
+) else if exist "%ROOT%converter.py" (
+    python "%ROOT%converter.py"
 ) else (
     echo converter.py not found, skipping conversion
 )
@@ -181,3 +194,4 @@ powershell -NoProfile -Command "$ErrorActionPreference = 'SilentlyContinue'; $de
 
 echo Pruebas completadas. Resultados guardados.
 echo Dispositivos Bluetooth desconectados y limpiados.
+popd

@@ -285,9 +285,9 @@ namespace AudioTest
             label2.TextAlign = ContentAlignment.MiddleCenter;
             label3.TextAlign = ContentAlignment.MiddleCenter;
 
-            comboBox1.Dock = DockStyle.None;
-            comboBox1.Width = maxW;
-            comboBox1.Location = new Point((content1.Width - comboBox1.Width) / 2, 104);
+            listBox1.Dock = DockStyle.None;
+            listBox1.Width = maxW;
+            listBox1.Location = new Point((content1.Width - listBox1.Width) / 2, 104);
 
             tableLayoutPanel3.Height = 130;
             btnFail.Dock = DockStyle.Fill;
