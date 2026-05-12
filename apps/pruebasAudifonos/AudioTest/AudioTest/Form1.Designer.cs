@@ -44,7 +44,15 @@
             pictureBox1 = new PictureBox();
             label3 = new Label();
             content1 = new Panel();
-            listBox1 = new ListBox();
+            //START-MOD FONG
+            labelHeadphones = new Label();
+            labelSpeakers = new Label();
+            labelMicrophones = new Label();
+
+            comboHeadphones = new ComboBox();
+            comboSpeakers = new ComboBox();
+            comboMicrophones = new ComboBox();
+            //END-MOD FONG
             label1 = new Label();
             tableLayoutPanel2 = new TableLayoutPanel();
             panel3 = new Panel();
@@ -251,26 +259,24 @@
             // content1
             // 
             content1.BackColor = Color.White;
-            content1.Controls.Add(listBox1);
+            //START-MOD FONG
+            content1.Controls.Add(comboMicrophones);
+            content1.Controls.Add(labelMicrophones);
+
+            content1.Controls.Add(comboSpeakers);
+            content1.Controls.Add(labelSpeakers);
+
+            content1.Controls.Add(comboHeadphones);
+            content1.Controls.Add(labelHeadphones);
+            
             content1.Controls.Add(label1);
+            //END-MOD FONG
             content1.Dock = DockStyle.Fill;
             content1.Location = new Point(0, 0);
             content1.Name = "content1";
             content1.Padding = new Padding(10);
             content1.Size = new Size(1163, 519);
             content1.TabIndex = 0;
-            // 
-            // listBox1
-            // 
-            listBox1.Dock = DockStyle.Fill;
-            listBox1.Font = new Font("Segoe UI", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            listBox1.FormattingEnabled = true;
-            listBox1.Location = new Point(10, 82);
-            listBox1.Name = "listBox1";
-            listBox1.Size = new Size(1143, 427);
-            listBox1.TabIndex = 1;
-            listBox1.BorderStyle = BorderStyle.FixedSingle;
-            listBox1.ItemHeight = 30;
             // 
             // label1
             // 
@@ -282,6 +288,55 @@
             label1.TabIndex = 0;
             label1.Text = "Seleccione su dispositivo de salida";
             label1.TextAlign = ContentAlignment.TopCenter;
+            //START-MOD FONG
+            //
+            // labelHeadphones
+            //
+            labelHeadphones.Text = "Seleccione dispositivo de audífonos";
+            labelHeadphones.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            labelHeadphones.AutoSize = false;
+            labelHeadphones.Height = 40;
+            labelHeadphones.Width = 900;
+
+            //
+            // labelSpeakers
+            //
+            labelSpeakers.Text = "Seleccione bocinas externas";
+            labelSpeakers.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            labelSpeakers.AutoSize = false;
+            labelSpeakers.Height = 40;
+            labelSpeakers.Width = 900;
+
+            //
+            // labelMicrophones
+            //
+            labelMicrophones.Text = "Seleccione micrófono de orejas";
+            labelMicrophones.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            labelMicrophones.AutoSize = false;
+            labelMicrophones.Height = 40;
+            labelMicrophones.Width = 900;
+
+            //
+            // comboHeadphones
+            //
+            comboHeadphones.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboHeadphones.Font = new Font("Segoe UI", 13F);
+            comboHeadphones.Width = 900;
+
+            //
+            // comboSpeakers
+            //
+            comboSpeakers.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboSpeakers.Font = new Font("Segoe UI", 13F);
+            comboSpeakers.Width = 900;
+
+            //
+            // comboMicrophones
+            //
+            comboMicrophones.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboMicrophones.Font = new Font("Segoe UI", 13F);
+            comboMicrophones.Width = 900;
+            //END-MOD FONG
             // 
             // tableLayoutPanel2
             // 
@@ -386,7 +441,6 @@
         private Button btnNext;
         private Panel panel2;
         private Button btnCancel;
-        private ListBox listBox1;
         private Panel panelContainer;
         private Panel content3;
         private Label label2;
@@ -400,5 +454,15 @@
         private Panel panel1;
         private Button btnFail;
         private Label label4;
+        //
+        //AGREGADO POR FONG
+        //
+        private Label labelHeadphones;
+        private Label labelSpeakers;
+        private Label labelMicrophones;
+
+        private ComboBox comboHeadphones;
+        private ComboBox comboSpeakers;
+        private ComboBox comboMicrophones;
     }
 }

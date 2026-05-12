@@ -2,7 +2,7 @@
   "version": 3,
   "targets": {
     "net9.0-windows7.0": {
-      "Microsoft.NET.ILLink.Tasks/9.0.15": {
+      "Microsoft.NET.ILLink.Tasks/9.0.7": {
         "type": "package",
         "build": {
           "build/Microsoft.NET.ILLink.Tasks.props": {}
@@ -252,7 +252,7 @@
       }
     },
     "net9.0-windows7.0/win-x64": {
-      "Microsoft.NET.ILLink.Tasks/9.0.15": {
+      "Microsoft.NET.ILLink.Tasks/9.0.7": {
         "type": "package",
         "build": {
           "build/Microsoft.NET.ILLink.Tasks.props": {}
@@ -471,10 +471,10 @@
     }
   },
   "libraries": {
-    "Microsoft.NET.ILLink.Tasks/9.0.15": {
-      "sha512": "EejcbfCMR77Dthy77qxRbEShmzLApHZUPqXMBVQK+A0pNrRThkaHoGGMGvbq/gTkC/waKcDEgjBkbaejB58Wtw==",
+    "Microsoft.NET.ILLink.Tasks/9.0.7": {
+      "sha512": "SZ1brSGoLnhLbE8QUZrtN6YwzN2gDT1wbx9qDBEfFFJcstiDTjJ6ygNuTPBV/K7SjGfx2YNbcJi5+ygbPOZpDg==",
       "type": "package",
-      "path": "microsoft.net.illink.tasks/9.0.15",
+      "path": "microsoft.net.illink.tasks/9.0.7",
       "hasTools": true,
       "files": [
         ".nupkg.metadata",
@@ -488,7 +488,7 @@
         "build/Microsoft.NET.ILLink.Analyzers.props",
         "build/Microsoft.NET.ILLink.Tasks.props",
         "build/Microsoft.NET.ILLink.targets",
-        "microsoft.net.illink.tasks.9.0.15.nupkg.sha512",
+        "microsoft.net.illink.tasks.9.0.7.nupkg.sha512",
         "microsoft.net.illink.tasks.nuspec",
         "tools/net472/ILLink.Tasks.dll",
         "tools/net472/ILLink.Tasks.dll.config",
@@ -860,30 +860,37 @@
   },
   "projectFileDependencyGroups": {
     "net9.0-windows7.0": [
-      "Microsoft.NET.ILLink.Tasks >= 9.0.15",
+      "Microsoft.NET.ILLink.Tasks >= 9.0.7",
       "NAudio >= 2.2.1",
       "System.Management >= 10.0.5"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\eduardo.beltran\\.nuget\\packages\\": {}
+    "C:\\Users\\jose.fong\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\eduardo.beltran\\Documents\\Sonova-Sennheiser\\Sennheiser\\Sennheiser_tests\\apps\\MicroTestCloud\\MicroTestCloud\\MicroTestCloud.csproj",
+      "projectUniqueName": "C:\\FONG\\senheisser_v_eduardo\\Sennheiser_tests\\apps\\MicroTestCloud\\MicroTestCloud\\MicroTestCloud.csproj",
       "projectName": "MicroTestCloud",
-      "projectPath": "C:\\Users\\eduardo.beltran\\Documents\\Sonova-Sennheiser\\Sennheiser\\Sennheiser_tests\\apps\\MicroTestCloud\\MicroTestCloud\\MicroTestCloud.csproj",
-      "packagesPath": "C:\\Users\\eduardo.beltran\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\eduardo.beltran\\Documents\\Sonova-Sennheiser\\Sennheiser\\Sennheiser_tests\\apps\\MicroTestCloud\\MicroTestCloud\\obj\\",
+      "projectPath": "C:\\FONG\\senheisser_v_eduardo\\Sennheiser_tests\\apps\\MicroTestCloud\\MicroTestCloud\\MicroTestCloud.csproj",
+      "packagesPath": "C:\\Users\\jose.fong\\.nuget\\packages\\",
+      "outputPath": "C:\\FONG\\senheisser_v_eduardo\\Sennheiser_tests\\apps\\MicroTestCloud\\MicroTestCloud\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "C:\\Users\\eduardo.beltran\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\jose.fong\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net9.0-windows"
       ],
       "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -911,7 +918,7 @@
           "Microsoft.NET.ILLink.Tasks": {
             "suppressParent": "All",
             "target": "Package",
-            "version": "[9.0.15, )",
+            "version": "[9.0.7, )",
             "autoReferenced": true
           },
           "NAudio": {
@@ -937,15 +944,15 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
-            "version": "[9.0.15, 9.0.15]"
+            "version": "[9.0.7, 9.0.7]"
           },
           {
             "name": "Microsoft.NETCore.App.Runtime.win-x64",
-            "version": "[9.0.15, 9.0.15]"
+            "version": "[9.0.7, 9.0.7]"
           },
           {
             "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
-            "version": "[9.0.15, 9.0.15]"
+            "version": "[9.0.7, 9.0.7]"
           }
         ],
         "frameworkReferences": {
@@ -956,7 +963,7 @@
             "privateAssets": "none"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.313/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.302/PortableRuntimeIdentifierGraph.json"
       }
     },
     "runtimes": {

@@ -16,12 +16,21 @@ namespace AudioTest
 
         public int step = 1;
 
-        public int inputIndex;
+        public int headphonesOutputIndex;
+        public int speakerOutputIndex;
+        public int microphoneInputIndex;
 
-        WaveOutEvent output;
-        AudioFileReader reader;
+        WaveOutEvent? output;
+        AudioFileReader? reader;
 
-        System.Windows.Forms.Timer timer;
+        LoopStream? loopStream;
+
+        WaveInEvent? waveIn;
+        WaveFileWriter? writer;
+
+        string recordedAudioPath = "ear_microphone_capture.wav";
+
+        System.Windows.Forms.Timer? timer;
         public int seconds = 7;
 
         public bool passed;
@@ -42,7 +51,9 @@ namespace AudioTest
         {
             if (step == 1)
             {
-                inputIndex = listBox1.SelectedIndex;
+                headphonesOutputIndex = comboHeadphones.SelectedIndex;
+                speakerOutputIndex = comboSpeakers.SelectedIndex;
+                microphoneInputIndex = comboMicrophones.SelectedIndex;
                 content1.Visible = false;
                 content2.Visible = true;
             }
@@ -54,7 +65,8 @@ namespace AudioTest
                 btnNext.Enabled = false;
                 btnCancel.Enabled = false;
 
-                PlayAudio("karmaPolice.wav");
+                StartRecording();
+                PlayAudio("karmaPolice.wav",headphonesOutputIndex);
 
                 timer = new System.Windows.Forms.Timer();
                 timer.Interval = 1000;
@@ -82,28 +94,52 @@ namespace AudioTest
                 btnFail.Visible = true;
                 btnPass.Visible = true;
                 timer.Stop();
+                StopRecording();
+                StopAudio();
+                PlayAudio(recordedAudioPath, speakerOutputIndex,true);
             }
         }
 
         private void Form1_Shown(object sender, EventArgs e)
         {
-            loadOutputDevices();
+            LoadDevices();
             ApplyProfessionalLayout();
         }
 
-        private void loadOutputDevices()
+        //START-MOD FONG
+        private void LoadDevices()
         {
-            listBox1.Items.Clear();
+            comboHeadphones.Items.Clear();
+            comboSpeakers.Items.Clear();
+            comboMicrophones.Items.Clear();
+
+            // OUTPUTS
             for (int i = 0; i < WaveOut.DeviceCount; i++)
             {
                 var info = WaveOut.GetCapabilities(i);
-                listBox1.Items.Add(info.ProductName);
+
+                comboHeadphones.Items.Add(info.ProductName);
+                comboSpeakers.Items.Add(info.ProductName);
             }
-            if (WaveOut.DeviceCount > 0)
+
+            // INPUTS
+            for (int i = 0; i < WaveIn.DeviceCount; i++)
             {
-                listBox1.SelectedIndex = 0;
+                var info = WaveIn.GetCapabilities(i);
+
+                comboMicrophones.Items.Add(info.ProductName);
             }
+
+            if (comboHeadphones.Items.Count > 0)
+                comboHeadphones.SelectedIndex = 0;
+
+            if (comboSpeakers.Items.Count > 0)
+                comboSpeakers.SelectedIndex = 0;
+
+            if (comboMicrophones.Items.Count > 0)
+                comboMicrophones.SelectedIndex = 0;
         }
+        //END-MOD FONG
 
         private void StopAudio()
         {
@@ -113,7 +149,11 @@ namespace AudioTest
                 output.Dispose();
                 output = null;
             }
-
+            if (loopStream != null)
+            {
+                loopStream.Dispose();
+                loopStream = null;
+            }
             if (reader != null)
             {
                 reader.Dispose();
@@ -121,26 +161,89 @@ namespace AudioTest
             }
         }
 
-        private void PlayAudio(string path)
+        private void PlayAudio(
+    string path,
+    int outputDeviceIndex,
+    bool loop = false
+)
         {
             StopAudio();
 
             string fullPath = path;
+
             if (!File.Exists(fullPath))
             {
-                fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
+                fullPath = Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    path
+                );
             }
+
             if (!File.Exists(fullPath))
             {
-                throw new FileNotFoundException($"Audio file not found: {path}");
+                throw new FileNotFoundException(
+                    $"Audio file not found: {path}"
+                );
             }
 
             reader = new AudioFileReader(fullPath);
-            output = new WaveOutEvent();
-            output.DeviceNumber = inputIndex;
 
-            output.Init(reader);
+            output = new WaveOutEvent();
+            output.DeviceNumber = outputDeviceIndex;
+
+            if (loop)
+            {
+                loopStream = new LoopStream(reader);
+                output.Init(loopStream);
+            }
+            else
+            {
+                output.Init(reader);
+            }
+
             output.Play();
+        }
+
+        private void StartRecording()
+        {
+            if (File.Exists(recordedAudioPath))
+            {
+                File.Delete(recordedAudioPath);
+            }
+
+            waveIn = new WaveInEvent();
+            waveIn.DeviceNumber = microphoneInputIndex;
+
+            waveIn.WaveFormat = new WaveFormat(44100, 1);
+
+            writer = new WaveFileWriter(
+                recordedAudioPath,
+                waveIn.WaveFormat
+            );
+
+            waveIn.DataAvailable += (s, a) =>
+            {
+                writer.Write(a.Buffer, 0, a.BytesRecorded);
+                writer.Flush();
+            };
+
+            waveIn.StartRecording();
+        }
+
+        private void StopRecording()
+        {
+            if (waveIn != null)
+            {
+                waveIn.StopRecording();
+                waveIn.Dispose();
+                waveIn = null;
+            }
+
+            if (writer != null)
+            {
+                writer.Dispose();
+                writer = null;
+            }
         }
 
         private void btnFail_Click(object sender, EventArgs e)
@@ -187,10 +290,19 @@ namespace AudioTest
             StyleHeadline(label3);
             label4.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
 
-            listBox1.BackColor = Color.White;
-            listBox1.ForeColor = TextPrimary;
-            listBox1.Font = new Font("Segoe UI", 14F, FontStyle.Regular);
-            listBox1.BorderStyle = BorderStyle.FixedSingle;
+            foreach (var combo in new[]
+            {
+                comboHeadphones,
+                comboSpeakers,
+                comboMicrophones
+            })
+                        {
+                            combo.BackColor = Color.White;
+                            combo.ForeColor = TextPrimary;
+                            combo.Font = new Font("Segoe UI", 13F);
+                            combo.FlatStyle = FlatStyle.Flat;
+                        }
+
             ApplyProfessionalLayout();
         }
 
@@ -285,15 +397,72 @@ namespace AudioTest
             label2.TextAlign = ContentAlignment.MiddleCenter;
             label3.TextAlign = ContentAlignment.MiddleCenter;
 
-            listBox1.Dock = DockStyle.None;
-            listBox1.Width = maxW;
-            listBox1.Location = new Point((content1.Width - listBox1.Width) / 2, 104);
+            //START-MOD FONG
+            int startX = (content1.Width - maxW) / 2;
+
+            labelHeadphones.Location = new Point(startX, 100);
+            comboHeadphones.Location = new Point(startX, 145);
+            comboHeadphones.Width = maxW;
+
+            labelSpeakers.Location = new Point(startX, 225);
+            comboSpeakers.Location = new Point(startX, 270);
+            comboSpeakers.Width = maxW;
+
+            labelMicrophones.Location = new Point(startX, 350);
+            comboMicrophones.Location = new Point(startX, 395);
+            comboMicrophones.Width = maxW;
+            //END-MOD FONG
 
             tableLayoutPanel3.Height = 130;
             btnFail.Dock = DockStyle.Fill;
             btnPass.Dock = DockStyle.Fill;
             panel1.Padding = new Padding(24, 10, 24, 10);
             panel4.Padding = new Padding(24, 10, 24, 10);
+        }
+    }
+
+    public class LoopStream : WaveStream
+    {
+        private readonly WaveStream sourceStream;
+
+        public LoopStream(WaveStream sourceStream)
+        {
+            this.sourceStream = sourceStream;
+        }
+
+        public override WaveFormat WaveFormat => sourceStream.WaveFormat;
+
+        public override long Length => sourceStream.Length;
+
+        public override long Position
+        {
+            get => sourceStream.Position;
+            set => sourceStream.Position = value;
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            int totalBytesRead = 0;
+
+            while (totalBytesRead < count)
+            {
+                int bytesRead = sourceStream.Read(
+                    buffer,
+                    offset + totalBytesRead,
+                    count - totalBytesRead
+                );
+
+                if (bytesRead == 0)
+                {
+                    sourceStream.Position = 0;
+                }
+                else
+                {
+                    totalBytesRead += bytesRead;
+                }
+            }
+
+            return totalBytesRead;
         }
     }
 }
