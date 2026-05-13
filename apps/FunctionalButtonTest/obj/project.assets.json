@@ -2,7 +2,7 @@
   "version": 3,
   "targets": {
     "net9.0-windows7.0": {
-      "Microsoft.NET.ILLink.Tasks/9.0.15": {
+      "Microsoft.NET.ILLink.Tasks/9.0.16": {
         "type": "package",
         "build": {
           "build/Microsoft.NET.ILLink.Tasks.props": {}
@@ -211,7 +211,7 @@
       }
     },
     "net9.0-windows7.0/win-x64": {
-      "Microsoft.NET.ILLink.Tasks/9.0.15": {
+      "Microsoft.NET.ILLink.Tasks/9.0.16": {
         "type": "package",
         "build": {
           "build/Microsoft.NET.ILLink.Tasks.props": {}
@@ -395,10 +395,10 @@
     }
   },
   "libraries": {
-    "Microsoft.NET.ILLink.Tasks/9.0.15": {
-      "sha512": "EejcbfCMR77Dthy77qxRbEShmzLApHZUPqXMBVQK+A0pNrRThkaHoGGMGvbq/gTkC/waKcDEgjBkbaejB58Wtw==",
+    "Microsoft.NET.ILLink.Tasks/9.0.16": {
+      "sha512": "ccPBYGLPJt8DeJTUzQ0JzOh/iuUAgnjayU63PokVywAhUOx+dzDKSPTL7AG94U/VpvNXflTT2AjsFAIF1+bXBw==",
       "type": "package",
-      "path": "microsoft.net.illink.tasks/9.0.15",
+      "path": "microsoft.net.illink.tasks/9.0.16",
       "hasTools": true,
       "files": [
         ".nupkg.metadata",
@@ -412,7 +412,7 @@
         "build/Microsoft.NET.ILLink.Analyzers.props",
         "build/Microsoft.NET.ILLink.Tasks.props",
         "build/Microsoft.NET.ILLink.targets",
-        "microsoft.net.illink.tasks.9.0.15.nupkg.sha512",
+        "microsoft.net.illink.tasks.9.0.16.nupkg.sha512",
         "microsoft.net.illink.tasks.nuspec",
         "tools/net472/ILLink.Tasks.dll",
         "tools/net472/ILLink.Tasks.dll.config",
@@ -723,7 +723,7 @@
   },
   "projectFileDependencyGroups": {
     "net9.0-windows7.0": [
-      "Microsoft.NET.ILLink.Tasks >= 9.0.15",
+      "Microsoft.NET.ILLink.Tasks >= 9.0.16",
       "NAudio >= 2.2.1"
     ]
   },
@@ -773,7 +773,7 @@
           "Microsoft.NET.ILLink.Tasks": {
             "suppressParent": "All",
             "target": "Package",
-            "version": "[9.0.15, )",
+            "version": "[9.0.16, )",
             "autoReferenced": true
           },
           "NAudio": {
@@ -795,15 +795,15 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
-            "version": "[9.0.15, 9.0.15]"
+            "version": "[9.0.16, 9.0.16]"
           },
           {
             "name": "Microsoft.NETCore.App.Runtime.win-x64",
-            "version": "[9.0.15, 9.0.15]"
+            "version": "[9.0.16, 9.0.16]"
           },
           {
             "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
-            "version": "[9.0.15, 9.0.15]"
+            "version": "[9.0.16, 9.0.16]"
           }
         ],
         "frameworkReferences": {
@@ -814,7 +814,7 @@
             "privateAssets": "none"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.313/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.314/PortableRuntimeIdentifierGraph.json"
       }
     },
     "runtimes": {
