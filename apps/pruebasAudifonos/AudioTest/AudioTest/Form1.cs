@@ -104,6 +104,15 @@ namespace AudioTest
         {
             LoadDevices();
             ApplyProfessionalLayout();
+
+            try
+            {
+                pictureBox1.Image = Image.FromFile("miniDSP.jpg");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }
         }
 
         //START-MOD FONG
