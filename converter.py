@@ -11,7 +11,6 @@ import subprocess
 API_ENDPOINT = "https://usengprod-functionapp.azurewebsites.net/api/DataWipeResult?code=qaITPGBWPv55-nnUoXunopRqJIZeyHQwSbo0F0-aYOBTAzFua5QkRg=="
 
 def get_windows_username():
-    """Extract the current Windows username from $env:USERNAME"""
     try:
         result = subprocess.run(
             ['powershell', '-Command', '$env:USERNAME'],
@@ -32,7 +31,7 @@ DEFAULTS = {
     "MachineName": "AudioTester",
     "TestArea": "MEXICALI_R2",
     "Program": "HP_MXLR2",
-    "dbType": "TEST",
+    "dbType": "",
 }
 SUBTESTS = [
     "distorsion","left_dbfs","left_peak","right_dbfs","right_peak",
