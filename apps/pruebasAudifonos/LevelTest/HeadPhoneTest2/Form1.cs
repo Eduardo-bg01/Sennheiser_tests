@@ -146,7 +146,7 @@ namespace HeadPhoneTest2
                 // Ejecutar solo la parte automatica (sin confirmacion manual de escucha).
                 MMDeviceEnumerator enumerator = new MMDeviceEnumerator();
                 MMDevice device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-                device.AudioEndpointVolume.MasterVolumeLevelScalar = 0.5f;
+                //device.AudioEndpointVolume.MasterVolumeLevelScalar = 0.5f;
 
                 currentTimer = 2;
                 seconds2 = 40;

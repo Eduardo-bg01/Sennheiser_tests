@@ -253,7 +253,7 @@
             label3.Name = "label3";
             label3.Size = new Size(1143, 72);
             label3.TabIndex = 1;
-            label3.Text = "Coloque los audifonos sobre sus orejas";
+            label3.Text = "Coloque los audifonos sobre el dispositivo DSP";
             label3.TextAlign = ContentAlignment.TopCenter;
             // 
             // content1

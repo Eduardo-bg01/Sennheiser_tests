@@ -36,13 +36,13 @@ if not exist "%APP_DIR%AskForSerial2.exe" (
     exit /b 1
 )
 
-if not exist "%APP_DIR%AudioTest.exe" (
-    echo Falta AudioTest.exe. Ejecuta build-all.bat primero.
+if not exist "%APP_DIR%BluetoothHeadphoneTest.exe" (
+    echo Falta BluetoothHeadphoneTest.exe. Ejecuta build-all.bat primero.
     exit /b 1
 )
 
-if not exist "%APP_DIR%BluetoothHeadphoneTest.exe" (
-    echo Falta BluetoothHeadphoneTest.exe. Ejecuta build-all.bat primero.
+if not exist "%APP_DIR%AudioTest.exe" (
+    echo Falta AudioTest.exe. Ejecuta build-all.bat primero.
     exit /b 1
 )
 
@@ -167,7 +167,6 @@ for /f %%i in ('powershell -command "[int64](Get-Date).ToUniversalTime().Subtrac
 
 echo %timestamp% > tiempo2.txt
 
-:: Build final_results.json now that tiempo2 is available
 if exist "%ROOT%getFinalResults.exe" (
     "%ROOT%getFinalResults.exe"
 ) else (
@@ -188,7 +187,6 @@ if exist "%ROOT%converter.exe" (
     echo converter.py not found, skipping conversion
 )
 
-:: Clean up paired Bluetooth devices so they do not auto-reconnect on the next run
 echo Limpiando dispositivos Bluetooth emparejados...
 powershell -NoProfile -Command "$ErrorActionPreference = 'SilentlyContinue'; $devices = Get-PnpDevice -Class Bluetooth | Where-Object { $_.FriendlyName -and $_.FriendlyName -notmatch 'Radio|Adapter|Enumerator|LE Enumerator|Microsoft|Intel|Qualcomm|Broadcom' }; foreach ($device in $devices) { $device | Remove-PnpDevice -Confirm:$false -Force }" >nul 2>&1
 
