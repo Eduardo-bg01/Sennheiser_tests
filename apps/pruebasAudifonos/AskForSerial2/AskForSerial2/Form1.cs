@@ -15,6 +15,9 @@ namespace AskForSerial2
         public Form1()
         {
             InitializeComponent();
+
+            AcceptButton = button1;
+
             ApplyCohesiveTheme();
             Resize += (_, _) => ApplyProfessionalLayout();
         }
