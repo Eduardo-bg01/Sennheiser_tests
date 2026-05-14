@@ -698,7 +698,7 @@ namespace MicroTestCloud
             if (_modoBocina)
             {
                 string rutaBase = AppDomain.CurrentDomain.BaseDirectory;
-                string rutaAudio = Path.Combine(rutaBase, "PistaAudio", "Prueba.mp3");
+                string rutaAudio = Path.Combine(rutaBase, "PistaAudio", "VozParaPruebaMicrofono.mp3");
 
                 try
                 {
