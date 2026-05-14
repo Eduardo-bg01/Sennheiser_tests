@@ -1017,33 +1017,16 @@ namespace MicroTestCloud
         {
             try
             {
-                if (_reportGenerated)
+                // Only write fallback if a proper result was never captured or report already exists
+                if (_reportGenerated || (_testResult != "PASS" && _testResult != "FAIL"))
                     return;
 
-                bool hasActivity = _logEntries != null && _logEntries.Count > 0;
-                if (!hasActivity && string.IsNullOrWhiteSpace(_deviceName))
-                    return;
-
+                // Double-check: if any report file already exists, don't create another
                 if (Directory.GetFiles(Environment.CurrentDirectory, "MicroTest_*.txt").Length > 0)
                 {
                     _reportGenerated = true;
                     return;
                 }
-
-                string baseName = $"MicroTest_{DateTime.Now:yyyyMMdd_HHmmss}";
-                string txtPath = Path.Combine(Environment.CurrentDirectory, baseName + ".txt");
-                string result = _testResult == "PASS" || _testResult == "FAIL" ? _testResult : "FAIL";
-
-                using (var sw = new StreamWriter(txtPath, false, System.Text.Encoding.UTF8))
-                {
-                    sw.WriteLine("MICROTEST · REPORTE DE RESCATE");
-                    sw.WriteLine($"Resultado : {result}");
-                    sw.WriteLine($"Fecha y hora : {DateTime.Now:dd/MM/yyyy HH:mm:ss}");
-                    sw.WriteLine($"Micrófono : {_deviceName}");
-                    sw.WriteLine($"Muestras : {_logEntries?.Count ?? 0}");
-                }
-
-                _reportGenerated = true;
             }
             catch
             {
@@ -1302,6 +1285,7 @@ public class FormResultado : Form
             // Auto-save and close immediately
             SaveReport();
             this.Close();
+            Application.Exit();
         };
 
         this.Controls.AddRange(new Control[] { _btnPaso, _btnFallo });

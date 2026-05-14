@@ -68,14 +68,6 @@ for /f %%i in ('powershell -command "[int64](Get-Date).ToUniversalTime().Subtrac
 
 echo %timestamp% > tiempo1.txt
 
-:: Set system master volume to 80% (tries Python script, prints helpful message on failure)
-echo Configurando volumen del sistema a 80%%...
-set "VOL_PERCENT=80"
-if exist "%~dp0\.venv\Scripts\python.exe" (
-    "%~dp0\.venv\Scripts\python.exe" "%~dp0\scripts\set_volume.py" %VOL_PERCENT% >nul 2>&1 || echo No se pudo configurar el volumen con el entorno virtual Python.
-) else (
-    python "%~dp0\scripts\set_volume.py" %VOL_PERCENT% >nul 2>&1 || echo No se pudo configurar el volumen. Instala Python y ejecuta `pip install pycaw comtypes` para soporte.
-)
 
 
 :GET_SERIAL
@@ -96,23 +88,6 @@ if not exist serial.txt (
     echo No se encontro serial.txt despues de AskForSerial2.
     exit /b 1
 )
-
-set /a AUDIO_ATTEMPTS=0
-:TEST_AUDIO
-    set /a AUDIO_ATTEMPTS+=1
-    start /wait "" "%APP_DIR%AudioTest.exe"
-    timeout /t %RETRY_DELAY% /nobreak >nul
-    dir hearingPass*.txt >nul 2>&1
-    if !ERRORLEVEL! NEQ 0 (
-        if !AUDIO_ATTEMPTS! GEQ %MAX_RETRIES% (
-            echo [AUDIO TEST FAILED] Alcanzado maximo de intentos ^(!AUDIO_ATTEMPTS!/%MAX_RETRIES%^).
-            dir hearingPass* 2>nul
-            exit /b 2
-        )
-        echo [AUDIO TEST FAILED] Reintentando ^(!AUDIO_ATTEMPTS!/%MAX_RETRIES%^)...
-        goto TEST_AUDIO
-    )
-    echo [AUDIO TEST PASSED]
 
 set /a CONTROLS_ATTEMPTS=0
 :TEST_CONTROLS
@@ -139,6 +114,23 @@ set /a CONTROLS_ATTEMPTS=0
     copy "%APP_DIR%Prueba_*.txt" . >nul 2>&1
     echo [CONTROLS TEST PASSED]
 
+set /a AUDIO_ATTEMPTS=0
+:TEST_AUDIO
+    set /a AUDIO_ATTEMPTS+=1
+    start /wait "" "%APP_DIR%AudioTest.exe"
+    timeout /t %RETRY_DELAY% /nobreak >nul
+    dir hearingPass*.txt >nul 2>&1
+    if !ERRORLEVEL! NEQ 0 (
+        if !AUDIO_ATTEMPTS! GEQ %MAX_RETRIES% (
+            echo [AUDIO TEST FAILED] Alcanzado maximo de intentos ^(!AUDIO_ATTEMPTS!/%MAX_RETRIES%^).
+            dir hearingPass* 2>nul
+            exit /b 2
+        )
+        echo [AUDIO TEST FAILED] Reintentando ^(!AUDIO_ATTEMPTS!/%MAX_RETRIES%^)...
+        goto TEST_AUDIO
+    )
+    echo [AUDIO TEST PASSED]
+
 set /a MIC_ATTEMPTS=0
 :TEST_MICROPHONE
     set /a MIC_ATTEMPTS+=1
@@ -163,6 +155,15 @@ set /a MIC_ATTEMPTS=0
     )
     copy "%APP_DIR%MicroTest_*.txt" . >nul 2>&1
     echo [MICROPHONE TEST PASSED]
+
+:: Set system master volume to 80%% BEFORE LEVEL TEST (tries Python script, prints helpful message on failure)
+echo Configurando volumen del sistema a 80%% antes de la prueba de nivel...
+set "VOL_PERCENT=80"
+if exist "%~dp0\.venv\Scripts\python.exe" (
+    "%~dp0\.venv\Scripts\python.exe" "%~dp0\scripts\set_volume.py" %VOL_PERCENT% >nul 2>&1 || echo No se pudo configurar el volumen con el entorno virtual Python.
+) else (
+    python "%~dp0\scripts\set_volume.py" %VOL_PERCENT% >nul 2>&1 || echo No se pudo configurar el volumen. Instala Python y ejecuta `pip install pycaw comtypes` para soporte.
+)
 
 set /a LEVELS_ATTEMPTS=0
 :TEST_LEVELS

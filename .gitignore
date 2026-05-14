@@ -33,3 +33,5 @@ diferencia_minutos.txt
 
 .venv/
 __pycache__/
+
+.github/

@@ -31,7 +31,7 @@ DEFAULTS = {
     "MachineName": "AudioTester",
     "TestArea": "MEXICALI_R2",
     "Program": "HP_MXLR2",
-    "dbType": "",
+    "dbType": "TEST",
 }
 SUBTESTS = [
     "distorsion","left_dbfs","left_peak","right_dbfs","right_peak",
