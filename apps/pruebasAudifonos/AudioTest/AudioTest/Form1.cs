@@ -31,7 +31,7 @@ namespace AudioTest
         string recordedAudioPath = "ear_microphone_capture.wav";
 
         System.Windows.Forms.Timer? timer;
-        public int seconds = 7;
+        public int seconds = 15;
 
         public bool passed;
 
