@@ -62,8 +62,8 @@ echo.
 echo All builds completed successfully.
 echo Copying runner scripts...
 copy /Y "%ROOT%run.bat" "%BIN_DIR%\run.bat" >nul
-if exist "%ROOT%getFinalResults.py" copy /Y "%ROOT%getFinalResults.py" "%BIN_DIR%\getFinalResults.py" >nul
-if exist "%ROOT%converter.py" copy /Y "%ROOT%converter.py" "%BIN_DIR%\converter.py" >nul
+if exist "%ROOT%scripts\getFinalResults.py" copy /Y "%ROOT%scripts\getFinalResults.py" "%BIN_DIR%\getFinalResults.py" >nul
+if exist "%ROOT%scripts\converter.py" copy /Y "%ROOT%scripts\converter.py" "%BIN_DIR%\converter.py" >nul
 if exist "%ROOT%serial.txt" copy /Y "%ROOT%serial.txt" "%BIN_DIR%\serial.txt" >nul
 
 echo.

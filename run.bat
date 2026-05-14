@@ -60,6 +60,16 @@ for /f %%i in ('powershell -command "[int64](Get-Date).ToUniversalTime().Subtrac
 
 echo %timestamp% > tiempo1.txt
 
+:: Set system master volume to 80% (tries Python script, prints helpful message on failure)
+echo Configurando volumen del sistema a 80%%...
+set "VOL_PERCENT=80"
+if exist "%~dp0\.venv\Scripts\python.exe" (
+    "%~dp0\.venv\Scripts\python.exe" "%~dp0\scripts\set_volume.py" %VOL_PERCENT% >nul 2>&1 || echo No se pudo configurar el volumen con el entorno virtual Python.
+) else (
+    python "%~dp0\scripts\set_volume.py" %VOL_PERCENT% >nul 2>&1 || echo No se pudo configurar el volumen. Instala Python y ejecuta `pip install pycaw comtypes` para soporte.
+)
+
+
 :GET_SERIAL
     if defined SKIP_SERIAL_PROMPT (
         if not exist serial.txt (
@@ -170,7 +180,7 @@ echo %timestamp% > tiempo2.txt
 if exist "%ROOT%getFinalResults.exe" (
     "%ROOT%getFinalResults.exe"
 ) else (
-    python "%ROOT%getFinalResults.py"
+    python "%ROOT%scripts\getFinalResults.py"
 )
 
 for /f "delims=" %%i in ('powershell -command "$t1 = Get-Content tiempo1.txt; $t2 = Get-Content tiempo2.txt; [math]::Round(($t2 - $t1)/60000,2)"') do set diff_min=%%i
@@ -181,8 +191,8 @@ echo Tiempo total (min): %diff_min%
 :: Convert to XML and optionally upload using converter.py
 if exist "%ROOT%converter.exe" (
     "%ROOT%converter.exe"
-) else if exist "%ROOT%converter.py" (
-    python "%ROOT%converter.py"
+) else if exist "%ROOT%scripts\converter.py" (
+    python "%ROOT%scripts\converter.py"
 ) else (
     echo converter.py not found, skipping conversion
 )

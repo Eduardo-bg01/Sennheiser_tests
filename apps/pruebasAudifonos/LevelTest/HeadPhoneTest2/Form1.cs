@@ -425,8 +425,11 @@ namespace HeadPhoneTest2
             {
                 scriptName,
                 Path.Combine(Directory.GetCurrentDirectory(), scriptName),
+                Path.Combine(Directory.GetCurrentDirectory(), "scripts", scriptName),
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, scriptName),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scripts", scriptName),
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", scriptName),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "scripts", scriptName),
                 Path.Combine(Directory.GetCurrentDirectory(), "apps", "pruebasAudifonos", scriptName),
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "apps", "pruebasAudifonos", scriptName),
             };
