@@ -1,25 +1,32 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\eduardo.beltran\\Documents\\Sonova-Sennheiser\\Sennheiser\\Sennheiser_tests\\apps\\pruebasAudifonos\\AskForSerial2\\AskForSerial2\\AskForSerial2.csproj": {}
+    "C:\\Users\\Sergio.ReyesV\\Source\\Repos\\Sennheiser_tests\\apps\\pruebasAudifonos\\AskForSerial2\\AskForSerial2\\AskForSerial2.csproj": {}
   },
   "projects": {
-    "C:\\Users\\eduardo.beltran\\Documents\\Sonova-Sennheiser\\Sennheiser\\Sennheiser_tests\\apps\\pruebasAudifonos\\AskForSerial2\\AskForSerial2\\AskForSerial2.csproj": {
+    "C:\\Users\\Sergio.ReyesV\\Source\\Repos\\Sennheiser_tests\\apps\\pruebasAudifonos\\AskForSerial2\\AskForSerial2\\AskForSerial2.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\eduardo.beltran\\Documents\\Sonova-Sennheiser\\Sennheiser\\Sennheiser_tests\\apps\\pruebasAudifonos\\AskForSerial2\\AskForSerial2\\AskForSerial2.csproj",
+        "projectUniqueName": "C:\\Users\\Sergio.ReyesV\\Source\\Repos\\Sennheiser_tests\\apps\\pruebasAudifonos\\AskForSerial2\\AskForSerial2\\AskForSerial2.csproj",
         "projectName": "AskForSerial2",
-        "projectPath": "C:\\Users\\eduardo.beltran\\Documents\\Sonova-Sennheiser\\Sennheiser\\Sennheiser_tests\\apps\\pruebasAudifonos\\AskForSerial2\\AskForSerial2\\AskForSerial2.csproj",
-        "packagesPath": "C:\\Users\\eduardo.beltran\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\eduardo.beltran\\Documents\\Sonova-Sennheiser\\Sennheiser\\Sennheiser_tests\\apps\\pruebasAudifonos\\AskForSerial2\\AskForSerial2\\obj\\",
+        "projectPath": "C:\\Users\\Sergio.ReyesV\\Source\\Repos\\Sennheiser_tests\\apps\\pruebasAudifonos\\AskForSerial2\\AskForSerial2\\AskForSerial2.csproj",
+        "packagesPath": "C:\\Users\\Sergio.ReyesV\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Sergio.ReyesV\\Source\\Repos\\Sennheiser_tests\\apps\\pruebasAudifonos\\AskForSerial2\\AskForSerial2\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\eduardo.beltran\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\Sergio.ReyesV\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net8.0-windows"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -43,14 +50,6 @@
       "frameworks": {
         "net8.0-windows7.0": {
           "targetAlias": "net8.0-windows",
-          "dependencies": {
-            "Microsoft.NET.ILLink.Tasks": {
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[8.0.27, )",
-              "autoReferenced": true
-            }
-          },
           "imports": [
             "net461",
             "net462",
@@ -62,36 +61,6 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "downloadDependencies": [
-            {
-              "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[8.0.27, 8.0.27]"
-            },
-            {
-              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
-              "version": "[8.0.27, 8.0.27]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Host.win-x64",
-              "version": "[8.0.27, 8.0.27]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Ref",
-              "version": "[8.0.27, 8.0.27]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Runtime.win-x64",
-              "version": "[8.0.27, 8.0.27]"
-            },
-            {
-              "name": "Microsoft.WindowsDesktop.App.Ref",
-              "version": "[8.0.27, 8.0.27]"
-            },
-            {
-              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
-              "version": "[8.0.27, 8.0.27]"
-            }
-          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
@@ -100,12 +69,7 @@
               "privateAssets": "none"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.314/PortableRuntimeIdentifierGraph.json"
-        }
-      },
-      "runtimes": {
-        "win-x64": {
-          "#import": []
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.313/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

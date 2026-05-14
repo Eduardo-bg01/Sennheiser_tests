@@ -31,6 +31,14 @@ if not defined SKIP_SERIAL_PROMPT (
     del /q serial* >nul 2>&1
 )
 
+
+:: ============================================================
+:: VENTANA: Instrucciones para conectar Bluetooth
+:: ============================================================
+echo Mostrando instrucciones de conexion Bluetooth...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%show_bluetooth_connect.ps1"
+
+
 if not exist "%APP_DIR%AskForSerial2.exe" (
     echo Falta AskForSerial2.exe. Ejecuta build-all.bat primero.
     exit /b 1
@@ -199,6 +207,15 @@ if exist "%ROOT%converter.exe" (
 
 echo Limpiando dispositivos Bluetooth emparejados...
 powershell -NoProfile -Command "$ErrorActionPreference = 'SilentlyContinue'; $devices = Get-PnpDevice -Class Bluetooth | Where-Object { $_.FriendlyName -and $_.FriendlyName -notmatch 'Radio|Adapter|Enumerator|LE Enumerator|Microsoft|Intel|Qualcomm|Broadcom' }; foreach ($device in $devices) { $device | Remove-PnpDevice -Confirm:$false -Force }" >nul 2>&1
+
+
+:: ============================================================
+:: VENTANA: Instrucciones para desconectar Bluetooth
+:: ============================================================
+echo Mostrando instrucciones de desconexion Bluetooth...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%show_bluetooth_disconnect.ps1"
+
+
 
 echo Pruebas completadas. Resultados guardados.
 echo Dispositivos Bluetooth desconectados y limpiados.
