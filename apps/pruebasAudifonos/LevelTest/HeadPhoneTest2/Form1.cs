@@ -31,7 +31,7 @@ namespace HeadPhoneTest2
 
         WaveOutEvent outputDevice = new WaveOutEvent();
         WaveInEvent waveIn = new WaveInEvent();
-        AudioFileReader audioFile;
+        WaveStream? audioFile;
         WaveFileWriter writer;
 
         public double peak_right;
@@ -277,14 +277,16 @@ namespace HeadPhoneTest2
                 outputDevice.Dispose();
 
                 outputDevice = new WaveOutEvent();
-                outputDevice.DeviceNumber = outputIndex;
-
                 if (audioTitle.StartsWith("audioSweep", StringComparison.OrdinalIgnoreCase))
                     outputDevice.PlaybackStopped += stopActions;
 
                 string audioPath = ResolveAudioPath(audioTitle);
 
-                audioFile = new AudioFileReader(audioPath);
+                audioFile?.Dispose();
+                audioFile = Path.GetExtension(audioPath).Equals(".mp3", StringComparison.OrdinalIgnoreCase)
+                    ? new Mp3FileReader(audioPath)
+                    : new AudioFileReader(audioPath);
+
                 outputDevice.Init(audioFile);
                 outputDevice.Play();
             }
@@ -340,9 +342,13 @@ namespace HeadPhoneTest2
                 string baseDirPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "audio", fileName);
                 if (File.Exists(baseDirPath))
                     return baseDirPath;
+
+                string currentDirPath = Path.Combine(Directory.GetCurrentDirectory(), "audio", fileName);
+                if (File.Exists(currentDirPath))
+                    return currentDirPath;
             }
 
-            throw new FileNotFoundException($"Audio file not found for '{audioTitle}'. Tried: {string.Join(", ", candidates)}");
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "audio", candidates.Count > 0 ? candidates[0] : audioTitle);
         }
 
         void stopAudio()
@@ -351,6 +357,7 @@ namespace HeadPhoneTest2
             {
                 outputDevice.Stop();
                 audioFile?.Dispose();
+                audioFile = null;
             }
         }
 

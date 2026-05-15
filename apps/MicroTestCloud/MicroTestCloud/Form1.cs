@@ -93,7 +93,7 @@ namespace MicroTestCloud
         private RadioButton rbBocina;
         private System.Windows.Forms.Timer timerUI;
 
-        private AudioFileReader _audioFile;
+        private WaveStream _audioFile;
 
         private ComboBox cmbOutputDevices;
 
@@ -708,7 +708,7 @@ namespace MicroTestCloud
                         _speakerTone?.Dispose();
                         _audioFile?.Dispose();
 
-                        _audioFile = new AudioFileReader(rutaAudio) { Volume = 0.5f };
+                        _audioFile = new Mp3FileReader(rutaAudio);
 
                         _speakerTone = new WaveOutEvent
                         {

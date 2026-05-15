@@ -107,7 +107,26 @@ namespace AudioTest
 
             try
             {
-                pictureBox1.Image = Image.FromFile("miniDSP.jpg");
+                var candidates = new[]
+                {
+                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miniDSP.jpg"),
+                    Path.Combine(Directory.GetCurrentDirectory(), "miniDSP.jpg"),
+                    "miniDSP.jpg"
+                };
+
+                foreach (var imagePath in candidates)
+                {
+                    if (!File.Exists(imagePath))
+                        continue;
+
+                    using var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    using var tempImage = Image.FromStream(fs);
+                    pictureBox1.Image = new Bitmap(tempImage);
+                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                    return;
+                }
+
+                pictureBox1.BackColor = Color.LightGray;
             }
             catch
             {
