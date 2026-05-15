@@ -233,6 +233,7 @@ UIHelper.cs
  Microsoft.VisualBasic.Forms.dll
  Microsoft.Win32.Registry.AccessControl.dll
  Microsoft.Win32.SystemEvents.dll
+ System.CodeDom.dll
  System.Configuration.ConfigurationManager.dll
  System.Design.dll
  System.Diagnostics.EventLog.dll
@@ -255,16 +256,6 @@ UIHelper.cs
  System.Windows.Forms.Design.Editors.dll
  System.Windows.Forms.dll
  System.Windows.Forms.Primitives.dll
-<NUGET>/
- naudio.asio/2.2.1/lib/netstandard2.0/NAudio.Asio.dll
- naudio.core/2.2.1/lib/netstandard2.0/NAudio.Core.dll
- naudio.midi/2.2.1/lib/netstandard2.0/NAudio.Midi.dll
- naudio.wasapi/2.2.1/lib/netstandard2.0/NAudio.Wasapi.dll
- naudio.winforms/2.2.1/lib/netcoreapp3.1/NAudio.WinForms.dll
- naudio.winmm/2.2.1/lib/netstandard2.0/NAudio.WinMM.dll
- naudio/2.2.1/lib/net6.0-windows7.0/NAudio.dll
- system.codedom/10.0.5/lib/net9.0/System.CodeDom.dll
- system.management/10.0.5/lib/net9.0/System.Management.dll
 
 [analyzerReferences]
 <DOTNET>/packs/Microsoft.NETCore.App.Ref/9.0.16/analyzers/dotnet/cs/
@@ -282,9 +273,6 @@ UIHelper.cs
  sdk/9.0.314/Sdks/Microsoft.NET.Sdk/analyzers/
   Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll
   Microsoft.CodeAnalysis.NetAnalyzers.dll
-<NUGET>/microsoft.net.illink.tasks/9.0.16/analyzers/dotnet/cs/
- ILLink.CodeFixProvider.dll
- ILLink.RoslynAnalyzer.dll
 
 [analyzerConfigFiles]
 <DOTNET>/sdk/9.0.314/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_9_default.globalconfig
