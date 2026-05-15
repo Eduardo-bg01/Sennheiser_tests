@@ -8,6 +8,7 @@ obj/
 .vs/
 .vscode/
 *.cache
+*.lscache
 
 ## User-specific files
 *.suo
