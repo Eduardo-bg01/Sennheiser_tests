@@ -271,20 +271,43 @@ namespace HeadPhoneTest2
 
         void playAudio(string audioTitle)
         {
-            outputDevice.Stop();
-            outputDevice.Dispose();
+            try
+            {
+                outputDevice.Stop();
+                outputDevice.Dispose();
 
-            outputDevice = new WaveOutEvent();
-            outputDevice.DeviceNumber = outputIndex;
+                outputDevice = new WaveOutEvent();
+                outputDevice.DeviceNumber = outputIndex;
 
-            if (audioTitle.StartsWith("audioSweep", StringComparison.OrdinalIgnoreCase))
-                outputDevice.PlaybackStopped += stopActions;
+                if (audioTitle.StartsWith("audioSweep", StringComparison.OrdinalIgnoreCase))
+                    outputDevice.PlaybackStopped += stopActions;
 
-            string audioPath = ResolveAudioPath(audioTitle);
+                string audioPath = ResolveAudioPath(audioTitle);
 
-            audioFile = new AudioFileReader(audioPath);
-            outputDevice.Init(audioFile);
-            outputDevice.Play();
+                audioFile = new AudioFileReader(audioPath);
+                outputDevice.Init(audioFile);
+                outputDevice.Play();
+            }
+            catch (System.DllNotFoundException)
+            {
+                MessageBox.Show(
+                    "Error: Windows Media Foundation not found.\n\n" +
+                    "This system is missing required audio libraries.\n" +
+                    "Please install Windows Media Feature Pack:\n" +
+                    "https://support.microsoft.com/en-us/help/14019/windows-media-feature-pack\n\n" +
+                    "Or install the desktop Media Feature Pack for your Windows version.",
+                    "Audio Library Missing",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Error playing audio:\n{ex.Message}",
+                    "Playback Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
 
         private string ResolveAudioPath(string audioTitle)

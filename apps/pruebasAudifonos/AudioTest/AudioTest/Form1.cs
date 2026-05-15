@@ -109,9 +109,10 @@ namespace AudioTest
             {
                 pictureBox1.Image = Image.FromFile("miniDSP.jpg");
             }
-            catch (Exception ex)
+            catch
             {
-                MessageBox.Show(ex.ToString());
+                // miniDSP.jpg not found - this is optional, continue without it
+                pictureBox1.BackColor = Color.LightGray;
             }
         }
 
