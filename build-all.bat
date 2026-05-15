@@ -55,6 +55,7 @@ if errorlevel 1 exit /b 1
 call :copy_publish_output "%BIN_DIR%\%~3"
 if errorlevel 1 exit /b 1
 if not "%~4"=="" (
+    for %%F in (%~4) do set "ASSET_NAME=%%~nxF"
     call :copy_asset_folder "%~4" "%BIN_DIR%\!ASSET_NAME!"
     if errorlevel 1 exit /b 1
 )
@@ -89,15 +90,6 @@ exit /b 0
 :fail
 echo Build failed!
 exit /b 1
-exit /b 0
-
-:copy_asset_folder
-set "SOURCE_DIR=%~1"
-set "DEST_DIR=%~2"
-if not exist "%SOURCE_DIR%" exit /b 0
-robocopy "%SOURCE_DIR%" "%DEST_DIR%" /E /NFL /NDL /NJH /NJS /NP >nul
-if errorlevel 8 exit /b 1
-exit /b 0
 
 :fail
 echo Build failed.

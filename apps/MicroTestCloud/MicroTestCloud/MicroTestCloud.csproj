@@ -10,10 +10,14 @@
 
   <ItemGroup>
     <None Remove="PistaAudio\Prueba.mp3" />
+    <None Remove="PistaAudio\VozParaPruebaMicrofono.mp3" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="PistaAudio\Prueba.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="PistaAudio\VozParaPruebaMicrofono.mp3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

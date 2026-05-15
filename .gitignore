@@ -1,5 +1,9 @@
-## Build outputs
+## Build outputs (but keep deployment files)
 bin/
+!bin/DEPLOYMENT.md
+!bin/*.ps1
+!bin/*.py
+!bin/run.bat
 obj/
 .vs/
 .vscode/
