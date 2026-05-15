@@ -9,6 +9,26 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+# Audio processing constants
+MIN_DB_FLOOR = -120.0  # Minimum dB value for unrepresentable audio
+DEFAULT_CALIBRATION_SPL = 94.0  # Reference SPL for calibration
+
+# PCM sample width scaling factors
+PCM_SCALE_8BIT = 128.0
+PCM_SCALE_16BIT = 32768.0
+PCM_SCALE_24BIT = 8388608.0
+PCM_SCALE_32BIT = 2147483648.0
+
+# Chart rendering constants
+CHART_FIGSIZE = (8, 4.5)
+CHART_DPI = 150
+ASCII_CHART_WIDTH = 50
+
+# Stereo constants
+STEREO_CHANNELS = 2
+CHANNEL_LEFT = 0
+CHANNEL_RIGHT = 1
+
 
 @dataclass
 class Measurement:
@@ -21,14 +41,15 @@ class Measurement:
 
 
 def pcm_to_floats(raw: bytes, sample_width: int) -> List[float]:
+    """Convert raw PCM bytes to normalized floating-point samples."""
     if sample_width == 1:
-        vals = [(b - 128) / 128.0 for b in raw]
+        vals = [(b - 128) / PCM_SCALE_8BIT for b in raw]
         return vals
 
     if sample_width == 2:
         count = len(raw) // 2
         vals = struct.unpack("<" + "h" * count, raw)
-        return [v / 32768.0 for v in vals]
+        return [v / PCM_SCALE_16BIT for v in vals]
 
     if sample_width == 3:
         vals = []
@@ -37,40 +58,44 @@ def pcm_to_floats(raw: bytes, sample_width: int) -> List[float]:
             x = b0 | (b1 << 8) | (b2 << 16)
             if x & 0x800000:
                 x -= 0x1000000
-            vals.append(x / 8388608.0)
+            vals.append(x / PCM_SCALE_24BIT)
         return vals
 
     if sample_width == 4:
         count = len(raw) // 4
         vals = struct.unpack("<" + "i" * count, raw)
-        return [v / 2147483648.0 for v in vals]
+        return [v / PCM_SCALE_32BIT for v in vals]
 
     raise ValueError(f"Unsupported sample width: {sample_width} bytes")
 
 
 def calc_rms(samples: List[float]) -> float:
+    """Calculate RMS (root mean square) amplitude of samples."""
     if not samples:
         return 0.0
     return math.sqrt(sum(s * s for s in samples) / len(samples))
 
 
-def db_from_amplitude(amplitude: float, floor_db: float = -120.0) -> float:
+def db_from_amplitude(amplitude: float, floor_db: float = MIN_DB_FLOOR) -> float:
+    """Convert linear amplitude to decibels, with floor threshold."""
     if amplitude <= 0.0:
         return floor_db
     return max(20.0 * math.log10(amplitude), floor_db)
 
 
 def split_channels(samples: List[float], channels: int) -> Tuple[List[float], List[float]]:
-    if channels < 2:
+    """Separate interleaved stereo samples into left and right channels."""
+    if channels < STEREO_CHANNELS:
         raise ValueError("Input WAV must be stereo (2 channels)")
 
-    left = samples[0::channels]
-    right = samples[1::channels]
+    left = samples[CHANNEL_LEFT::channels]
+    right = samples[CHANNEL_RIGHT::channels]
 
     return left, right
 
 
 def read_stereo_wav(wav_path: Path) -> Tuple[List[float], List[float], float]:
+    """Read stereo WAV file and return left/right channels with duration."""
     with wave.open(str(wav_path), "rb") as wf:
         channels = wf.getnchannels()
         sample_width = wf.getsampwidth()
@@ -93,6 +118,7 @@ def measure_from_samples(
     duration: float,
     calibration_offset_db: float | None
 ) -> Measurement:
+    """Analyze audio samples and return loudness measurements."""
 
     rms = calc_rms(samples)
     peak = max((abs(s) for s in samples), default=0.0)
@@ -113,6 +139,7 @@ def measure_from_samples(
 
 
 def print_table(results: List[Measurement]) -> None:
+    """Print results as formatted ASCII table."""
     use_spl = any(r.dbspl is not None for r in results)
     print("\nChannel Loudness Results")
     print("-" * 78)
@@ -130,6 +157,7 @@ def print_table(results: List[Measurement]) -> None:
 
 
 def print_ascii_chart(results: List[Measurement]) -> None:
+    """Print results as ASCII bar chart."""
     use_spl = all(r.dbspl is not None for r in results)
     metric_name = "dBSPL" if use_spl else "dBFS"
     values = [r.dbspl if use_spl else r.dbfs for r in results]
@@ -139,16 +167,16 @@ def print_ascii_chart(results: List[Measurement]) -> None:
     print(f"\nASCII Chart ({metric_name})")
     print("-" * 78)
 
-    width = 50
     span = max(max_val - min_val, 1e-9)
 
     for r, v in zip(results, values):
-        bar_len = int(((v - min_val) / span) * width)
+        bar_len = int(((v - min_val) / span) * ASCII_CHART_WIDTH)
         bar = "#" * bar_len
         print(f"{r.label:<12} | {bar:<50} {v:>7.2f} {metric_name}")
 
 
 def maybe_save_png(results: List[Measurement], output_png: Path) -> None:
+    """Save results as PNG chart if matplotlib available."""
     try:
         import matplotlib.pyplot as plt
     except Exception:
@@ -160,7 +188,7 @@ def maybe_save_png(results: List[Measurement], output_png: Path) -> None:
     y = [r.dbspl if use_spl else r.dbfs for r in results]
     ylabel = "dBSPL" if use_spl else "dBFS"
 
-    plt.figure(figsize=(8, 4.5))
+    plt.figure(figsize=CHART_FIGSIZE)
     bars = plt.bar(labels, y)
     plt.title("Headphone Channel Comparison")
     plt.ylabel(ylabel)
@@ -171,12 +199,13 @@ def maybe_save_png(results: List[Measurement], output_png: Path) -> None:
                  ha="center", va="bottom")
 
     plt.tight_layout()
-    plt.savefig(output_png, dpi=150)
+    plt.savefig(output_png, dpi=CHART_DPI)
     plt.close()
     print(f"\nSaved chart image: {output_png}")
 
 
 def build_json(results: List[Measurement]) -> Dict:
+    """Convert measurement results to JSON-serializable dictionary."""
     return {
         "measurements": [
             {

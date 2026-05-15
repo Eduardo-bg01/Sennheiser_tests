@@ -8,7 +8,16 @@ import os
 from pathlib import Path
 import subprocess
 
-API_ENDPOINT = "https://usengprod-functionapp.azurewebsites.net/api/DataWipeResult?code=qaITPGBWPv55-nnUoXunopRqJIZeyHQwSbo0F0-aYOBTAzFua5QkRg=="
+# Load API endpoint from environment variable for security
+# To set: $env:AZURE_API_ENDPOINT="https://..."
+API_ENDPOINT = os.getenv(
+    'AZURE_API_ENDPOINT',
+    'https://usengprod-functionapp.azurewebsites.net/api/DataWipeResult?code=qaITPGBWPv55-nnUoXunopRqJIZeyHQwSbo0F0-aYOBTAzFua5QkRg=='
+)
+
+# Warning if using default (for development only)
+if API_ENDPOINT.endswith('aYOBTAzFua5QkRg=='):
+    print("[WARNING] Using hardcoded API endpoint. Set AZURE_API_ENDPOINT environment variable for security.")
 
 def get_windows_username():
     try:
@@ -23,6 +32,7 @@ def get_windows_username():
     except Exception:
         return "tester1"
 
+# Test configuration defaults
 DEFAULTS = {
     "Username": get_windows_username(),
     "StartTime": None,
@@ -33,17 +43,21 @@ DEFAULTS = {
     "Program": "HP_MXLR2",
     "dbType": "TEST",
 }
+
+# Subtest names matching test results
 SUBTESTS = [
-    "distorsion","left_dbfs","left_peak","right_dbfs","right_peak",
-    "balance","volume","clipping","bluetooth","play_pausa",
-    "anterior","siguiente","subir_volumen","bajar_volumen","resultado_mic"
+    "distorsion", "left_dbfs", "left_peak", "right_dbfs", "right_peak",
+    "balance", "volume", "clipping", "bluetooth", "play_pausa",
+    "anterior", "siguiente", "subir_volumen", "bajar_volumen", "resultado_mic"
 ]
 
 def load_json(path):
-    with open(path,'r',encoding='utf-8') as f:
+    """Load JSON file with UTF-8 encoding."""
+    with open(path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 def find_input_file(input_arg):
+    """Find final_results.json in current or parent directories."""
     if input_arg:
         return input_arg
 

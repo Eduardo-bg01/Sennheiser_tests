@@ -1,11 +1,52 @@
+#!/usr/bin/env python3
+"""
+Aggregate test results from multiple output files into final_results.json.
+Consolidates audio measurements, device tests, and microphone results.
+"""
 import glob
 import json
+import os
+from datetime import datetime
+
+# File patterns
+FILE_PATTERN_SERIAL = "serial*"
+FILE_PATTERN_AUDIO = "hearingPass*"
+FILE_PATTERN_RESULTS = "results.json"
+FILE_PATTERN_BLUETOOTH = "Prueba_*"
+FILE_PATTERN_MICROPHONE = "MicroTest_*"
+FILE_PATTERN_TIME_START = "tiempo1.txt"
+FILE_PATTERN_TIME_END = "tiempo2.txt"
+
+# Audio measurement thresholds
+CHANNEL_BALANCE_THRESHOLD = 2  # dB difference acceptable
+VOLUME_MIN = -30  # dB - minimum acceptable level
+VOLUME_MAX = -10  # dB - maximum acceptable level
+CLIPPING_THRESHOLD = 0  # dB - any level above 0 is clipping
+
+# Test result constants
+RESULT_PASS = "PASS"
+RESULT_FAIL = "FAIL"
+RESULT_SKIPPED = "SKIPPED"
+RESULT_TRUE = "True"
+
+# Bluetooth test field names
+BT_FIELD_CONNECTION = "Conexión Bluetooth"
+BT_FIELD_PLAY_PAUSE = "Play / Pausa"
+BT_FIELD_PREVIOUS = "Anterior"
+BT_FIELD_NEXT = "Siguiente"
+BT_FIELD_VOLUME_UP = "Subir Volumen"
+BT_FIELD_VOLUME_DOWN = "Bajar Volumen"
+
+# Microphone result field name
+MIC_FIELD_RESULT = "Resultado"
 
 def first_match(pattern):
+    """Return first file matching glob pattern, or None."""
     matches = glob.glob(pattern)
     return matches[0] if matches else None
 
 def read_text_file(path):
+    """Read text file with fallback encodings."""
     encodings = ["utf-8", "cp1252", "latin-1"]
     for enc in encodings:
         try:
@@ -13,117 +54,147 @@ def read_text_file(path):
                 return f.read().lstrip("\ufeff")
         except UnicodeDecodeError:
             continue
+    # Last resort: ignore errors
     with open(path, "r", encoding="utf-8", errors="ignore") as f:
         return f.read().lstrip("\ufeff")
 
-serialfile = first_match("serial*")
+def read_ms_file(path):
+    """Read millisecond timestamp from file."""
+    if os.path.exists(path):
+        try:
+            with open(path, "r") as f:
+                txt = f.read().strip()
+                if txt.isdigit():
+                    return int(txt)
+        except Exception:
+            pass
+    return None
 
-final_results = {}
+def parse_bluetooth_results(filepath):
+    """Extract Bluetooth test results from report file."""
+    results = {}
+    for line in read_text_file(filepath).splitlines():
+        if BT_FIELD_CONNECTION in line:
+            parts = line.split()
+            results["bluetooth"] = parts[2] if len(parts) > 2 else RESULT_SKIPPED
+        elif BT_FIELD_PLAY_PAUSE in line:
+            parts = line.split()
+            results["play_pausa"] = parts[3] if len(parts) > 3 else RESULT_SKIPPED
+        elif BT_FIELD_PREVIOUS in line:
+            parts = line.split()
+            results["anterior"] = parts[1] if len(parts) > 1 else RESULT_SKIPPED
+        elif BT_FIELD_NEXT in line:
+            parts = line.split()
+            results["siguiente"] = parts[1] if len(parts) > 1 else RESULT_SKIPPED
+        elif BT_FIELD_VOLUME_UP in line:
+            parts = line.split()
+            results["subir_volumen"] = parts[2] if len(parts) > 2 else RESULT_SKIPPED
+        elif BT_FIELD_VOLUME_DOWN in line:
+            parts = line.split()
+            results["bajar_volumen"] = parts[2] if len(parts) > 2 else RESULT_SKIPPED
+    return results
 
-if serialfile:
-    final_results["serial"] = read_text_file(serialfile).strip()
-else:
-    final_results["serial"] = ""
-
-audiofile = first_match("hearingPass*")
-if audiofile:
-    final_results["distorsion"] = read_text_file(audiofile).strip()
-    if final_results["distorsion"]=="True":
-        final_results["distorsion"] = "PASS"
-    else:
-        final_results["distorsion"] = "FAIL"
-else:
-    final_results["distorsion"] = "SKIPPED"
-
-if glob.glob("results.json"):
-    results_text = read_text_file("results.json").lstrip("\ufeff")
-    results = json.loads(results_text)
-
-    for m in results["measurements"]:
+def analyze_audio_levels(measurements):
+    """Analyze audio measurements for volume, balance, and clipping."""
+    results = {}
+    left_dbfs = None
+    right_dbfs = None
+    left_peak = None
+    right_peak = None
+    
+    for m in measurements:
         if m["channel"] == "Left":
-            final_results["left_dbfs"] = round(m["dbfs"],2)
-            final_results["left_peak"] = round(m["peak_dbfs"],2)
-        if m["channel"] == "Right":
-            final_results["right_dbfs"] = round(m["dbfs"],2)
-            final_results["right_peak"] = round(m["peak_dbfs"],2)
+            left_dbfs = round(m["dbfs"], 2)
+            left_peak = round(m["peak_dbfs"], 2)
+            results["left_dbfs"] = left_dbfs
+            results["left_peak"] = left_peak
+        elif m["channel"] == "Right":
+            right_dbfs = round(m["dbfs"], 2)
+            right_peak = round(m["peak_dbfs"], 2)
+            results["right_dbfs"] = right_dbfs
+            results["right_peak"] = right_peak
+    
+    # Check channel balance
+    if left_dbfs is not None and right_dbfs is not None:
+        diff = abs(right_dbfs - left_dbfs)
+        results["balance"] = RESULT_PASS if diff <= CHANNEL_BALANCE_THRESHOLD else RESULT_FAIL
+        
+        # Check volume levels
+        left_ok = VOLUME_MIN <= left_dbfs <= VOLUME_MAX
+        right_ok = VOLUME_MIN <= right_dbfs <= VOLUME_MAX
+        results["volume"] = RESULT_PASS if (left_ok and right_ok) else RESULT_FAIL
+    
+    # Check for clipping
+    if left_peak is not None and right_peak is not None:
+        peak = max(left_peak, right_peak)
+        results["clipping"] = RESULT_PASS if peak <= CLIPPING_THRESHOLD else RESULT_FAIL
+    
+    return results
 
-    diff = abs(final_results["right_dbfs"]-final_results["left_dbfs"])
-    if diff>2:
-        final_results["balance"] = "FAIL"
+def main():
+    """Generate final_results.json from test output files."""
+    final_results = {}
+    
+    # Read serial number
+    serialfile = first_match(FILE_PATTERN_SERIAL)
+    if serialfile:
+        final_results["serial"] = read_text_file(serialfile).strip()
     else:
-        final_results["balance"] = "PASS"
-
-    if final_results["left_dbfs"]>-10 or final_results["left_dbfs"]<-30 or final_results["right_dbfs"]>-10 or final_results["right_dbfs"]<-30:
-        final_results["volume"] = "FAIL"
+        final_results["serial"] = ""
+    
+    # Read audio distortion test
+    audiofile = first_match(FILE_PATTERN_AUDIO)
+    if audiofile:
+        audio_result = read_text_file(audiofile).strip()
+        final_results["distorsion"] = RESULT_PASS if audio_result == RESULT_TRUE else RESULT_FAIL
     else:
-        final_results["volume"] = "PASS"
-
-    peak = max(final_results["left_peak"],final_results["right_peak"])
-    if peak > 0:
-        final_results["clipping"] = "FAIL"
+        final_results["distorsion"] = RESULT_SKIPPED
+    
+    # Read audio level measurements
+    if os.path.exists(FILE_PATTERN_RESULTS):
+        results_text = read_text_file(FILE_PATTERN_RESULTS)
+        results = json.loads(results_text)
+        audio_analysis = analyze_audio_levels(results.get("measurements", []))
+        final_results.update(audio_analysis)
     else:
-        final_results["clipping"] = "PASS"
-else:
-    final_results["balance"] = "SKIPPED"
-    final_results["volume"] = "SKIPPED"
-    final_results["clipping"] = "SKIPPED"
-
-btfile = first_match("Prueba_*")
-if btfile:
-    for line in read_text_file(btfile).splitlines():
-        if("Conexión Bluetooth" in line):
-            parts=line.split()
-            final_results["bluetooth"] = parts[2]
-        if("Play / Pausa" in line):
-            parts=line.split()
-            final_results["play_pausa"] = parts[3]
-        if("Anterior" in line):
-            parts = line.split()
-            final_results["anterior"] = parts[1]
-        if("Siguiente" in line):
-            parts = line.split()
-            final_results["siguiente"] = parts[1]
-        if("Subir Volumen" in line):
-            parts = line.split()
-            final_results["subir_volumen"] = parts[2]
-        if("Bajar Volumen" in line):
-            parts = line.split()
-            final_results["bajar_volumen"] = parts[2]
-
-micfile = first_match("MicroTest_*")
-if micfile:
-    for line in read_text_file(micfile).splitlines():
-        if "Resultado" in line:
-            parts = line.split()
-            if "PAS" in parts[2]:
-                final_results["resultado_mic"] = "PASS"
-            else:
-                final_results["resultado_mic"] = "FAIL"
-else:
-    final_results["resultado_mic"] = "SKIPPED"
-
-with open("final_results.json","w") as f:
-    # Attach StartTime/EndTime from tiempo files if available (ms since epoch -> UTC)
+        final_results["balance"] = RESULT_SKIPPED
+        final_results["volume"] = RESULT_SKIPPED
+        final_results["clipping"] = RESULT_SKIPPED
+    
+    # Read Bluetooth control test
+    btfile = first_match(FILE_PATTERN_BLUETOOTH)
+    if btfile:
+        bt_results = parse_bluetooth_results(btfile)
+        final_results.update(bt_results)
+    
+    # Read microphone test
+    micfile = first_match(FILE_PATTERN_MICROPHONE)
+    if micfile:
+        for line in read_text_file(micfile).splitlines():
+            if MIC_FIELD_RESULT in line:
+                parts = line.split()
+                final_results["resultado_mic"] = RESULT_PASS if "PAS" in parts[2] else RESULT_FAIL
+    else:
+        final_results["resultado_mic"] = RESULT_SKIPPED
+    
+    # Add timestamps if available
     try:
-        def read_ms_file(p):
-            import os
-            if os.path.exists(p):
-                with open(p,'r') as tf:
-                    txt = tf.read().strip()
-                    if txt.isdigit():
-                        return int(txt)
-            return None
-
-        t1 = read_ms_file('tiempo1.txt')
-        t2 = read_ms_file('tiempo2.txt')
+        t1 = read_ms_file(FILE_PATTERN_TIME_START)
+        t2 = read_ms_file(FILE_PATTERN_TIME_END)
         if t1 is not None:
-            from datetime import datetime
-            final_results['StartTime'] = datetime.utcfromtimestamp(t1/1000.0).strftime('%Y-%m-%d %H:%M:%S')
+            final_results['StartTime'] = datetime.utcfromtimestamp(t1 / 1000.0).strftime('%Y-%m-%d %H:%M:%S')
         if t2 is not None:
-            from datetime import datetime
-            final_results['EndTime'] = datetime.utcfromtimestamp(t2/1000.0).strftime('%Y-%m-%d %H:%M:%S')
+            final_results['EndTime'] = datetime.utcfromtimestamp(t2 / 1000.0).strftime('%Y-%m-%d %H:%M:%S')
     except Exception:
-        # best-effort; if anything fails, leave StartTime/EndTime absent
+        # Best-effort: if timestamp parsing fails, continue without timestamps
         pass
+    
+    # Write results
+    with open("final_results.json", "w") as f:
+        json.dump(final_results, f, indent=4)
+    
+    print("final_results.json generated successfully")
 
-    json.dump(final_results,f,indent=4)
+if __name__ == "__main__":
+    main()
+

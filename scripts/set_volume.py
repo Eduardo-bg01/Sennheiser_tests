@@ -7,7 +7,15 @@ Requires: pip install pycaw comtypes
 """
 import sys
 
+# Volume configuration constants
+DEFAULT_VOLUME_PERCENT = 80.0
+MIN_VOLUME_PERCENT = 0.0
+MAX_VOLUME_PERCENT = 100.0
+VOLUME_SCALAR_MIN = 0.0
+VOLUME_SCALAR_MAX = 1.0
+
 def set_volume_percent(percent: float) -> None:
+    """Set Windows master volume to specified percentage."""
     try:
         from ctypes import POINTER, cast
         from comtypes import CLSCTX_ALL
@@ -19,19 +27,24 @@ def set_volume_percent(percent: float) -> None:
     devices = AudioUtilities.GetSpeakers()
     interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
     volume = cast(interface, POINTER(IAudioEndpointVolume))
-    # percent: 0.0 - 100.0 -> scalar 0.0 - 1.0
-    scalar = max(0.0, min(1.0, float(percent) / 100.0))
+    
+    # Convert percentage (0-100) to scalar (0.0-1.0)
+    scalar = max(VOLUME_SCALAR_MIN, min(VOLUME_SCALAR_MAX, float(percent) / MAX_VOLUME_PERCENT))
     volume.SetMasterVolumeLevelScalar(scalar, None)
 
 
 def main():
-    pct = 80.0
+    """Main entry point."""
+    pct = DEFAULT_VOLUME_PERCENT
     if len(sys.argv) > 1:
         try:
             pct = float(sys.argv[1])
-        except Exception:
-            print("Invalid percent argument, using 80")
-            pct = 80.0
+            # Validate range
+            if not (MIN_VOLUME_PERCENT <= pct <= MAX_VOLUME_PERCENT):
+                print(f"Warning: Volume out of range [{MIN_VOLUME_PERCENT}-{MAX_VOLUME_PERCENT}], clamping to {pct}%")
+        except ValueError:
+            print(f"Invalid percentage argument, using default {DEFAULT_VOLUME_PERCENT}%")
+            pct = DEFAULT_VOLUME_PERCENT
 
     try:
         set_volume_percent(pct)

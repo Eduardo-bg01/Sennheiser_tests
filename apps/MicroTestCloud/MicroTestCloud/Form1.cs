@@ -960,7 +960,14 @@ namespace MicroTestCloud
                 _recordedStream);   // ← se pasa el stream para guardar el WAV
 
             formResultado.ShowDialog(this);
-            _testResult = formResultado.TestResult;
+                _testResult = formResultado.TestResult;
+
+                // If user explicitly chose PASS or FAIL, ensure the report is present
+                // and exit the application so the batch runner can detect the result.
+                if (_testResult == "PASS" || _testResult == "FAIL")
+                {
+                    Application.Exit();
+                }
         }
 
         // ══════════════════════════════════════════════════════════════
@@ -1145,6 +1152,7 @@ namespace MicroTestCloud
 public class FormResultado : Form
 {
     public string TestResult { get; private set; } = "No definido";
+    private bool _reportGenerated = false;
 
     // ── Paleta ────────────────────────────────────────────────────────
     private readonly Color BgCard = ColorTranslator.FromHtml("#FFFFFF");
@@ -1273,8 +1281,8 @@ public class FormResultado : Form
             _btnFallo.BackColor = BgCard;
             // Auto-save and close immediately
             SaveReport();
+            DialogResult = DialogResult.OK;
             this.Close();
-            Application.Exit();
         };
 
         _btnFallo.Click += (s, e) =>
@@ -1284,8 +1292,8 @@ public class FormResultado : Form
             _btnPaso.BackColor = BgCard;
             // Auto-save and close immediately
             SaveReport();
+            DialogResult = DialogResult.OK;
             this.Close();
-            Application.Exit();
         };
 
         this.Controls.AddRange(new Control[] { _btnPaso, _btnFallo });
@@ -1349,6 +1357,9 @@ public class FormResultado : Form
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string txtPath = Path.Combine(baseDir, baseName + ".txt");
             string wavPath = Path.Combine(baseDir, baseName + ".wav");
+            string currentDir = Environment.CurrentDirectory;
+            string currentTxtPath = Path.Combine(currentDir, baseName + ".txt");
+            string currentWavPath = Path.Combine(currentDir, baseName + ".wav");
             string modoStr = _modoBocina ? "Bocina (Pista)" : "Voz del operador";
 
             // ── Calcular estadísticas ──────────────────────────────────
@@ -1418,6 +1429,16 @@ public class FormResultado : Form
                 using var fs = new FileStream(wavPath, FileMode.Create, FileAccess.Write);
                 _audioStream.CopyTo(fs);
             }
+
+            if (!string.Equals(baseDir, currentDir, StringComparison.OrdinalIgnoreCase))
+            {
+                File.Copy(txtPath, currentTxtPath, true);
+
+                if (File.Exists(wavPath))
+                    File.Copy(wavPath, currentWavPath, true);
+            }
+
+            _reportGenerated = true;
         }
         catch (Exception ex)
         {
