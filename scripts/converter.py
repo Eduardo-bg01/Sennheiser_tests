@@ -41,7 +41,7 @@ DEFAULTS = {
     "MachineName": "AudioTester",
     "TestArea": "MEXICALI_R2",
     "Program": "HP_MXLR2",
-    "dbType": "TEST",
+    "dbType": "",
 }
 
 # Subtest names matching test results
