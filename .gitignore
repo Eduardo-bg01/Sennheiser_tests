@@ -26,8 +26,6 @@ recorded.wav
 final_results.json
 tiempo*.txt
 diferencia_minutos.txt
-*.wav
-*.mp3
 
 ## Generated files
 *.dll
