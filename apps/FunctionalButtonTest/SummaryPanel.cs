@@ -132,7 +132,8 @@ namespace BluetoothHeadphoneTest
             foreach (var rec in session.Records)
             {
                 bool ok = rec.Result == TestResult.Pass;
-                bool na = rec.Result == TestResult.Pending;
+                bool na = rec.Result == TestResult.NotApplicable;
+                bool fail = rec.Result == TestResult.Fail;
 
                 var row = new Panel
                 {
@@ -142,25 +143,31 @@ namespace BluetoothHeadphoneTest
                     Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
                 };
 
+                // Barra de color lateral
+                Color accentColor = ok ? AccentGreen : (na ? BorderColor : (fail ? AccentRed : TextMuted));
                 var accent = new Panel
                 {
-                    BackColor = ok ? AccentGreen : (na ? TextMuted : AccentRed),
+                    BackColor = accentColor,
                     Location = new Point(0, 0),
                     Size = new Size(4, 42)
                 };
                 row.Controls.Add(accent);
 
+                // Nombre de la prueba (atenuado si N/A)
                 AddRowLabel(row, rec.Name, 14, w - 300,
-                    new Font("Segoe UI", 10.5f), TextPrimary);
+                    new Font("Segoe UI", 10.5f, na ? FontStyle.Italic : FontStyle.Regular),
+                    na ? TextMuted : TextPrimary);
 
-                string resText = ok ? "✔  PASS" : (na ? "—  N/A" : "✘  FAIL");
-                Color resColor = ok ? AccentGreen : (na ? TextMuted : AccentRed);
+                // Resultado
+                string resText = ok ? "✔  PASS" : (na ? "—  N/A" : (fail ? "✘  FAIL" : "·  Pend."));
+                Color resColor = ok ? AccentGreen : (na ? TextMuted : (fail ? AccentRed : TextMuted));
                 AddRowLabel(row, resText, w - 280, 120,
                     new Font("Segoe UI", 10f, FontStyle.Bold), resColor,
                     ContentAlignment.MiddleCenter);
 
-                string timeText = rec.Timestamp.HasValue
-                    ? rec.Timestamp.Value.ToString("HH:mm:ss") : "--:--:--";
+                // Hora
+                string timeText = na ? "—" : (rec.Timestamp.HasValue
+                    ? rec.Timestamp.Value.ToString("HH:mm:ss") : "--:--:--");
                 AddRowLabel(row, timeText, w - 160, 140,
                     new Font("Segoe UI", 9.5f), TextMuted,
                     ContentAlignment.MiddleRight);
@@ -174,7 +181,7 @@ namespace BluetoothHeadphoneTest
 
             // ── Buttons ──────────────────────────────────────────────────────
             var btnNew = MakeButton("↺  NUEVA PRUEBA", ColorTranslator.FromHtml("#0099BB"), 20, y, 190, 44);
-            var btnClose = MakeButton("↓  SIGUIENTE PRUEBA", ColorTranslator.FromHtml("#00A85A"), 224, y, 160, 44);
+            var btnClose = MakeButton("SIGUIENTE PRUEBA", ColorTranslator.FromHtml("#CC2222"), 224, y, 160, 44);
             btnNew.Click += (s, e) =>
             {
                 var btn = (Control)s;
@@ -249,9 +256,8 @@ namespace BluetoothHeadphoneTest
         {
             try
             {
-                string folder = Environment.CurrentDirectory;
-                string deviceName = SanitizeFileNamePart(session.SelectedDevice?.Name ?? "BT");
-                string fileName = $"Prueba_{deviceName}_{session.StartTime:yyyyMMdd_HHmm}.txt";
+                string folder = AppDomain.CurrentDomain.BaseDirectory;
+                string fileName = $"Prueba_{session.SelectedDevice?.Name ?? "BT"}_{session.StartTime:yyyyMMdd_HHmm}.txt";
                 string filePath = Path.Combine(folder, fileName);
 
                 var sb = new System.Text.StringBuilder();
@@ -268,31 +274,27 @@ namespace BluetoothHeadphoneTest
                 foreach (var rec in session.Records)
                 {
                     string res = rec.Result == TestResult.Pass ? "PASS" :
-                                  rec.Result == TestResult.Fail ? "FAIL" : "N/A";
-                    string time = rec.Timestamp.HasValue
-                        ? rec.Timestamp.Value.ToString("HH:mm:ss") : "--:--:--";
+                                 rec.Result == TestResult.Fail ? "FAIL" :
+                                 rec.Result == TestResult.NotApplicable ? "N/A" : "PEND";
+                    string time = rec.Result == TestResult.NotApplicable ? "—"
+                        : (rec.Timestamp.HasValue
+                            ? rec.Timestamp.Value.ToString("HH:mm:ss") : "--:--:--");
                     sb.AppendLine($"  {rec.Name,-32} {res,-10} {time}");
                 }
 
                 sb.AppendLine(sep);
-                sb.AppendLine($"  Resultado final: {(passed ? "APROBADO" : "FALLIDO")}  ({passCount}/{session.Records.Count})");
+                int totalApplicable = 0, naCount = 0;
+                foreach (var r in session.Records)
+                {
+                    if (r.Result == TestResult.NotApplicable) naCount++;
+                    else totalApplicable++;
+                }
 
+                sb.AppendLine(sep);
+                sb.AppendLine($"  Resultado final: {(passed ? "APROBADO" : "FALLIDO")}  ({passCount}/{totalApplicable})  •  N/A: {naCount}");
                 File.WriteAllText(filePath, sb.ToString(), System.Text.Encoding.UTF8);
             }
             catch { /* Si falla el guardado, continuar sin interrumpir */ }
-        }
-
-        private static string SanitizeFileNamePart(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-                return "BT";
-
-            foreach (char c in Path.GetInvalidFileNameChars())
-            {
-                value = value.Replace(c, '_');
-            }
-
-            return value.Trim();
         }
     }
 }

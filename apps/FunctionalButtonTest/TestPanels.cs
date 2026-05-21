@@ -53,8 +53,8 @@ namespace BluetoothHeadphoneTest
             labelTestNumber = new Label
             {
                 Text = number > 1
-                    ? $"PRUEBA {number - 1} / {TestStepManager.TotalTests - 1}"
-                    : $"PRUEBA {number} / {TestStepManager.TotalTests - 1}",
+                    ? $"PRUEBA {number - 1} / {TestStepManager.ActiveTotalTests - 1}"
+                    : $"PRUEBA {number} / {TestStepManager.ActiveTotalTests - 1}",
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = AccentCyan,
                 BackColor = ColorTranslator.FromHtml("#E0F4FA"),
