@@ -478,10 +478,36 @@ namespace MicroTestCloud
 
             // ── Botón: Siguiente prueba ────────────────────────────────
             int nextY = playY + btnH + pad;
-            var btnSiguiente = MakeButton("PASAR A LA SIGUIENTE PRUEBA", rightColX, nextY, rightColW, btnH, AccentCyan, BgDark);
-            btnSiguiente.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
-            btnSiguiente.Click += (s, e) => Application.Exit();
-            this.Controls.Add(btnSiguiente);
+
+            //var btnSiguiente = MakeButton("PASAR A LA SIGUIENTE PRUEBA",
+            //    rightColX, nextY, rightColW, btnH, AccentCyan, BgDark);
+
+            //btnSiguiente.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+            //btnSiguiente.Click += (s, e) => Application.Exit();
+            //this.Controls.Add(btnSiguiente);
+
+            // ── Botón: Sin micrófono ────────────────────────────────
+            int nextMicY = nextY + btnH + pad; // ✅ ahora va debajo
+
+            var btnNoMicro = MakeButton("EL DISPOSITIVO NO TIENE MICROFONO",
+                rightColX, nextMicY, rightColW, btnH, AccentRed, BgDark);
+
+            btnNoMicro.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+            btnNoMicro.Click += (s, e) => 
+            {
+                DialogResult result = MessageBox.Show(
+                    "¿Confirmas que el dispositivo no tiene micrófono?",
+                    "Confirmar",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+                
+                if (result == DialogResult.Yes)
+                {
+                    SaveReport2();
+                    Application.Exit();
+                }
+            };
+            this.Controls.Add(btnNoMicro);
 
             this.Paint += (s, e) =>
             {
@@ -491,6 +517,62 @@ namespace MicroTestCloud
 
             timerUI = new System.Windows.Forms.Timer { Interval = 40 };
             timerUI.Tick += TimerUI_Tick;
+        }
+
+        private void SaveReport2()
+        {
+            try
+            {
+                string baseName = $"MicroTest_{DateTime.Now:yyyyMMdd_HHmmss}";
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                string txtPath = Path.Combine(baseDir, baseName + ".txt");
+
+                using (var sw = new StreamWriter(txtPath, false, System.Text.Encoding.UTF8))
+                {
+                    sw.WriteLine("╔══════════════════════════════════════════════════╗");
+                    sw.WriteLine("║        MICROTEST · REPORTE SIN MICRÓFONO         ║");
+                    sw.WriteLine("╚══════════════════════════════════════════════════╝");
+                    sw.WriteLine();
+
+                    sw.WriteLine($"  Resultado       : N/A");
+                    sw.WriteLine($"  Fecha y hora    : {DateTime.Now:dd/MM/yyyy  HH:mm:ss}");
+                    sw.WriteLine($"  Micrófono       : N/A");
+                    sw.WriteLine($"  Modo de prueba  : N/A");
+                    sw.WriteLine($"  Duración        : N/A");
+                    sw.WriteLine($"  Muestras        : N/A");
+                    sw.WriteLine();
+
+                    sw.WriteLine("──────────────────────────────────────────────────");
+                    sw.WriteLine("  RESUMEN ESTADÍSTICO");
+                    sw.WriteLine("──────────────────────────────────────────────────");
+
+                    sw.WriteLine($"  Volumen máximo  : N/A");
+                    sw.WriteLine($"  Volumen mínimo  : N/A");
+                    sw.WriteLine($"  Volumen promedio: N/A");
+                    sw.WriteLine();
+
+                    sw.WriteLine("  Distribución de estados:");
+                    sw.WriteLine("    · N/A");
+                    sw.WriteLine();
+
+                    sw.WriteLine("──────────────────────────────────────────────────");
+                    sw.WriteLine("  REGISTRO DETALLADO");
+                    sw.WriteLine("──────────────────────────────────────────────────");
+
+                    sw.WriteLine("  No hay datos disponibles.");
+                    sw.WriteLine();
+
+                    sw.WriteLine($"  Reporte generado por MicroTest · {DateTime.Now:dd/MM/yyyy HH:mm}");
+                    sw.WriteLine("──────────────────────────────────────────────────");
+                }
+
+                _reportGenerated = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error en SaveReport2:\n{ex.Message}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         // ══════════════════════════════════════════════════════════════
@@ -952,12 +1034,20 @@ namespace MicroTestCloud
 
         private void MostrarFormResultado()
         {
+            MemoryStream copyStream = null;
+
+
+            if (_recordedStream != null && _recordedStream.Length > 0)
+                copyStream = new MemoryStream(_recordedStream.ToArray());
+
+
             var formResultado = new FormResultado(
                 _deviceName,
                 _testStartTime,
                 _logEntries,
                 _modoBocina,
-                _recordedStream);   // ← se pasa el stream para guardar el WAV
+                copyStream);
+            
 
             formResultado.ShowDialog(this);
                 _testResult = formResultado.TestResult;
@@ -1172,7 +1262,7 @@ public class FormResultado : Form
     // ── Datos recibidos ───────────────────────────────────────────────
     private readonly string _deviceName;
     private readonly DateTime _testStartTime;
-    private readonly List<(DateTime Time, int Volume, string Level)> _logEntries;
+    private readonly List<(DateTime, int, string)> _logEntries;
     private readonly bool _modoBocina;
     private readonly MemoryStream _audioStream;     // ← stream de audio grabado
 
@@ -1349,7 +1439,7 @@ public class FormResultado : Form
     ///   · MicroTest_YYYYMMDD_HHMMSS.txt  — reporte estadístico de texto
     ///   · MicroTest_YYYYMMDD_HHMMSS.wav  — audio grabado durante el test
     /// </summary>
-    private void SaveReport()
+    private async void SaveReport()
     {
         try
         {
@@ -1368,11 +1458,11 @@ public class FormResultado : Form
 
             foreach (var entry in _logEntries)
             {
-                volMax = Math.Max(volMax, entry.Volume);
-                volMin = Math.Min(volMin, entry.Volume);
-                volSum += entry.Volume;
-                if (!levelCounts.ContainsKey(entry.Level)) levelCounts[entry.Level] = 0;
-                levelCounts[entry.Level]++;
+                volMax = Math.Max(volMax, entry.Item2);
+                volMin = Math.Min(volMin, entry.Item2);
+                volSum += entry.Item2;
+                if (!levelCounts.ContainsKey(entry.Item3)) levelCounts[entry.Item3] = 0;
+                levelCounts[entry.Item3]++;
             }
 
             double volAvg = _logEntries.Count > 0 ? (double)volSum / _logEntries.Count : 0;
@@ -1400,6 +1490,7 @@ public class FormResultado : Form
                 sw.WriteLine($"  Volumen mínimo  : {volMin}%");
                 sw.WriteLine($"  Volumen promedio: {volAvg:F1}%");
                 sw.WriteLine();
+
                 sw.WriteLine("  Distribución de estados:");
                 foreach (var kv in levelCounts)
                     sw.WriteLine($"    · {kv.Key,-14} : {kv.Value} seg");
@@ -1412,9 +1503,9 @@ public class FormResultado : Form
 
                 foreach (var entry in _logEntries)
                 {
-                    int bars = entry.Volume / 5;
+                    int bars = entry.Item2 / 5;
                     string bar = "[" + new string('█', bars) + new string('░', 20 - bars) + "]";
-                    sw.WriteLine($"  {entry.Time:HH:mm:ss}     {entry.Volume,3}%   {entry.Level,-16}  {bar}");
+                    sw.WriteLine($"  {entry.Item1:HH:mm:ss}     {entry.Item2,3}%   {entry.Item3,-16}  {bar}");
                 }
 
                 sw.WriteLine();
@@ -1432,7 +1523,23 @@ public class FormResultado : Form
 
             if (!string.Equals(baseDir, currentDir, StringComparison.OrdinalIgnoreCase))
             {
-                File.Copy(txtPath, currentTxtPath, true);
+                // Esperar a que el archivo se libere completamente
+                await Task.Delay(100);
+                
+                int retries = 3;
+                while (retries > 0)
+                {
+                    try
+                    {
+                        File.Copy(txtPath, currentTxtPath, true);
+                        break;
+                    }
+                    catch (IOException) when (retries > 1)
+                    {
+                        await Task.Delay(200);
+                        retries--;
+                    }
+                }
 
                 if (File.Exists(wavPath))
                     File.Copy(wavPath, currentWavPath, true);
@@ -1446,4 +1553,7 @@ public class FormResultado : Form
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
+
+    
+
 }
