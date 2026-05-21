@@ -40,3 +40,7 @@ diferencia_minutos.txt
 __pycache__/
 
 .github/
+
+*.cs
+*.csproj
+*.csproj.nuget.*
