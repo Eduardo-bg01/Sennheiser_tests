@@ -4,21 +4,18 @@ namespace BluetoothHeadphoneTest
 {
     /// <summary>
     /// Catálogo de perfiles por modelo.
-    /// - Agrega un bloque en _btProfiles para modelos Bluetooth.
-    /// - Agrega un bloque en _jackProfiles para modelos que se conectan por Jack 3.5 mm.
-    ///   El nombre debe ser el nombre comercial/interno que tú elijas; el operador
-    ///   lo seleccionará manualmente en la pantalla de selección de dispositivo.
+    /// - _btProfiles: modelos BT, USB-C, USB-A (Windows los reconoce por nombre propio).
+    /// - _jackProfiles: modelos Jack 3.5 mm o genéricos (el operador elige el modelo).
+    /// - GenericAudioNames: nombres genéricos que Windows asigna en algunos equipos.
     /// </summary>
     public static class DeviceProfileRegistry
     {
         // ════════════════════════════════════════════════════════════════════
-        //  MODELOS BLUETOOTH
-        //  El nombre debe coincidir con el nombre Bluetooth del dispositivo
-        //  (el que aparece en la lista automática de DeviceSelectForm).
+        //  MODELOS CON NOMBRE PROPIO (Bluetooth, USB-C, USB-A)
+        //  El nombre debe coincidir exactamente con el que aparece en Windows.
         // ════════════════════════════════════════════════════════════════════
         private static readonly List<DeviceProfile> _btProfiles = new()
         {
-            // ── Bluetooth completo ───────────────────────────────────────────
             new DeviceProfile("Momentum 4")
             {
                 HasBluetooth     = true,
@@ -29,7 +26,6 @@ namespace BluetoothHeadphoneTest
                 HasVolumeDown    = true,
             },
 
-            // ── Bluetooth sin botones de canción ────────────────────────────
             new DeviceProfile("Momentum TW 4")
             {
                 HasBluetooth     = true,
@@ -40,7 +36,7 @@ namespace BluetoothHeadphoneTest
                 HasVolumeDown    = true,
             },
 
-            // ── USB-C (detectado automático por nombre de audio de Windows) ──
+            // ── USB-C ────────────────────────────────────────────────────────
             new DeviceProfile("Headphones (HD 400U)")
             {
                 HasBluetooth     = false,
@@ -52,8 +48,7 @@ namespace BluetoothHeadphoneTest
             },
 
             // ════════════════════════════════════════════════════════════════
-            //  AGREGA AQUÍ MODELOS NUEVOS (BT, USB-C o cualquier tipo que
-            //  Windows reconozca automáticamente por nombre):
+            //  AGREGA AQUÍ MODELOS NUEVOS (BT, USB-C o USB-A):
             //
             //  new DeviceProfile("Nombre exacto como aparece en Windows")
             //  {
@@ -68,16 +63,96 @@ namespace BluetoothHeadphoneTest
         };
 
         // ════════════════════════════════════════════════════════════════════
-        //  MODELOS JACK 3.5 MM
-        //  Todos aparecen en Windows como "Headphone (Realtek(R) Audio)".
-        //  El nombre aquí es el nombre comercial que tú asignas; el operador
-        //  lo elige en el combo de la pantalla de selección.
+        //  MODELOS JACK 3.5 MM Y GENÉRICOS
+        //  Aparecen en Windows como "Headphone (Realtek(R) Audio)",
+        //  "Speakers/Headphones", "Headphones", etc.
+        //  El nombre aquí es el nombre comercial que el operador elige.
         // ════════════════════════════════════════════════════════════════════
         private static readonly List<DeviceProfile> _jackProfiles = new()
         {
+            new DeviceProfile("HD 550")
+            {
+                HasBluetooth     = false,
+                HasPlayPause     = false,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
+            },
+
+            new DeviceProfile("HD 560S")
+            {
+                HasBluetooth     = false,
+                HasPlayPause     = false,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
+            },
+
+            new DeviceProfile("HD 569")
+            {
+                HasBluetooth     = false,
+                HasPlayPause     = false,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
+            },
+
+            new DeviceProfile("HD 599")
+            {
+                HasBluetooth     = false,
+                HasPlayPause     = false,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
+            },
+
+            new DeviceProfile("HD 600")
+            {
+                HasBluetooth     = false,
+                HasPlayPause     = false,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
+            },
+
+            new DeviceProfile("HD 650")
+            {
+                HasBluetooth     = false,
+                HasPlayPause     = false,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
+            },
+
             new DeviceProfile("HD 660S2")
             {
-                HasBluetooth     = false,   // sin prueba de conexión BT
+                HasBluetooth     = false,
+                HasPlayPause     = false,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
+            },
+
+            new DeviceProfile("HDR 175")
+            {
+                HasBluetooth     = false,
+                HasPlayPause     = false,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
+            },
+
+            new DeviceProfile("RS 120-W")
+            {
+                HasBluetooth     = false,
                 HasPlayPause     = false,
                 HasPreviousTrack = false,
                 HasNextTrack     = false,
@@ -87,7 +162,7 @@ namespace BluetoothHeadphoneTest
 
             new DeviceProfile("RS 195")
             {
-                HasBluetooth     = false,   // sin prueba de conexión BT
+                HasBluetooth     = false,
                 HasPlayPause     = false,
                 HasPreviousTrack = false,
                 HasNextTrack     = false,
@@ -95,9 +170,9 @@ namespace BluetoothHeadphoneTest
                 HasVolumeDown    = false,
             },
 
-             new DeviceProfile("RS 120-W")
+            new DeviceProfile("RS 275")
             {
-                HasBluetooth     = false,   // sin prueba de conexión BT
+                HasBluetooth     = false,
                 HasPlayPause     = false,
                 HasPreviousTrack = false,
                 HasNextTrack     = false,
@@ -105,114 +180,39 @@ namespace BluetoothHeadphoneTest
                 HasVolumeDown    = false,
             },
 
-              new DeviceProfile("RS 275")
-            {
-                HasBluetooth     = false,   // sin prueba de conexión BT
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-             new DeviceProfile("HD 569")
-            {
-                HasBluetooth     = false,   // sin prueba de conexión BT
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-              new DeviceProfile("HD 599")
-            {
-                HasBluetooth     = false,   // sin prueba de conexión BT
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-               new DeviceProfile("HD 650")
-            {
-                HasBluetooth     = false,   // sin prueba de conexión BT
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-                new DeviceProfile("HD 550")
-            {
-                HasBluetooth     = false,   // sin prueba de conexión BT
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-                 new DeviceProfile("HD 600")
-            {
-                HasBluetooth     = false,   // sin prueba de conexión BT
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-              new DeviceProfile("HD 560S")
-            {
-                HasBluetooth     = false,   // sin prueba de conexión BT
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-              new DeviceProfile("RS 195")
-            {
-                HasBluetooth     = false,   // sin prueba de conexión BT
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-               new DeviceProfile("HDR 175")
-            {
-                HasBluetooth     = false,   // sin prueba de conexión BT
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-            // ── Agrega aquí más modelos jack ─────────────────────────────────
+            // ════════════════════════════════════════════════════════════════
+            //  AGREGA AQUÍ MÁS MODELOS JACK / GENÉRICOS:
             //
-            //  new DeviceProfile("Nombre Comercial del Modelo Jack")
+            //  new DeviceProfile("Nombre Comercial")
             //  {
-            //      HasBluetooth     = false,  // siempre false para jack
+            //      HasBluetooth     = false,
             //      HasPlayPause     = true/false,
             //      HasPreviousTrack = true/false,
             //      HasNextTrack     = true/false,
             //      HasVolumeUp      = true/false,
             //      HasVolumeDown    = true/false,
             //  },
+            // ════════════════════════════════════════════════════════════════
+        };
+
+        // ════════════════════════════════════════════════════════════════════
+        //  NOMBRES GENÉRICOS DE WINDOWS
+        //  En algunos equipos Windows asigna estos nombres en lugar del nombre
+        //  del fabricante. Se tratan igual que el jack: combo de modelo.
+        //  Si en algún equipo aparece con otro nombre genérico, agrégalo aquí.
+        // ════════════════════════════════════════════════════════════════════
+        private static readonly string[] GenericAudioNames = new[]
+        {
+            "Speakers/Headphones",
+            "Speakers / Headphones",
+            "Headphones",
         };
 
         // ── API pública ────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Devuelve el perfil si el nombre está explícitamente registrado; null si no.
-        /// Usado por BluetoothDetector para saber si un dispositivo de audio
-        /// (USB-C, USB-A) debe aparecer en la lista.
+        /// Devuelve el perfil si está registrado en _btProfiles; null si no.
+        /// Usado por BluetoothDetector para dispositivos con nombre propio (USB-C, etc.).
         /// </summary>
         public static DeviceProfile GetProfileIfRegistered(string modelName)
         {
@@ -224,7 +224,7 @@ namespace BluetoothHeadphoneTest
         }
 
         /// <summary>
-        /// Busca el perfil para un dispositivo Bluetooth por nombre.
+        /// Busca el perfil en _btProfiles por nombre.
         /// Si no está registrado devuelve un perfil genérico con todo habilitado.
         /// </summary>
         public static DeviceProfile GetProfile(string modelName)
@@ -236,12 +236,11 @@ namespace BluetoothHeadphoneTest
                 if (p.ModelName.Equals(modelName, System.StringComparison.OrdinalIgnoreCase))
                     return p;
 
-            // Fallback: modelo desconocido → todas las pruebas activas
             return new DeviceProfile(modelName);
         }
 
         /// <summary>
-        /// Devuelve el perfil de un modelo Jack por su nombre comercial.
+        /// Devuelve el perfil de un modelo jack/genérico por nombre comercial.
         /// </summary>
         public static DeviceProfile GetJackProfile(string jackModelName)
         {
@@ -252,13 +251,25 @@ namespace BluetoothHeadphoneTest
                 if (p.ModelName.Equals(jackModelName, System.StringComparison.OrdinalIgnoreCase))
                     return p;
 
-            // Fallback: jack desconocido → sin BT, resto activo
             return new DeviceProfile(jackModelName) { HasBluetooth = false };
         }
 
         /// <summary>
-        /// Devuelve la lista de perfiles jack para poblar el combo de selección.
+        /// Devuelve la lista de perfiles jack/genéricos para el combo de selección.
         /// </summary>
         public static List<DeviceProfile> GetWiredProfiles() => _jackProfiles;
+
+        /// <summary>
+        /// Devuelve true si el nombre es uno de los nombres genéricos de Windows
+        /// (Speakers/Headphones, Headphones, etc.) que requieren selección manual.
+        /// </summary>
+        public static bool IsGenericAudioName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+            foreach (var g in GenericAudioNames)
+                if (name.Equals(g, System.StringComparison.OrdinalIgnoreCase))
+                    return true;
+            return false;
+        }
     }
 }

@@ -9,12 +9,12 @@ namespace BluetoothHeadphoneTest
     public class BluetoothDeviceInfo
     {
         public string Name { get; set; }
-        public string Address { get; set; }  // MAC para BT, "JACK" para auxiliar
+        public string Address { get; set; }  // MAC para BT, "JACK" para auxiliar, "USB" para USB-C
         public bool IsConnected { get; set; }
         public DeviceConnectionType ConnectionType { get; set; } = DeviceConnectionType.Bluetooth;
 
         /// <summary>
-        /// Para audífonos jack con múltiples modelos, aquí se guarda
+        /// Para audífonos jack/genéricos con múltiples modelos, aquí se guarda
         /// el modelo elegido por el operador en el paso de selección.
         /// </summary>
         public string SelectedJackModel { get; set; }
@@ -23,8 +23,8 @@ namespace BluetoothHeadphoneTest
 
         public override string ToString() => IsWired
             ? (string.IsNullOrEmpty(SelectedJackModel)
-                ? $"🎧  {Name}  (Jack 3.5 mm)"
-                : $"🎧  {SelectedJackModel}  (Jack 3.5 mm)")
+                ? $"🎧  {Name}  (Cableado)"
+                : $"🎧  {SelectedJackModel}  (Cableado)")
             : (IsConnected
                 ? $"{Name}  ✔ Conectado"
                 : $"{Name}  (no conectado)");
@@ -109,29 +109,20 @@ namespace BluetoothHeadphoneTest
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool CloseHandle(IntPtr hObject);
 
-        // ── Nombre de dispositivo que Windows asigna al jack 3.5 mm ───────────
-        // Si en tu equipo aparece con otro nombre, agrégalo aquí.
-        // Solo los dispositivos Realtek que SÍ son audífonos (sin Speakers).
-        // Agrega aquí si en tu equipo el jack aparece con otro nombre.
+        // ── Nombres Realtek jack 3.5 mm ────────────────────────────────────────
         private static readonly string[] WiredJackNames = new[]
         {
             "Headphone (Realtek(R) Audio)",
             "Headset (Realtek(R) Audio)"
         };
 
-        // Palabras que identifican parlantes/bocinas — se excluyen siempre.
+        // ── Palabras de bocina/parlante — se ignoran si NO están registrados ───
         private static readonly string[] SpeakerKeywords = new[]
         {
             "Speaker", "Altavoz", "Bocina"
         };
 
         // ── Public API ─────────────────────────────────────────────────────────
-
-        /// <summary>
-        /// Devuelve todos los dispositivos disponibles:
-        /// - Dispositivos Bluetooth pareados/conectados
-        /// - Dispositivo de salida Jack 3.5 mm si está activo (Realtek Audio)
-        /// </summary>
         public static List<BluetoothDeviceInfo> GetPairedDevices()
         {
             var list = new List<BluetoothDeviceInfo>();
@@ -150,7 +141,6 @@ namespace BluetoothHeadphoneTest
                         CloseHandle(hRadio);
                     }
                     while (BluetoothFindNextRadio(hRadioFind, out hRadio));
-
                     BluetoothFindRadioClose(hRadioFind);
                 }
             }
@@ -159,20 +149,20 @@ namespace BluetoothHeadphoneTest
                 list.AddRange(GetDevicesFromRegistry());
             }
 
-            // 2) Dispositivos de audio cableados (Jack 3.5mm, USB-C, USB-A)
-            //    Se detectan vía NAudio enumerando todos los endpoints activos
-            //    y se cruzan contra los perfiles registrados en DeviceProfileRegistry.
-            var wiredDevices = DetectWiredAudioDevices();
-            list.AddRange(wiredDevices);
+            // 2) Dispositivos de audio cableados (Jack 3.5mm, USB-C, genéricos)
+            list.AddRange(DetectWiredAudioDevices());
 
             return list;
         }
 
         /// <summary>
-        /// Detecta dispositivos de audio cableados activos (jack, USB-C, USB-A, etc.)
-        /// usando NAudio MMDeviceEnumerator. Hay dos categorías:
-        ///   - Jack Realtek → ConnectionType.WiredJack (requiere selección manual de modelo)
-        ///   - Cualquier otro con perfil registrado → ConnectionType.Bluetooth (nombre propio)
+        /// Detecta dispositivos de audio cableados con esta prioridad:
+        ///
+        ///   1. Nombre registrado en _btProfiles  → aparece directo (USB-C, etc.)
+        ///   2. Nombre Realtek jack                → aparece con combo de modelo
+        ///   3. Nombre genérico (Speakers/Headphones, Headphones) → combo de modelo
+        ///   4. Contiene palabra de bocina Y no está registrado → ignorado
+        ///   5. Cualquier otro no registrado        → ignorado
         /// </summary>
         private static List<BluetoothDeviceInfo> DetectWiredAudioDevices()
         {
@@ -186,32 +176,36 @@ namespace BluetoothHeadphoneTest
 
                 foreach (var dev in devices)
                 {
-                    string friendlyName = dev.FriendlyName ?? "";
+                    string name = dev.FriendlyName ?? "";
 
-                    // ── Excluir parlantes/bocinas siempre ─────────────────────
-                    bool isSpeaker = false;
-                    foreach (var kw in SpeakerKeywords)
-                        if (friendlyName.IndexOf(kw, StringComparison.OrdinalIgnoreCase) >= 0)
-                        { isSpeaker = true; break; }
-                    if (isSpeaker) continue;
-
-                    // ── Jack Realtek: requiere selección manual de modelo ──────
-                    bool isRealtek = false;
-                    foreach (var wiredName in WiredJackNames)
+                    // ── PRIORIDAD 1: registrado explícitamente en _btProfiles ──
+                    // Aplica a USB-C/USB-A o cualquier nombre que Windows reconozca.
+                    // Se muestra directo SIN combo, aunque el nombre diga "Speaker".
+                    var btProfile = DeviceProfileRegistry.GetProfileIfRegistered(name);
+                    if (btProfile != null)
                     {
-                        if (friendlyName.IndexOf(wiredName, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            wiredName.IndexOf(friendlyName, StringComparison.OrdinalIgnoreCase) >= 0)
+                        result.Add(new BluetoothDeviceInfo
                         {
-                            isRealtek = true;
-                            break;
-                        }
+                            Name = name,
+                            Address = "USB",
+                            IsConnected = true,
+                            ConnectionType = DeviceConnectionType.Bluetooth
+                        });
+                        continue;
                     }
+
+                    // ── PRIORIDAD 2: Jack Realtek → combo de modelo ────────────
+                    bool isRealtek = false;
+                    foreach (var wn in WiredJackNames)
+                        if (name.IndexOf(wn, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            wn.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0)
+                        { isRealtek = true; break; }
 
                     if (isRealtek)
                     {
                         result.Add(new BluetoothDeviceInfo
                         {
-                            Name = friendlyName,
+                            Name = name,
                             Address = "JACK",
                             IsConnected = true,
                             ConnectionType = DeviceConnectionType.WiredJack,
@@ -220,18 +214,30 @@ namespace BluetoothHeadphoneTest
                         continue;
                     }
 
-                    // ── USB-C / USB-A: nombre propio registrado en perfiles ───
-                    var profile = DeviceProfileRegistry.GetProfileIfRegistered(friendlyName);
-                    if (profile != null)
+                    // ── PRIORIDAD 3: nombre genérico → combo de modelo ─────────
+                    // Cubre "Speakers/Headphones", "Headphones", etc. en equipos
+                    // donde Windows no identifica el fabricante.
+                    if (DeviceProfileRegistry.IsGenericAudioName(name))
                     {
                         result.Add(new BluetoothDeviceInfo
                         {
-                            Name = friendlyName,
-                            Address = "USB",
+                            Name = name,
+                            Address = "JACK",
                             IsConnected = true,
-                            ConnectionType = DeviceConnectionType.Bluetooth  // flujo automático
+                            ConnectionType = DeviceConnectionType.WiredJack,
+                            SelectedJackModel = null
                         });
+                        continue;
                     }
+
+                    // ── PRIORIDAD 4: contiene palabra de bocina → ignorar ──────
+                    bool isSpeaker = false;
+                    foreach (var kw in SpeakerKeywords)
+                        if (name.IndexOf(kw, StringComparison.OrdinalIgnoreCase) >= 0)
+                        { isSpeaker = true; break; }
+                    if (isSpeaker) continue;
+
+                    // ── PRIORIDAD 5: no reconocido → ignorar ───────────────────
                 }
             }
             catch { }
