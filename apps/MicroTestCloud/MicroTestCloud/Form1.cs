@@ -8,6 +8,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Forms;
 
 
@@ -1114,21 +1115,62 @@ namespace MicroTestCloud
         {
             try
             {
-                // Only write fallback if a proper result was never captured or report already exists
-                if (_reportGenerated || (_testResult != "PASS" && _testResult != "FAIL"))
+                // If the user closes the form before the normal save completes, still emit a TXT report.
+                if (_reportGenerated)
                     return;
 
-                // Double-check: if any report file already exists, don't create another
-                if (Directory.GetFiles(Environment.CurrentDirectory, "MicroTest_*.txt").Length > 0)
-                {
-                    _reportGenerated = true;
+                bool hasActivity = _logEntries.Count > 0
+                    || (_recordedStream != null && _recordedStream.Length > 0)
+                    || _testResult == "PASS"
+                    || _testResult == "FAIL";
+
+                if (!hasActivity)
                     return;
-                }
+
+                SaveFallbackReport();
             }
             catch
             {
                 // Best-effort fallback, never block close.
             }
+        }
+
+        private void SaveFallbackReport()
+        {
+            string baseName = $"MicroTest_{_testStartTime:yyyyMMdd_HHmmss}";
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string txtPath = Path.Combine(baseDir, baseName + ".txt");
+            string currentDir = Environment.CurrentDirectory;
+            string currentTxtPath = Path.Combine(currentDir, baseName + ".txt");
+            string resultLabel = string.IsNullOrWhiteSpace(_testResult) ? "No definido" : _testResult;
+
+            var sb = new StringBuilder();
+            sb.AppendLine("╔══════════════════════════════════════════════════╗");
+            sb.AppendLine("║           MICROTEST · REPORTE DE AUDIO           ║");
+            sb.AppendLine("╚══════════════════════════════════════════════════╝");
+            sb.AppendLine();
+            sb.AppendLine($"  Resultado       : {resultLabel}");
+            sb.AppendLine($"  Fecha y hora    : {_testStartTime:dd/MM/yyyy  HH:mm:ss}");
+            sb.AppendLine($"  Micrófono       : {_deviceName}");
+            sb.AppendLine($"  Modo de prueba  : {(_modoBocina ? "Bocina (Pista)" : "Voz del operador")}");
+            sb.AppendLine($"  Duración        : {(int)(DateTime.Now - _testStartTime).TotalSeconds} segundos");
+            sb.AppendLine($"  Muestras        : {_logEntries.Count}");
+            sb.AppendLine();
+            sb.AppendLine("──────────────────────────────────────────────────");
+            sb.AppendLine("  REPORTE GENERADO AL CERRAR");
+            sb.AppendLine("──────────────────────────────────────────────────");
+            sb.AppendLine("  Se guardó un reporte mínimo porque el cierre ocurrió antes");
+            sb.AppendLine("  de completar el flujo normal de guardado.");
+            sb.AppendLine("──────────────────────────────────────────────────");
+
+            File.WriteAllText(txtPath, sb.ToString(), Encoding.UTF8);
+
+            if (!string.Equals(baseDir, currentDir, StringComparison.OrdinalIgnoreCase))
+            {
+                File.Copy(txtPath, currentTxtPath, true);
+            }
+
+            _reportGenerated = true;
         }
     }
 

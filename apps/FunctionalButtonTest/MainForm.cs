@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 
 namespace BluetoothHeadphoneTest
@@ -75,9 +76,102 @@ namespace BluetoothHeadphoneTest
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            WriteFallbackReportIfMissing();
             AppCommandRouter.Unregister();
             _globalHook?.Dispose();
             base.OnFormClosed(e);
+        }
+
+        private void WriteFallbackReportIfMissing()
+        {
+            try
+            {
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                if (Directory.GetFiles(baseDir, "Prueba_*.txt").Length > 0)
+                    return;
+
+                bool hasActivity = _session.CurrentTestIndex > 1;
+                if (!hasActivity)
+                {
+                    foreach (var rec in _session.Records)
+                    {
+                        if (rec.Result != TestResult.Pending || rec.Timestamp.HasValue)
+                        {
+                            hasActivity = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!hasActivity)
+                    return;
+
+                string deviceName = _session.SelectedDevice?.Name ?? "BT";
+                foreach (char c in Path.GetInvalidFileNameChars())
+                {
+                    deviceName = deviceName.Replace(c, '_');
+                }
+
+                string fileName = $"Prueba_{deviceName}_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
+                string filePath = Path.Combine(baseDir, fileName);
+                string currentDir = Environment.CurrentDirectory;
+
+                var sb = new System.Text.StringBuilder();
+                string sep = new string('─', 54);
+
+                sb.AppendLine($"Dispositivo : {_session.SelectedDevice?.Name ?? "—"}");
+                sb.AppendLine($"MAC         : {_session.SelectedDevice?.Address ?? "—"}");
+                sb.AppendLine($"Fecha       : {_session.StartTime:dd/MM/yyyy  HH:mm}");
+                sb.AppendLine();
+                sb.AppendLine(sep);
+                sb.AppendLine($"  {"PRUEBA",-32} {"RESULTADO",-10} {"HORA"}");
+                sb.AppendLine(sep);
+
+                foreach (var rec in _session.Records)
+                {
+                    string res = rec.Result == TestResult.Pass ? "PASS" :
+                                 rec.Result == TestResult.Fail ? "FAIL" :
+                                 rec.Result == TestResult.NotApplicable ? "N/A" : "PEND";
+                    string time = rec.Result == TestResult.NotApplicable ? "—"
+                        : (rec.Timestamp.HasValue
+                            ? rec.Timestamp.Value.ToString("HH:mm:ss") : "--:--:--");
+                    sb.AppendLine($"  {rec.Name,-32} {res,-10} {time}");
+                }
+
+                sb.AppendLine(sep);
+                int totalApplicable = 0, naCount = 0;
+                foreach (var r in _session.Records)
+                {
+                    if (r.Result == TestResult.NotApplicable) naCount++;
+                    else totalApplicable++;
+                }
+
+                sb.AppendLine(sep);
+                sb.AppendLine($"  Resultado final: {(_session.AllPassed ? "APROBADO" : "FALLIDO")}  ({CountPassed()}/{totalApplicable})  •  N/A: {naCount}");
+
+                File.WriteAllText(filePath, sb.ToString(), System.Text.Encoding.UTF8);
+
+                if (!string.Equals(baseDir, currentDir, StringComparison.OrdinalIgnoreCase))
+                {
+                    File.Copy(filePath, Path.Combine(currentDir, fileName), true);
+                }
+            }
+            catch
+            {
+                // Best-effort fallback, never block app shutdown.
+            }
+        }
+
+        private int CountPassed()
+        {
+            int count = 0;
+            foreach (var rec in _session.Records)
+            {
+                if (rec.Result == TestResult.Pass)
+                    count++;
+            }
+
+            return count;
         }
 
         public void RefreshDateTime() =>

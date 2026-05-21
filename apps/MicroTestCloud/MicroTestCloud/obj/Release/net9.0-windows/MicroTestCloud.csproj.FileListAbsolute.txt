@@ -59,3 +59,4 @@ C:\Users\Sergio.ReyesV\Source\Repos\Sennheiser_tests\apps\MicroTestCloud\MicroTe
 C:\Users\Sergio.ReyesV\Source\Repos\Sennheiser_tests\apps\MicroTestCloud\MicroTestCloud\obj\Release\net9.0-windows\MicroTestCloud.pdb
 C:\Users\Sergio.ReyesV\Source\Repos\Sennheiser_tests\apps\MicroTestCloud\MicroTestCloud\obj\Release\net9.0-windows\MicroTestCloud.genruntimeconfig.cache
 C:\Users\Sergio.ReyesV\Source\Repos\Sennheiser_tests\apps\MicroTestCloud\MicroTestCloud\obj\Release\net9.0-windows\ref\MicroTestCloud.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\MicroTestCloud\MicroTestCloud\bin\Release\net9.0-windows\PistaAudio\VozParaPruebaMicrofono.mp3
