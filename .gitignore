@@ -1,0 +1,62 @@
+# Build outputs
+bin/
+obj/
+[Bb]uild/
+[Oo]ut/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+
+# .NET / MSBuild
+*.aps
+*.nupkg
+*.snupkg
+TestResults/
+*.log
+*.cache
+*.ilk
+*.pdb
+
+# Publish artifacts
+publish/
+artifacts/
+
+# Python / local tooling
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Generated reports and temp files
+*.tmp
+*.temp
+*.bak
+*.orig
+
+*.lscache
