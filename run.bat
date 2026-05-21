@@ -54,7 +54,7 @@ set /a CONTROLS_ATTEMPTS=0
 :RETRY_CONTROLS
 set /a CONTROLS_ATTEMPTS+=1
 start /wait "" "%APP_DIR%BluetoothHeadphoneTest.exe"
-timeout /t 5 /nobreak >nul
+call :wait_for_result_file "Prueba_*.txt" "%APP_DIR%Prueba_*.txt" 5
 if exist Prueba_*.txt (
     echo [CONTROLS] PASSED
     goto TEST_AUDIO
@@ -93,7 +93,7 @@ set /a MIC_ATTEMPTS=0
 :RETRY_MICROPHONE
 set /a MIC_ATTEMPTS+=1
 start /wait "" "%APP_DIR%MicroTestCloud.exe"
-timeout /t 5 /nobreak >nul
+call :wait_for_result_file "MicroTest_*.txt" "%APP_DIR%MicroTest_*.txt" 5
 if exist MicroTest_*.txt (
     echo [MICROPHONE] PASSED
     goto SETUP_VOLUME
@@ -163,3 +163,18 @@ echo.
 echo Pruebas completadas. Tiempo total: %diff_min% min
 echo.
 popd
+exit /b 0
+
+:wait_for_result_file
+set "LOCAL_PATTERN=%~1"
+set "APP_PATTERN=%~2"
+set /a MAX_WAIT=%~3
+set /a ELAPSED=0
+
+:wait_for_result_file_loop
+if exist "%LOCAL_PATTERN%" exit /b 0
+if exist "%APP_PATTERN%" exit /b 0
+if !ELAPSED! GEQ !MAX_WAIT! exit /b 1
+timeout /t 1 /nobreak >nul
+set /a ELAPSED+=1
+goto wait_for_result_file_loop
