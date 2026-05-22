@@ -30,8 +30,8 @@ namespace BluetoothHeadphoneTest
             {
                 HasBluetooth     = true,
                 HasPlayPause     = true,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
+                HasPreviousTrack = true,
+                HasNextTrack     = true,
                 HasVolumeUp      = true,
                 HasVolumeDown    = true,
             },
