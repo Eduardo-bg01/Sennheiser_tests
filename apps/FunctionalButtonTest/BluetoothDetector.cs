@@ -113,7 +113,10 @@ namespace BluetoothHeadphoneTest
         private static readonly string[] WiredJackNames = new[]
         {
             "Headphone (Realtek(R) Audio)",
-            "Headset (Realtek(R) Audio)"
+            "Headset (Realtek(R) Audio)",
+            "Speakers/Headphones (Realtek(R) Audio)",
+            "Realtek HD Audio 2nd output (Realtek(R) Audio)"
+
         };
 
         // ── Palabras de bocina/parlante — se ignoran si NO están registrados ───
