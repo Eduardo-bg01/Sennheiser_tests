@@ -49,6 +49,14 @@ if defined SKIP_SERIAL_PROMPT (
     )
 )
 
+:SET_VOLUME_100_BEFORE_CONTROLS
+echo Configurando volumen a 100%% antes de la prueba de controles...
+if exist "%~dp0\.venv\Scripts\python.exe" (
+    "%~dp0\.venv\Scripts\python.exe" "%~dp0\scripts\set_volume.py" 100 >nul 2>&1 || echo No se pudo configurar volumen.
+) else (
+    python "%~dp0\scripts\set_volume.py" 100 >nul 2>&1 || echo No se pudo configurar volumen.
+)
+
 :TEST_CONTROLS
 set /a CONTROLS_ATTEMPTS=0
 :RETRY_CONTROLS
@@ -71,6 +79,14 @@ if !CONTROLS_ATTEMPTS! LSS %MAX_RETRIES% (
 echo [CONTROLS] FAILED - Max retries exceeded
 exit /b 3
 
+:SET_VOLUME_100_BEFORE_AUDIO
+echo Configurando volumen a 100%% antes de la prueba de audio...
+if exist "%~dp0\.venv\Scripts\python.exe" (
+    "%~dp0\.venv\Scripts\python.exe" "%~dp0\scripts\set_volume.py" 100 >nul 2>&1 || echo No se pudo configurar volumen.
+) else (
+    python "%~dp0\scripts\set_volume.py" 100 >nul 2>&1 || echo No se pudo configurar volumen.
+)
+
 :TEST_AUDIO
 set /a AUDIO_ATTEMPTS=0
 :RETRY_AUDIO
@@ -87,6 +103,14 @@ if !AUDIO_ATTEMPTS! LSS %MAX_RETRIES% (
 )
 echo [AUDIO] FAILED - Max retries exceeded
 exit /b 2
+
+:SET_VOLUME_100_BEFORE_MICROPHONE
+echo Configurando volumen a 100%% antes de la prueba de microfono...
+if exist "%~dp0\.venv\Scripts\python.exe" (
+    "%~dp0\.venv\Scripts\python.exe" "%~dp0\scripts\set_volume.py" 100 >nul 2>&1 || echo No se pudo configurar volumen.
+) else (
+    python "%~dp0\scripts\set_volume.py" 100 >nul 2>&1 || echo No se pudo configurar volumen.
+)
 
 :TEST_MICROPHONE
 set /a MIC_ATTEMPTS=0
@@ -111,11 +135,17 @@ echo [MICROPHONE] FAILED - Max retries exceeded
 exit /b 4
 
 :SETUP_VOLUME
-echo Configurando volumen a 80%% antes de la prueba de nivel...
+echo Configurando volumen a 100%% antes de la prueba de nivel...
 if exist "%~dp0\.venv\Scripts\python.exe" (
-    "%~dp0\.venv\Scripts\python.exe" "%~dp0\scripts\set_volume.py" 80 >nul 2>&1 || echo Advertencia: No se pudo configurar volumen.
+    "%~dp0\.venv\Scripts\python.exe" "%~dp0\scripts\set_volume.py" 100 >nul 2>&1 || echo No se pudo configurar volumen.
 ) else (
-    python "%~dp0\scripts\set_volume.py" 80 >nul 2>&1 || echo Advertencia: No se pudo configurar volumen.
+    python "%~dp0\scripts\set_volume.py" 100 >nul 2>&1 || echo No se pudo configurar volumen.
+)
+
+:ENSURE_REQUESTS
+python -c "import requests" >nul 2>&1 || (
+    echo Instalando dependencia requests...
+    python -m pip install --user requests >nul 2>&1 || echo No se pudo instalar requests.
 )
 
 :TEST_LEVELS

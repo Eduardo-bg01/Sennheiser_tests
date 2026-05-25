@@ -4,6 +4,9 @@ bin/
 !bin/*.ps1
 !bin/*.py
 !bin/run.bat
+!bin/scripts/
+!bin/scripts/*.py
+!bin/scripts/*.txt
 obj/
 .vs/
 .vscode/
@@ -37,11 +40,4 @@ diferencia_minutos.txt
 .venv/
 __pycache__/
 
-*.csproj.nuget.g
-*.csproj.nuget.g.dgspec.json
-project.assets.json
-project.nuget.cache
-apps/FunctionalButtonTest/obj/BluetoothHeadphoneTest.csproj.nuget.dgspec.json
-apps/pruebasAudifonos/LevelTest/HeadPhoneTest2/obj/HeadPhoneTest2.csproj.nuget.dgspec.json
-apps/pruebasAudifonos/AudioTest/AudioTest/obj/project.nuget.cache
-apps/pruebasAudifonos/AskForSerial2/AskForSerial2/obj/project.nuget.cache
+.log

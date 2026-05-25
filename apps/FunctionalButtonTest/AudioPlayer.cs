@@ -19,7 +19,7 @@ namespace BluetoothHeadphoneTest
 
         public PlayerState State    { get; private set; } = PlayerState.Stopped;
         public int         Track    { get; private set; } = 0;
-        public float       Volume   { get; private set; } = 0.7f;
+        public float       Volume   { get; private set; } = 0.5f;
 
         private WaveOutEvent     _waveOut;
         private SignalGenerator  _signal;

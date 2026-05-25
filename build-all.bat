@@ -34,9 +34,7 @@ echo Copying runtime files...
 copy /Y "%ROOT%run.bat" "%BIN_DIR%\run.bat" >nul
 if exist "%ROOT%show_bluetooth_connect.ps1" copy /Y "%ROOT%show_bluetooth_connect.ps1" "%BIN_DIR%\show_bluetooth_connect.ps1" >nul
 if exist "%ROOT%show_bluetooth_disconnect.ps1" copy /Y "%ROOT%show_bluetooth_disconnect.ps1" "%BIN_DIR%\show_bluetooth_disconnect.ps1" >nul
-if exist "%ROOT%scripts\getFinalResults.py" copy /Y "%ROOT%scripts\getFinalResults.py" "%BIN_DIR%\getFinalResults.py" >nul
-if exist "%ROOT%scripts\converter.py" copy /Y "%ROOT%scripts\converter.py" "%BIN_DIR%\converter.py" >nul
-if exist "%ROOT%scripts\set_volume.py" copy /Y "%ROOT%scripts\set_volume.py" "%BIN_DIR%\set_volume.py" >nul
+call :copy_asset_folder "%ROOT%scripts" "%BIN_DIR%\scripts" || goto :fail
 if exist "%ROOT%miniDSP.jpg" copy /Y "%ROOT%miniDSP.jpg" "%BIN_DIR%\miniDSP.jpg" >nul
 if exist "%ROOT%serial.txt" copy /Y "%ROOT%serial.txt" "%BIN_DIR%\serial.txt" >nul
 

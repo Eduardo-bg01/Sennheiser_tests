@@ -557,6 +557,7 @@
             label4.TabIndex = 1;
             label4.Text = "Coloque los audifonos sobre el dispositivo E.A.R.S.";
             label4.TextAlign = ContentAlignment.MiddleCenter;
+            label4.Visible = false;
             // 
             // content1
             // 
