@@ -1551,6 +1551,8 @@ public class FormResultado : Form
             MessageBox.Show($"No se pudo guardar el reporte:\n{ex.Message}", "Error al guardar",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+    }
+
         private static void SetPlaybackVolume(int percent)
         {
             string helperPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VolumeHelper.exe");
@@ -1578,5 +1580,4 @@ public class FormResultado : Form
             }
         }
 
-        }
     }

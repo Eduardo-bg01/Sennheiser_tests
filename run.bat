@@ -166,7 +166,15 @@ if exist "%ROOT%converter.exe" (
     "%ROOT%converter.exe"
 ) else if exist "%ROOT%scripts\converter.py" (
     python "%ROOT%scripts\converter.py"
-)
+)Build succeeded in 6.7s
+Building MicroTestCloud...
+Restore complete (0.3s)
+  MicroTestCloud failed with 2 error(s) (0.3s)
+    C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\MicroTestCloud\MicroTestCloud\Form1.cs(1553,10): error CS1513: } expected
+    C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\MicroTestCloud\MicroTestCloud\Form1.cs(1582,5): error CS1022: Type or namespace definition, or end-of-file expected
+
+Build failed with 2 error(s) in 1.1s
+Build failed
 
 echo Limpiando dispositivos Bluetooth...
 powershell -NoProfile -Command "$ErrorActionPreference = 'SilentlyContinue'; Get-PnpDevice -Class Bluetooth | Where-Object { $_.FriendlyName -and $_.FriendlyName -notmatch 'Radio|Adapter|Enumerator|LE Enumerator|Microsoft|Intel|Qualcomm|Broadcom' } | Remove-PnpDevice -Confirm:$false -Force" >nul 2>&1
