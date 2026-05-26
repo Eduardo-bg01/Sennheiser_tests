@@ -105,15 +105,10 @@ namespace HeadPhoneTest2
         {
             if (step == 0)
             {
-                // Seleccion de dispositivos lista; pasar directo a pantalla previa de prueba automatica.
-                content1.Visible = false;
-                content2.Visible = true;
+                // Seleccion de dispositivos; pasar directo a la prueba automatica.
                 inputIndex = comboBoxIn.SelectedIndex;
                 outputIndex = comboBoxOut.SelectedIndex;
-            }
-            if (step == 1)
-            {
-                // Ejecutar solo la parte automatica (sin confirmacion manual de escucha).
+                content1.Visible = false;
                 MMDeviceEnumerator enumerator = new MMDeviceEnumerator();
                 MMDevice device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
                 //device.AudioEndpointVolume.MasterVolumeLevelScalar = 0.5f;
@@ -136,12 +131,14 @@ namespace HeadPhoneTest2
                 content3.Visible = false;
                 content4.Visible = false;
                 content5.Visible = true;
+                step = 2;
+                return;
             }
             if (step == 2)
             {
                 Application.Exit();
+                return;
             }
-            step++;
         }
 
         private void EnsureTimer()
@@ -257,6 +254,7 @@ namespace HeadPhoneTest2
                     ? new Mp3FileReader(audioPath)
                     : new AudioFileReader(audioPath);
 
+                outputDevice.Volume = 1.0f;
                 outputDevice.Init(audioFile);
                 outputDevice.Play();
             }

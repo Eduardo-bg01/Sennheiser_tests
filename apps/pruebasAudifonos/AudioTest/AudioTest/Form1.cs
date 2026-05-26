@@ -55,11 +55,6 @@ namespace AudioTest
                 speakerOutputIndex = comboSpeakers.SelectedIndex;
                 microphoneInputIndex = comboMicrophones.SelectedIndex;
                 content1.Visible = false;
-                content2.Visible = true;
-            }
-            if (step == 2)
-            {
-                content2.Visible = false;
                 content3.Visible = true;
 
                 btnNext.Enabled = false;
@@ -72,13 +67,15 @@ namespace AudioTest
                 timer.Interval = 1000;
                 timer.Tick += Timer_Tick;
                 timer.Start();
+                step = 3;
+                return;
             }
             if (step == 3)
             {
                 File.WriteAllText("hearingPassResults.txt", passed.ToString());
                 Application.Exit();
+                return;
             }
-            step++;
         }
 
         private void Timer_Tick(object? sender, EventArgs e)
@@ -192,6 +189,7 @@ namespace AudioTest
 
             output = new WaveOutEvent();
             output.DeviceNumber = outputDeviceIndex;
+            output.Volume = 1.0f;
 
             if (loop)
             {

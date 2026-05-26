@@ -778,6 +778,7 @@ namespace MicroTestCloud
                 { DiscardOnBufferOverflow = true };
                 waveOut = new WaveOutEvent();
                 waveOut.Init(bufferedWaveProvider);
+                waveOut.Volume = 1.0f;
                 waveOut.Play();
             }
 
@@ -805,6 +806,7 @@ namespace MicroTestCloud
                         {
                             DeviceNumber = cmbOutputDevices.SelectedIndex
                         };
+                        _speakerTone.Volume = 1.0f;
                         _speakerTone.Init(_audioFile);
                         _speakerTone.Play();
 
@@ -993,6 +995,7 @@ namespace MicroTestCloud
                 {
                     DeviceNumber = cmbOutputDevices.SelectedIndex
                 };
+                _playbackOut.Volume = 1.0f;
                 _playbackOut.Init(reader);
 
                 _playbackOut.PlaybackStopped += (s, ev) =>
@@ -1448,7 +1451,7 @@ public class FormResultado : Form
     ///   · MicroTest_YYYYMMDD_HHMMSS.txt  — reporte estadístico de texto
     ///   · MicroTest_YYYYMMDD_HHMMSS.wav  — audio grabado durante el test
     /// </summary>
-    private async void SaveReport()
+    private void SaveReport()
     {
         try
         {
@@ -1532,23 +1535,7 @@ public class FormResultado : Form
 
             if (!string.Equals(baseDir, currentDir, StringComparison.OrdinalIgnoreCase))
             {
-                // Esperar a que el archivo se libere completamente
-                await Task.Delay(100);
-                
-                int retries = 3;
-                while (retries > 0)
-                {
-                    try
-                    {
-                        File.Copy(txtPath, currentTxtPath, true);
-                        break;
-                    }
-                    catch (IOException) when (retries > 1)
-                    {
-                        await Task.Delay(200);
-                        retries--;
-                    }
-                }
+                File.Copy(txtPath, currentTxtPath, true);
 
                 if (File.Exists(wavPath))
                     File.Copy(wavPath, currentWavPath, true);
