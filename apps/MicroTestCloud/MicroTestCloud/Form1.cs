@@ -1085,6 +1085,33 @@ namespace MicroTestCloud
             lblStatus.ForeColor = color;
         }
 
+        private static void SetPlaybackVolume(int percent)
+        {
+            string helperPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VolumeHelper.exe");
+            if (!File.Exists(helperPath))
+            {
+                return;
+            }
+
+            try
+            {
+                using var process = Process.Start(new ProcessStartInfo
+                {
+                    FileName = helperPath,
+                    Arguments = percent.ToString(),
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                });
+
+                process?.WaitForExit(5000);
+            }
+            catch
+            {
+            }
+        }
+
         /// <summary>
         /// Intenta obtener el número de serie del micrófono via WMI.
         /// </summary>
