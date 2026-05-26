@@ -617,7 +617,7 @@
             label2.Name = "label2";
             label2.Size = new Size(550, 44);
             label2.TabIndex = 0;
-            label2.Text = "Entrada";
+            label2.Text = "Dispositivo DSP";
             label2.TextAlign = ContentAlignment.TopCenter;
             // 
             // panel4
@@ -650,7 +650,7 @@
             label3.Name = "label3";
             label3.Size = new Size(551, 44);
             label3.TabIndex = 1;
-            label3.Text = "Salida";
+            label3.Text = "Audifonos";
             label3.TextAlign = ContentAlignment.TopCenter;
             // 
             // label1

@@ -104,35 +104,8 @@ namespace AudioTest
         {
             LoadDevices();
             ApplyProfessionalLayout();
-
-            try
-            {
-                var candidates = new[]
-                {
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miniDSP.jpg"),
-                    Path.Combine(Directory.GetCurrentDirectory(), "miniDSP.jpg"),
-                    "miniDSP.jpg"
-                };
-
-                foreach (var imagePath in candidates)
-                {
-                    if (!File.Exists(imagePath))
-                        continue;
-
-                    using var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    using var tempImage = Image.FromStream(fs);
-                    pictureBox1.Image = new Bitmap(tempImage);
-                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                    return;
-                }
-
-                pictureBox1.BackColor = Color.LightGray;
-            }
-            catch
-            {
-                // miniDSP.jpg not found - this is optional, continue without it
-                pictureBox1.BackColor = Color.LightGray;
-            }
+            pictureBox1.Image = null;
+            pictureBox1.Visible = false;
         }
 
         //START-MOD FONG

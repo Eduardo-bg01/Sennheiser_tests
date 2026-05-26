@@ -223,7 +223,7 @@ namespace MicroTestCloud
             var cardDevice = MakeCard(leftColX, contentY, leftColW, 135);
             var lblDevLabel = new Label
             {
-                Text = "ENTRADA",
+                Text = "AUDIFONOS",
                 Font = new Font("Segoe UI", 7.5f, FontStyle.Bold),
                 ForeColor = TextMuted,
                 Location = new Point(12, 10),
@@ -245,7 +245,7 @@ namespace MicroTestCloud
 
             var lblOutLabel = new Label
             {
-                Text = "SALIDA",
+                Text = "BOCINAS",
                 Font = new Font("Segoe UI", 7.5f, FontStyle.Bold),
                 ForeColor = TextMuted,
                 Location = new Point(12, 66),
@@ -495,17 +495,9 @@ namespace MicroTestCloud
             btnNoMicro.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
             btnNoMicro.Click += (s, e) => 
             {
-                DialogResult result = MessageBox.Show(
-                    "¿Confirmas que el dispositivo no tiene micrófono?",
-                    "Confirmar",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question);
-                
-                if (result == DialogResult.Yes)
-                {
-                    SaveReport2();
-                    Application.Exit();
-                }
+                _testResult = "N/A";
+                SaveReport2();
+                Application.Exit();
             };
             this.Controls.Add(btnNoMicro);
 
@@ -525,30 +517,40 @@ namespace MicroTestCloud
             {
                 string baseName = $"MicroTest_{DateTime.Now:yyyyMMdd_HHmmss}";
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string txtPath = Path.Combine(baseDir, baseName + ".txt");
-
-                using (var sw = new StreamWriter(txtPath, false, System.Text.Encoding.UTF8))
+                string currentDir = Environment.CurrentDirectory;
+                var targetPaths = new List<string>
                 {
+                    Path.Combine(baseDir, baseName + ".txt")
+                };
+
+                if (!string.Equals(baseDir.TrimEnd(Path.DirectorySeparatorChar), currentDir.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
+                {
+                    targetPaths.Add(Path.Combine(currentDir, baseName + ".txt"));
+                }
+
+                foreach (var txtPath in targetPaths)
+                {
+                    using var sw = new StreamWriter(txtPath, false, System.Text.Encoding.UTF8);
                     sw.WriteLine("╔══════════════════════════════════════════════════╗");
                     sw.WriteLine("║        MICROTEST · REPORTE SIN MICRÓFONO         ║");
                     sw.WriteLine("╚══════════════════════════════════════════════════╝");
                     sw.WriteLine();
 
-                    sw.WriteLine($"  Resultado       : N/A");
+                    sw.WriteLine("  Resultado       : N/A");
                     sw.WriteLine($"  Fecha y hora    : {DateTime.Now:dd/MM/yyyy  HH:mm:ss}");
-                    sw.WriteLine($"  Micrófono       : N/A");
-                    sw.WriteLine($"  Modo de prueba  : N/A");
-                    sw.WriteLine($"  Duración        : N/A");
-                    sw.WriteLine($"  Muestras        : N/A");
+                    sw.WriteLine("  Micrófono       : N/A");
+                    sw.WriteLine("  Modo de prueba  : N/A");
+                    sw.WriteLine("  Duración        : N/A");
+                    sw.WriteLine("  Muestras        : N/A");
                     sw.WriteLine();
 
                     sw.WriteLine("──────────────────────────────────────────────────");
                     sw.WriteLine("  RESUMEN ESTADÍSTICO");
                     sw.WriteLine("──────────────────────────────────────────────────");
 
-                    sw.WriteLine($"  Volumen máximo  : N/A");
-                    sw.WriteLine($"  Volumen mínimo  : N/A");
-                    sw.WriteLine($"  Volumen promedio: N/A");
+                    sw.WriteLine("  Volumen máximo  : N/A");
+                    sw.WriteLine("  Volumen mínimo  : N/A");
+                    sw.WriteLine("  Volumen promedio: N/A");
                     sw.WriteLine();
 
                     sw.WriteLine("  Distribución de estados:");
@@ -699,9 +701,13 @@ namespace MicroTestCloud
             {
                 string name = WaveIn.GetCapabilities(i).ProductName;
                 cmbDevices.Items.Add(name);
-                // Prefer Bluetooth headphones (MOMENTUM, etc.) — NOT E.A.R.S (cable-connected)
-                if (btIndex == -1 && (name.IndexOf("Bluetooth", StringComparison.OrdinalIgnoreCase) >= 0 
-                    || name.IndexOf("MOMENTUM", StringComparison.OrdinalIgnoreCase) >= 0))
+                // Prefer headset-style devices for the entrada selector.
+                if (btIndex == -1 && (name.IndexOf("Bluetooth", StringComparison.OrdinalIgnoreCase) >= 0
+                    || name.IndexOf("MOMENTUM", StringComparison.OrdinalIgnoreCase) >= 0
+                    || name.IndexOf("Headphone", StringComparison.OrdinalIgnoreCase) >= 0
+                    || name.IndexOf("Headset", StringComparison.OrdinalIgnoreCase) >= 0
+                    || name.IndexOf("Audif", StringComparison.OrdinalIgnoreCase) >= 0
+                    || name.IndexOf("E.A.R.S", StringComparison.OrdinalIgnoreCase) >= 0))
                     btIndex = i;
             }
 
@@ -725,8 +731,11 @@ namespace MicroTestCloud
             {
                 var caps = WaveOut.GetCapabilities(i);
                 cmbOutputDevices.Items.Add(caps.ProductName);
-                // Prefer Speakers
-                if (speakersIndex == -1 && caps.ProductName.IndexOf("Speaker", StringComparison.OrdinalIgnoreCase) >= 0)
+                // Prefer speakers / bocinas for the salida selector.
+                if (speakersIndex == -1 && (caps.ProductName.IndexOf("Speaker", StringComparison.OrdinalIgnoreCase) >= 0
+                    || caps.ProductName.IndexOf("Speakers", StringComparison.OrdinalIgnoreCase) >= 0
+                    || caps.ProductName.IndexOf("Bocina", StringComparison.OrdinalIgnoreCase) >= 0
+                    || caps.ProductName.IndexOf("Altavoz", StringComparison.OrdinalIgnoreCase) >= 0))
                     speakersIndex = i;
             }
 

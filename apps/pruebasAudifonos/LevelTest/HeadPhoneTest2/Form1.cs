@@ -96,39 +96,9 @@ namespace HeadPhoneTest2
         {
             LoadInputDevices();
             LoadOutputDevices();
-            ApplyInstructionImage();
+            pictureBox1.Image = null;
+            pictureBox1.Visible = false;
             ApplyProfessionalLayout();
-        }
-
-        private void ApplyInstructionImage()
-        {
-            try
-            {
-                var candidates = new List<string>
-                {
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "miniDSP-headphones.jpg"),
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miniDSP-headphones.jpg"),
-                    Path.Combine(Directory.GetCurrentDirectory(), "Resources", "miniDSP-headphones.jpg"),
-                    Path.Combine("Resources", "miniDSP-headphones.jpg")
-                };
-
-                foreach (var imagePath in candidates)
-                {
-                    if (!File.Exists(imagePath))
-                        continue;
-
-                    using var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    using var tempImage = Image.FromStream(fs);
-                    pictureBox1.BackgroundImage = null;
-                    pictureBox1.Image = new Bitmap(tempImage);
-                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                    return;
-                }
-            }
-            catch
-            {
-                // Keep existing designer image if custom file load fails.
-            }
         }
 
         private void btnNext_Click(object sender, EventArgs e)

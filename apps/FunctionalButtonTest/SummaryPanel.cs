@@ -256,9 +256,11 @@ namespace BluetoothHeadphoneTest
         {
             try
             {
-                string folder = AppDomain.CurrentDomain.BaseDirectory;
+                string baseFolder = AppDomain.CurrentDomain.BaseDirectory;
+                string currentFolder = Directory.GetCurrentDirectory();
                 string fileName = $"Prueba_{session.SelectedDevice?.Name ?? "BT"}_{session.StartTime:yyyyMMdd_HHmm}.txt";
-                string filePath = Path.Combine(folder, fileName);
+                string baseFilePath = Path.Combine(baseFolder, fileName);
+                string currentFilePath = Path.Combine(currentFolder, fileName);
 
                 var sb = new System.Text.StringBuilder();
                 string sep = new string('─', 54);
@@ -292,7 +294,13 @@ namespace BluetoothHeadphoneTest
 
                 sb.AppendLine(sep);
                 sb.AppendLine($"  Resultado final: {(passed ? "APROBADO" : "FALLIDO")}  ({passCount}/{totalApplicable})  •  N/A: {naCount}");
-                File.WriteAllText(filePath, sb.ToString(), System.Text.Encoding.UTF8);
+
+                File.WriteAllText(baseFilePath, sb.ToString(), System.Text.Encoding.UTF8);
+
+                if (!string.Equals(baseFilePath, currentFilePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    File.WriteAllText(currentFilePath, sb.ToString(), System.Text.Encoding.UTF8);
+                }
             }
             catch { /* Si falla el guardado, continuar sin interrumpir */ }
         }
