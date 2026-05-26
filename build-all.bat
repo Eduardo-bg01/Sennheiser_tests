@@ -20,6 +20,7 @@ if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
 
 REM Build all projects in sequence
 echo Building projects...
+call :build_project "VolumeHelper" "%ROOT%tools\VolumeHelper\VolumeHelper.csproj" "temp0" "" || goto :fail
 call :build_project "BluetoothHeadphoneTest" "%ROOT%apps\FunctionalButtonTest\BluetoothHeadphoneTest.csproj" "temp1" "" || goto :fail
 call :build_project "MicroTestCloud" "%ROOT%apps\MicroTestCloud\MicroTestCloud\MicroTestCloud.csproj" "temp2" "%ROOT%apps\MicroTestCloud\MicroTestCloud\PistaAudio" || goto :fail
 call :build_project "AskForSerial2" "%ROOT%apps\pruebasAudifonos\AskForSerial2\AskForSerial2\AskForSerial2.csproj" "temp3" "" || goto :fail

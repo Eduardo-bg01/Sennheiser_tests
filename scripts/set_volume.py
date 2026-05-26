@@ -23,7 +23,59 @@ def build_powershell_script(volume_percent: float) -> str:
         f'''
         param([double]$Volume = {volume_percent})
 
-        $code = @"
+        $ErrorActionPreference = 'Stop'
+
+        function Get-AudioSwitcherAssemblies {{
+            $searchRoots = @(
+                (Join-Path $env:USERPROFILE '.nuget\packages'),
+                (Join-Path $env:LOCALAPPDATA 'NuGet\Cache')
+            ) | Where-Object {{ Test-Path $_ }}
+
+            $assemblies = @()
+
+            foreach ($root in $searchRoots) {{
+                foreach ($packageName in @('audioswitcher.audioapi.coreaudio', 'audioswitcher.audioapi')) {{
+                    $packageRoot = Join-Path $root $packageName
+                    if (Test-Path $packageRoot) {{
+                        $assemblies += Get-ChildItem -Path $packageRoot -Recurse -Filter 'AudioSwitcher*.dll' -ErrorAction SilentlyContinue | ForEach-Object {{ $_.FullName }}
+                    }}
+                }}
+            }}
+
+            $assemblies | Sort-Object -Unique
+        }}
+
+        function Set-Volume-WithAudioSwitcher {{
+            $refs = @(Get-AudioSwitcherAssemblies)
+            if ($refs.Count -eq 0) {{
+                return $false
+            }}
+
+            $code = @"
+using System;
+using AudioSwitcher.AudioApi.CoreAudio;
+
+public static class AudioVolumeSetter {{
+    public static void SetVolume(double volumePercent) {{
+        var controller = new CoreAudioController();
+        var device = controller.DefaultPlaybackDevice;
+        if (device == null) {{
+            throw new Exception("No default playback device found.");
+        }}
+
+        device.Volume = volumePercent;
+        device.Mute(false);
+    }}
+}}
+"@
+
+            Add-Type -TypeDefinition $code -Language CSharp -ReferencedAssemblies $refs
+            [AudioVolumeSetter]::SetVolume($Volume)
+            return $true
+        }}
+
+        function Set-Volume-WithCom {{
+            $code = @"
 using System;
 using System.Runtime.InteropServices;
 
@@ -99,8 +151,13 @@ public static class AudioVolumeSetter {{
 }}
 "@
 
-        Add-Type -TypeDefinition $code -Language CSharp
-        [AudioVolumeSetter]::SetVolume($Volume)
+            Add-Type -TypeDefinition $code -Language CSharp
+            [AudioVolumeSetter]::SetVolume($Volume)
+        }}
+
+        if (-not (Set-Volume-WithAudioSwitcher)) {{
+            Set-Volume-WithCom
+        }}
         "Set system volume to $([math]::Round($Volume, 2))%"
         '''.strip()
     )

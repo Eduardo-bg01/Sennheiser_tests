@@ -18,7 +18,7 @@ del /q Prueba_* results.json MicroTest_* test_results* hearingPass* recorded* fi
 if not defined SKIP_SERIAL_PROMPT del /q serial* >nul 2>&1
 
 :: Verify all required executables exist
-for %%f in (AskForSerial2.exe BluetoothHeadphoneTest.exe AudioTest.exe MicroTestCloud.exe LevelTest.exe) do (
+for %%f in (AskForSerial2.exe BluetoothHeadphoneTest.exe AudioTest.exe MicroTestCloud.exe LevelTest.exe VolumeHelper.exe) do (
     if not exist "%APP_DIR%%%f" (
         echo Error: %%f no encontrado. Ejecuta build-all.bat primero.
         exit /b 1
@@ -50,7 +50,8 @@ if defined SKIP_SERIAL_PROMPT (
 )
 
 :SET_VOLUME_100_BEFORE_CONTROLS
-rem La prueba de controles usa volumen interno de la app (50%%).
+echo Configurando volumen a 50%% antes de la prueba de controles...
+"%APP_DIR%VolumeHelper.exe" 50 >nul 2>&1 || echo No se pudo configurar volumen.
 
 :TEST_CONTROLS
 set /a CONTROLS_ATTEMPTS=0
@@ -75,7 +76,8 @@ echo [CONTROLS] FAILED - Max retries exceeded
 exit /b 3
 
 :SET_VOLUME_100_BEFORE_AUDIO
-rem La prueba de audio usa volumen interno de la app al 100%%.
+echo Configurando volumen a 100%% antes de la prueba de audio...
+"%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
 
 :TEST_AUDIO
 set /a AUDIO_ATTEMPTS=0
@@ -95,7 +97,8 @@ echo [AUDIO] FAILED - Max retries exceeded
 exit /b 2
 
 :SET_VOLUME_100_BEFORE_MICROPHONE
-rem La prueba de microfono usa volumen interno de la app al 100%%.
+echo Configurando volumen a 100%% antes de la prueba de microfono...
+"%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
 
 :TEST_MICROPHONE
 set /a MIC_ATTEMPTS=0
@@ -120,7 +123,8 @@ echo [MICROPHONE] FAILED - Max retries exceeded
 exit /b 4
 
 :SETUP_VOLUME
-rem La prueba de nivel usa volumen interno de la app al 100%%.
+echo Configurando volumen a 100%% antes de la prueba de nivel...
+"%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
 
 :ENSURE_REQUESTS
 python -c "import requests" >nul 2>&1 || (
