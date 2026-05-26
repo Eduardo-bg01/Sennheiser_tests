@@ -1,4 +1,5 @@
 using NAudio.Wave;
+using System.Diagnostics;
 
 namespace AudioTest
 {
@@ -60,6 +61,7 @@ namespace AudioTest
                 btnNext.Enabled = false;
                 btnCancel.Enabled = false;
 
+                SetPlaybackVolume(100);
                 StartRecording();
                 PlayAudio("karmaPolice.wav",headphonesOutputIndex);
 
@@ -418,6 +420,33 @@ namespace AudioTest
             btnPass.Dock = DockStyle.Fill;
             panel1.Padding = new Padding(24, 10, 24, 10);
             panel4.Padding = new Padding(24, 10, 24, 10);
+        }
+
+        private static void SetPlaybackVolume(int percent)
+        {
+            string helperPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VolumeHelper.exe");
+            if (!File.Exists(helperPath))
+            {
+                return;
+            }
+
+            try
+            {
+                using var process = Process.Start(new ProcessStartInfo
+                {
+                    FileName = helperPath,
+                    Arguments = percent.ToString(),
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                });
+
+                process?.WaitForExit(5000);
+            }
+            catch
+            {
+            }
         }
     }
 
