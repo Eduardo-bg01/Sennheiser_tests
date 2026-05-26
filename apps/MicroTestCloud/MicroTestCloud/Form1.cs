@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -1550,8 +1551,6 @@ public class FormResultado : Form
             MessageBox.Show($"No se pudo guardar el reporte:\n{ex.Message}", "Error al guardar",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
-    }
-
         private static void SetPlaybackVolume(int percent)
         {
             string helperPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VolumeHelper.exe");
@@ -1579,6 +1578,5 @@ public class FormResultado : Form
             }
         }
 
-    
-
-}
+        }
+    }
