@@ -20,6 +20,7 @@ if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
 
 REM Build all projects in sequence
 echo Building projects...
+call :build_project "VolumeHelper" "%ROOT%tools\VolumeHelper\VolumeHelper.csproj" "temp0" "" || goto :fail
 call :build_project "BluetoothHeadphoneTest" "%ROOT%apps\FunctionalButtonTest\BluetoothHeadphoneTest.csproj" "temp1" "" || goto :fail
 call :build_project "MicroTestCloud" "%ROOT%apps\MicroTestCloud\MicroTestCloud\MicroTestCloud.csproj" "temp2" "%ROOT%apps\MicroTestCloud\MicroTestCloud\PistaAudio" || goto :fail
 call :build_project "AskForSerial2" "%ROOT%apps\pruebasAudifonos\AskForSerial2\AskForSerial2\AskForSerial2.csproj" "temp3" "" || goto :fail
@@ -34,9 +35,7 @@ echo Copying runtime files...
 copy /Y "%ROOT%run.bat" "%BIN_DIR%\run.bat" >nul
 if exist "%ROOT%show_bluetooth_connect.ps1" copy /Y "%ROOT%show_bluetooth_connect.ps1" "%BIN_DIR%\show_bluetooth_connect.ps1" >nul
 if exist "%ROOT%show_bluetooth_disconnect.ps1" copy /Y "%ROOT%show_bluetooth_disconnect.ps1" "%BIN_DIR%\show_bluetooth_disconnect.ps1" >nul
-if exist "%ROOT%scripts\getFinalResults.py" copy /Y "%ROOT%scripts\getFinalResults.py" "%BIN_DIR%\getFinalResults.py" >nul
-if exist "%ROOT%scripts\converter.py" copy /Y "%ROOT%scripts\converter.py" "%BIN_DIR%\converter.py" >nul
-if exist "%ROOT%scripts\set_volume.py" copy /Y "%ROOT%scripts\set_volume.py" "%BIN_DIR%\set_volume.py" >nul
+call :copy_asset_folder "%ROOT%scripts" "%BIN_DIR%\scripts" || goto :fail
 if exist "%ROOT%miniDSP.jpg" copy /Y "%ROOT%miniDSP.jpg" "%BIN_DIR%\miniDSP.jpg" >nul
 if exist "%ROOT%serial.txt" copy /Y "%ROOT%serial.txt" "%BIN_DIR%\serial.txt" >nul
 

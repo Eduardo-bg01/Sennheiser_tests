@@ -1,4 +1,5 @@
 using NAudio.Wave;
+using System.Diagnostics;
 
 namespace AudioTest
 {
@@ -55,16 +56,12 @@ namespace AudioTest
                 speakerOutputIndex = comboSpeakers.SelectedIndex;
                 microphoneInputIndex = comboMicrophones.SelectedIndex;
                 content1.Visible = false;
-                content2.Visible = true;
-            }
-            if (step == 2)
-            {
-                content2.Visible = false;
                 content3.Visible = true;
 
                 btnNext.Enabled = false;
                 btnCancel.Enabled = false;
 
+                SetPlaybackVolume(100);
                 StartRecording();
                 PlayAudio("karmaPolice.wav",headphonesOutputIndex);
 
@@ -72,13 +69,15 @@ namespace AudioTest
                 timer.Interval = 1000;
                 timer.Tick += Timer_Tick;
                 timer.Start();
+                step = 3;
+                return;
             }
             if (step == 3)
             {
                 File.WriteAllText("hearingPassResults.txt", passed.ToString());
                 Application.Exit();
+                return;
             }
-            step++;
         }
 
         private void Timer_Tick(object? sender, EventArgs e)
@@ -104,35 +103,8 @@ namespace AudioTest
         {
             LoadDevices();
             ApplyProfessionalLayout();
-
-            try
-            {
-                var candidates = new[]
-                {
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miniDSP.jpg"),
-                    Path.Combine(Directory.GetCurrentDirectory(), "miniDSP.jpg"),
-                    "miniDSP.jpg"
-                };
-
-                foreach (var imagePath in candidates)
-                {
-                    if (!File.Exists(imagePath))
-                        continue;
-
-                    using var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    using var tempImage = Image.FromStream(fs);
-                    pictureBox1.Image = new Bitmap(tempImage);
-                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                    return;
-                }
-
-                pictureBox1.BackColor = Color.LightGray;
-            }
-            catch
-            {
-                // miniDSP.jpg not found - this is optional, continue without it
-                pictureBox1.BackColor = Color.LightGray;
-            }
+            pictureBox1.Image = null;
+            pictureBox1.Visible = false;
         }
 
         //START-MOD FONG
@@ -219,6 +191,7 @@ namespace AudioTest
 
             output = new WaveOutEvent();
             output.DeviceNumber = outputDeviceIndex;
+            output.Volume = 1.0f;
 
             if (loop)
             {
@@ -447,6 +420,33 @@ namespace AudioTest
             btnPass.Dock = DockStyle.Fill;
             panel1.Padding = new Padding(24, 10, 24, 10);
             panel4.Padding = new Padding(24, 10, 24, 10);
+        }
+
+        private static void SetPlaybackVolume(int percent)
+        {
+            string helperPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VolumeHelper.exe");
+            if (!File.Exists(helperPath))
+            {
+                return;
+            }
+
+            try
+            {
+                using var process = Process.Start(new ProcessStartInfo
+                {
+                    FileName = helperPath,
+                    Arguments = percent.ToString(),
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                });
+
+                process?.WaitForExit(5000);
+            }
+            catch
+            {
+            }
         }
     }
 

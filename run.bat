@@ -18,7 +18,7 @@ del /q Prueba_* results.json MicroTest_* test_results* hearingPass* recorded* fi
 if not defined SKIP_SERIAL_PROMPT del /q serial* >nul 2>&1
 
 :: Verify all required executables exist
-for %%f in (AskForSerial2.exe BluetoothHeadphoneTest.exe AudioTest.exe MicroTestCloud.exe LevelTest.exe) do (
+for %%f in (AskForSerial2.exe BluetoothHeadphoneTest.exe AudioTest.exe MicroTestCloud.exe LevelTest.exe VolumeHelper.exe) do (
     if not exist "%APP_DIR%%%f" (
         echo Error: %%f no encontrado. Ejecuta build-all.bat primero.
         exit /b 1
@@ -49,6 +49,10 @@ if defined SKIP_SERIAL_PROMPT (
     )
 )
 
+:SET_VOLUME_100_BEFORE_CONTROLS
+echo Configurando volumen a 50%% antes de la prueba de controles...
+"%APP_DIR%VolumeHelper.exe" 50 >nul 2>&1 || echo No se pudo configurar volumen.
+
 :TEST_CONTROLS
 set /a CONTROLS_ATTEMPTS=0
 :RETRY_CONTROLS
@@ -71,6 +75,10 @@ if !CONTROLS_ATTEMPTS! LSS %MAX_RETRIES% (
 echo [CONTROLS] FAILED - Max retries exceeded
 exit /b 3
 
+:SET_VOLUME_100_BEFORE_AUDIO
+echo Configurando volumen a 100%% antes de la prueba de audio...
+"%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
+
 :TEST_AUDIO
 set /a AUDIO_ATTEMPTS=0
 :RETRY_AUDIO
@@ -87,6 +95,10 @@ if !AUDIO_ATTEMPTS! LSS %MAX_RETRIES% (
 )
 echo [AUDIO] FAILED - Max retries exceeded
 exit /b 2
+
+:SET_VOLUME_100_BEFORE_MICROPHONE
+echo Configurando volumen a 100%% antes de la prueba de microfono...
+"%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
 
 :TEST_MICROPHONE
 set /a MIC_ATTEMPTS=0
@@ -111,11 +123,13 @@ echo [MICROPHONE] FAILED - Max retries exceeded
 exit /b 4
 
 :SETUP_VOLUME
-echo Configurando volumen a 80%% antes de la prueba de nivel...
-if exist "%~dp0\.venv\Scripts\python.exe" (
-    "%~dp0\.venv\Scripts\python.exe" "%~dp0\scripts\set_volume.py" 80 >nul 2>&1 || echo Advertencia: No se pudo configurar volumen.
-) else (
-    python "%~dp0\scripts\set_volume.py" 80 >nul 2>&1 || echo Advertencia: No se pudo configurar volumen.
+echo Configurando volumen a 100%% antes de la prueba de nivel...
+"%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
+
+:ENSURE_REQUESTS
+python -c "import requests" >nul 2>&1 || (
+    echo Instalando dependencia requests...
+    python -m pip install --user requests >nul 2>&1 || echo No se pudo instalar requests.
 )
 
 :TEST_LEVELS
@@ -152,7 +166,15 @@ if exist "%ROOT%converter.exe" (
     "%ROOT%converter.exe"
 ) else if exist "%ROOT%scripts\converter.py" (
     python "%ROOT%scripts\converter.py"
-)
+)Build succeeded in 6.7s
+Building MicroTestCloud...
+Restore complete (0.3s)
+  MicroTestCloud failed with 2 error(s) (0.3s)
+    C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\MicroTestCloud\MicroTestCloud\Form1.cs(1553,10): error CS1513: } expected
+    C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\MicroTestCloud\MicroTestCloud\Form1.cs(1582,5): error CS1022: Type or namespace definition, or end-of-file expected
+
+Build failed with 2 error(s) in 1.1s
+Build failed
 
 echo Limpiando dispositivos Bluetooth...
 powershell -NoProfile -Command "$ErrorActionPreference = 'SilentlyContinue'; Get-PnpDevice -Class Bluetooth | Where-Object { $_.FriendlyName -and $_.FriendlyName -notmatch 'Radio|Adapter|Enumerator|LE Enumerator|Microsoft|Intel|Qualcomm|Broadcom' } | Remove-PnpDevice -Confirm:$false -Force" >nul 2>&1

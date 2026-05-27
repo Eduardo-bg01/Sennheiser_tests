@@ -4,6 +4,9 @@ bin/
 !bin/*.ps1
 !bin/*.py
 !bin/run.bat
+!bin/scripts/
+!bin/scripts/*.py
+!bin/scripts/*.txt
 obj/
 .vs/
 .vscode/
@@ -26,8 +29,6 @@ recorded.wav
 final_results.json
 tiempo*.txt
 diferencia_minutos.txt
-*.wav
-*.mp3
 
 ## Generated files
 *.dll
@@ -39,8 +40,4 @@ diferencia_minutos.txt
 .venv/
 __pycache__/
 
-.github/
-
-*.cs
-*.csproj
-*.csproj.nuget.*
+.log

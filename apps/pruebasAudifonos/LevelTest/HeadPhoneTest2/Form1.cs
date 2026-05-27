@@ -96,54 +96,19 @@ namespace HeadPhoneTest2
         {
             LoadInputDevices();
             LoadOutputDevices();
-            ApplyInstructionImage();
+            pictureBox1.Image = null;
+            pictureBox1.Visible = false;
             ApplyProfessionalLayout();
-        }
-
-        private void ApplyInstructionImage()
-        {
-            try
-            {
-                var candidates = new List<string>
-                {
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "miniDSP-headphones.jpg"),
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "miniDSP-headphones.jpg"),
-                    Path.Combine(Directory.GetCurrentDirectory(), "Resources", "miniDSP-headphones.jpg"),
-                    Path.Combine("Resources", "miniDSP-headphones.jpg")
-                };
-
-                foreach (var imagePath in candidates)
-                {
-                    if (!File.Exists(imagePath))
-                        continue;
-
-                    using var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    using var tempImage = Image.FromStream(fs);
-                    pictureBox1.BackgroundImage = null;
-                    pictureBox1.Image = new Bitmap(tempImage);
-                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                    return;
-                }
-            }
-            catch
-            {
-                // Keep existing designer image if custom file load fails.
-            }
         }
 
         private void btnNext_Click(object sender, EventArgs e)
         {
             if (step == 0)
             {
-                // Seleccion de dispositivos lista; pasar directo a pantalla previa de prueba automatica.
-                content1.Visible = false;
-                content2.Visible = true;
+                // Seleccion de dispositivos; pasar directo a la prueba automatica.
                 inputIndex = comboBoxIn.SelectedIndex;
                 outputIndex = comboBoxOut.SelectedIndex;
-            }
-            if (step == 1)
-            {
-                // Ejecutar solo la parte automatica (sin confirmacion manual de escucha).
+                content1.Visible = false;
                 MMDeviceEnumerator enumerator = new MMDeviceEnumerator();
                 MMDevice device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
                 //device.AudioEndpointVolume.MasterVolumeLevelScalar = 0.5f;
@@ -166,12 +131,14 @@ namespace HeadPhoneTest2
                 content3.Visible = false;
                 content4.Visible = false;
                 content5.Visible = true;
+                step = 2;
+                return;
             }
             if (step == 2)
             {
                 Application.Exit();
+                return;
             }
-            step++;
         }
 
         private void EnsureTimer()
@@ -287,6 +254,7 @@ namespace HeadPhoneTest2
                     ? new Mp3FileReader(audioPath)
                     : new AudioFileReader(audioPath);
 
+                outputDevice.Volume = 1.0f;
                 outputDevice.Init(audioFile);
                 outputDevice.Play();
             }
