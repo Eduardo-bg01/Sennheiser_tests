@@ -25,3 +25,4 @@ C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests
 C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\pruebasAudifonos\AudioTest\AudioTest\obj\Release\net8.0-windows\AudioTest.pdb
 C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\pruebasAudifonos\AudioTest\AudioTest\obj\Release\net8.0-windows\AudioTest.genruntimeconfig.cache
 C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\pruebasAudifonos\AudioTest\AudioTest\obj\Release\net8.0-windows\ref\AudioTest.dll
+C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\pruebasAudifonos\AudioTest\AudioTest\bin\Release\net8.0-windows\karmaPolice.wav
