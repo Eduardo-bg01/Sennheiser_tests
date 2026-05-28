@@ -46,6 +46,24 @@ namespace BluetoothHeadphoneTest
                 HasVolumeUp      = true,
                 HasVolumeDown    = true,
             },
+             new DeviceProfile("ACCENTUM")
+            {
+                HasBluetooth     = true,
+                HasPlayPause     = true,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = true,
+                HasVolumeDown    = true,
+            },
+             new DeviceProfile("ACCENTUM PLUS")
+            {
+                HasBluetooth     = true,
+                HasPlayPause     = true,
+                HasPreviousTrack = true,
+                HasNextTrack     = true,
+                HasVolumeUp      = true,
+                HasVolumeDown    = true,
+            },
 
             // ════════════════════════════════════════════════════════════════
             //  AGREGA AQUÍ MODELOS NUEVOS (BT, USB-C o USB-A):
