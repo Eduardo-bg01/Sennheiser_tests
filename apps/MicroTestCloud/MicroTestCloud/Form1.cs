@@ -1,4 +1,5 @@
 ﻿using MicroTestCloud;
+using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using System;
@@ -1088,28 +1089,45 @@ namespace MicroTestCloud
 
         private static void SetPlaybackVolume(int percent)
         {
-            string helperPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VolumeHelper.exe");
-            if (!File.Exists(helperPath))
-            {
-                return;
-            }
-
             try
             {
-                using var process = Process.Start(new ProcessStartInfo
-                {
-                    FileName = helperPath,
-                    Arguments = percent.ToString(),
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                });
+                float scalar = Math.Clamp(percent / 100f, 0f, 1f);
+                using var enumerator = new MMDeviceEnumerator();
+                using var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
 
-                process?.WaitForExit(5000);
+                foreach (var device in devices)
+                {
+                    device.AudioEndpointVolume.Mute = false;
+                    device.AudioEndpointVolume.MasterVolumeLevelScalar = scalar;
+                }
+
+                return;
             }
             catch
             {
+                string helperPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VolumeHelper.exe");
+                if (!File.Exists(helperPath))
+                {
+                    return;
+                }
+
+                try
+                {
+                    using var process = Process.Start(new ProcessStartInfo
+                    {
+                        FileName = helperPath,
+                        Arguments = percent.ToString(),
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true
+                    });
+
+                    process?.WaitForExit(5000);
+                }
+                catch
+                {
+                }
             }
         }
 
@@ -1621,32 +1639,5 @@ public class FormResultado : Form
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
-
-        private static void SetPlaybackVolume(int percent)
-        {
-            string helperPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VolumeHelper.exe");
-            if (!File.Exists(helperPath))
-            {
-                return;
-            }
-
-            try
-            {
-                using var process = Process.Start(new ProcessStartInfo
-                {
-                    FileName = helperPath,
-                    Arguments = percent.ToString(),
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                });
-
-                process?.WaitForExit(5000);
-            }
-            catch
-            {
-            }
-        }
 
     }

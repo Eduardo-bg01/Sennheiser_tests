@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-# Audio processing constants
 MIN_DB_FLOOR = -120.0  # Minimum dB value for unrepresentable audio
 DEFAULT_CALIBRATION_SPL = 94.0  # Reference SPL for calibration
 
@@ -157,7 +156,6 @@ def print_table(results: List[Measurement]) -> None:
 
 
 def print_ascii_chart(results: List[Measurement]) -> None:
-    """Print results as ASCII bar chart."""
     use_spl = all(r.dbspl is not None for r in results)
     metric_name = "dBSPL" if use_spl else "dBFS"
     values = [r.dbspl if use_spl else r.dbfs for r in results]
@@ -176,7 +174,6 @@ def print_ascii_chart(results: List[Measurement]) -> None:
 
 
 def maybe_save_png(results: List[Measurement], output_png: Path) -> None:
-    """Save results as PNG chart if matplotlib available."""
     try:
         import matplotlib.pyplot as plt
     except Exception:
@@ -205,7 +202,6 @@ def maybe_save_png(results: List[Measurement], output_png: Path) -> None:
 
 
 def build_json(results: List[Measurement]) -> Dict:
-    """Convert measurement results to JSON-serializable dictionary."""
     return {
         "measurements": [
             {

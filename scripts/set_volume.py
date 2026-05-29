@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-"""Set the Windows master volume without external Python dependencies."""
 from __future__ import annotations
 
 import os
