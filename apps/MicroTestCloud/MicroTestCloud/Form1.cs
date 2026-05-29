@@ -1093,7 +1093,7 @@ namespace MicroTestCloud
             {
                 float scalar = Math.Clamp(percent / 100f, 0f, 1f);
                 using var enumerator = new MMDeviceEnumerator();
-                using var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
+                var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
 
                 foreach (var device in devices)
                 {

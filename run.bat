@@ -61,11 +61,15 @@ start /wait "" "%APP_DIR%BluetoothHeadphoneTest.exe"
 call :wait_for_result_file "Prueba_*.txt" "%APP_DIR%Prueba_*.txt" 5
 if exist Prueba_*.txt (
     echo [CONTROLS] PASSED
+    echo Configurando volumen a 100%% antes de la prueba de audio...
+    "%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
     goto TEST_AUDIO
 )
 if exist "%APP_DIR%Prueba_*.txt" (
     copy "%APP_DIR%Prueba_*.txt" . >nul 2>&1
     echo [CONTROLS] PASSED
+    echo Configurando volumen a 100%% antes de la prueba de audio...
+    "%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
     goto TEST_AUDIO
 )
 if !CONTROLS_ATTEMPTS! LSS %MAX_RETRIES% (
@@ -75,10 +79,6 @@ if !CONTROLS_ATTEMPTS! LSS %MAX_RETRIES% (
 echo [CONTROLS] FAILED - Max retries exceeded
 exit /b 3
 
-:SET_VOLUME_100_BEFORE_AUDIO
-echo Configurando volumen a 100%% antes de la prueba de audio...
-"%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
-
 :TEST_AUDIO
 set /a AUDIO_ATTEMPTS=0
 :RETRY_AUDIO
@@ -87,6 +87,8 @@ start /wait "" "%APP_DIR%AudioTest.exe"
 timeout /t %RETRY_DELAY% /nobreak >nul
 if exist hearingPass*.txt (
     echo [AUDIO] PASSED
+    echo Configurando volumen a 100%% antes de la prueba de microfono...
+    "%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
     goto TEST_MICROPHONE
 )
 if !AUDIO_ATTEMPTS! LSS %MAX_RETRIES% (
@@ -95,10 +97,6 @@ if !AUDIO_ATTEMPTS! LSS %MAX_RETRIES% (
 )
 echo [AUDIO] FAILED - Max retries exceeded
 exit /b 2
-
-:SET_VOLUME_100_BEFORE_MICROPHONE
-echo Configurando volumen a 100%% antes de la prueba de microfono...
-"%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
 
 :TEST_MICROPHONE
 set /a MIC_ATTEMPTS=0
