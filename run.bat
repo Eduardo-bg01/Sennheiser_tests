@@ -5,13 +5,15 @@ pushd "%ROOT%"
 
 set "APP_DIR=%ROOT%bin\"
 if exist "%ROOT%AskForSerial2.exe" set "APP_DIR=%ROOT%"
+set "REFURBISH_TOOL=%ROOT%RefurbishToolArvato\RefurbishTool.exe"
+if not exist "%REFURBISH_TOOL%" set "REFURBISH_TOOL=%ROOT%bin\RefurbishToolArvato\RefurbishTool.exe"
 
 if not defined MAX_RETRIES set MAX_RETRIES=5
 if not defined RETRY_DELAY set RETRY_DELAY=2
 
 :: Clean up previous test files and processes
 echo Limpiando archivos y procesos previos...
-for %%p in (AskForSerial2.exe AudioTest.exe BluetoothHeadphoneTest.exe MicroTestCloud.exe LevelTest.exe) do (
+for %%p in (AskForSerial2.exe AudioTest.exe BluetoothHeadphoneTest.exe MicroTestCloud.exe LevelTest.exe RefurbishTool.exe) do (
     taskkill /f /im %%p >nul 2>&1
 )
 del /q Prueba_* results.json MicroTest_* test_results* hearingPass* recorded* final_results* tiempo* diferen* >nul 2>&1
@@ -24,6 +26,16 @@ for %%f in (AskForSerial2.exe BluetoothHeadphoneTest.exe AudioTest.exe MicroTest
         exit /b 1
     )
 )
+
+if not exist "%REFURBISH_TOOL%" (
+    echo Error: RefurbishTool.exe no encontrado. Ejecuta build-all.bat primero.
+    exit /b 1
+)
+
+echo.
+echo Abriendo RefurbishTool...
+start /wait "" "%REFURBISH_TOOL%"
+echo.
 
 :: Show Bluetooth connection instructions
 echo.
@@ -164,15 +176,7 @@ if exist "%ROOT%converter.exe" (
     "%ROOT%converter.exe"
 ) else if exist "%ROOT%scripts\converter.py" (
     python "%ROOT%scripts\converter.py"
-)Build succeeded in 6.7s
-Building MicroTestCloud...
-Restore complete (0.3s)
-  MicroTestCloud failed with 2 error(s) (0.3s)
-    C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\MicroTestCloud\MicroTestCloud\Form1.cs(1553,10): error CS1513: } expected
-    C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\MicroTestCloud\MicroTestCloud\Form1.cs(1582,5): error CS1022: Type or namespace definition, or end-of-file expected
-
-Build failed with 2 error(s) in 1.1s
-Build failed
+)
 
 echo Limpiando dispositivos Bluetooth...
 powershell -NoProfile -Command "$ErrorActionPreference = 'SilentlyContinue'; Get-PnpDevice -Class Bluetooth | Where-Object { $_.FriendlyName -and $_.FriendlyName -notmatch 'Radio|Adapter|Enumerator|LE Enumerator|Microsoft|Intel|Qualcomm|Broadcom' } | Remove-PnpDevice -Confirm:$false -Force" >nul 2>&1
