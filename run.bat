@@ -73,6 +73,7 @@ start /wait "" "%APP_DIR%BluetoothHeadphoneTest.exe"
 call :wait_for_result_file "Prueba_*.txt" "%APP_DIR%Prueba_*.txt" 5
 if exist Prueba_*.txt (
     echo [CONTROLS] PASSED
+    for /f "usebackq delims=" %%a in (`powershell -NoProfile -Command "$line = (Select-String -Path Prueba_*.txt -Pattern 'Dispositivo').Line; $name = $line.Substring($line.IndexOf(':') + 1).Trim(); Write-Output $name"`) do set "DEVICE_NAME=%%a"
     echo Configurando volumen a 100%% antes de la prueba de audio...
     "%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
     goto TEST_AUDIO
@@ -80,6 +81,7 @@ if exist Prueba_*.txt (
 if exist "%APP_DIR%Prueba_*.txt" (
     copy "%APP_DIR%Prueba_*.txt" . >nul 2>&1
     echo [CONTROLS] PASSED
+    for /f "usebackq delims=" %%a in (`powershell -NoProfile -Command "$line = (Select-String -Path Prueba_*.txt -Pattern 'Dispositivo').Line; $name = $line.Substring($line.IndexOf(':') + 1).Trim(); Write-Output $name"`) do set "DEVICE_NAME=%%a"
     echo Configurando volumen a 100%% antes de la prueba de audio...
     "%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
     goto TEST_AUDIO
@@ -133,8 +135,13 @@ echo [MICROPHONE] FAILED - Max retries exceeded
 exit /b 4
 
 :SETUP_VOLUME
-echo Configurando volumen a 100%% antes de la prueba de nivel...
-"%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
+if /i "!DEVICE_NAME!"=="MOMENTUM TW 4" (
+    echo Configurando volumen a 80%% antes de la prueba de nivel (MOMENTUM TW 4)...
+    "%APP_DIR%VolumeHelper.exe" 80 >nul 2>&1 || echo No se pudo configurar volumen.
+) else (
+    echo Configurando volumen a 100%% antes de la prueba de nivel...
+    "%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
+)
 
 :ENSURE_REQUESTS
 python -c "import requests" >nul 2>&1 || (
