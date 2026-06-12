@@ -11,10 +11,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AudioSwitcher.AudioApi.CoreAudio" Version="3.0.3" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\tools\VolumeHelper\VolumeHelper.csproj" />
     <ProjectReference Include="..\FunctionalButtonTest\BluetoothHeadphoneTest.csproj" />
     <ProjectReference Include="..\MicroTestCloud\MicroTestCloud\MicroTestCloud.csproj" />

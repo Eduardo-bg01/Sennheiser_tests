@@ -1,14 +1,25 @@
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using AudioSwitcher.AudioApi.CoreAudio;
 
 namespace SennheiserTestRunner;
 
 static class Program
 {
     static string BaseDir => AppContext.BaseDirectory;
+    static string RootDir
+    {
+        get
+        {
+            var dir = BaseDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            return Path.GetDirectoryName(dir) ?? dir;
+        }
+    }
+    static string VolumeHelperExe => Path.Combine(BaseDir, "VolumeHelper.exe");
+
+    static string LogFile => Path.Combine(BaseDir, "runner_log.txt");
     static int MaxRetries => 5;
     static int RetryDelayMs => 2000;
+
+    static StreamWriter? _log;
 
     [STAThread]
     static void Main()
@@ -17,57 +28,88 @@ static class Program
         Application.SetCompatibleTextRenderingDefault(false);
 
         Environment.CurrentDirectory = BaseDir;
-        Console.WriteLine($"Working directory: {BaseDir}");
 
-        KillOldProcesses();
-        CleanOldFiles();
-
-        var refurbishTool = Path.Combine(BaseDir, "RefurbishToolArvato", "RefurbishTool.exe");
-        if (File.Exists(refurbishTool))
+        using (_log = new StreamWriter(LogFile, append: false) { AutoFlush = true })
         {
-            Console.WriteLine("Opening RefurbishTool...");
-            RunProcess(refurbishTool, "", wait: true);
+            Log($"Working directory: {BaseDir}");
+            Log($"Root directory: {RootDir}");
+            Log($"VolumeHelper path: {VolumeHelperExe}");
+
+            KillOldProcesses();
+            CleanOldFiles();
+
+            LaunchRefurbishTool();
+
+            ShowBluetoothConnectPrompt();
+
+            long startTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            File.WriteAllText("tiempo1.txt", startTime.ToString());
+
+            string? serial = GetSerial();
+            if (serial is null)
+            {
+                Log("No serial provided. Exiting.", isError: true);
+                Environment.Exit(1);
+            }
+
+            string? deviceName = RunControlsTest();
+            if (deviceName is null)
+            {
+                Log("[CONTROLS] Failed - max retries exceeded", isError: true);
+                Environment.Exit(3);
+            }
+
+            RunAudioTest();
+
+            RunMicrophoneTest();
+
+            int levelVolume = string.Equals(deviceName, "MOMENTUM TW 4", StringComparison.OrdinalIgnoreCase) ? 80 : 100;
+            SetVolume(levelVolume);
+
+            RunLevelTest();
+
+            long endTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            File.WriteAllText("tiempo2.txt", endTime.ToString());
+
+            RunResultsScripts();
+
+            CleanupBluetooth();
+            ShowBluetoothDisconnectPrompt();
+
+            double minutes = Math.Round((endTime - startTime) / 60000.0, 2);
+            File.WriteAllText("diferencia_minutos.txt", minutes.ToString());
+            Log($"Tests completed. Total time: {minutes} min");
         }
+    }
 
-        ShowBluetoothConnectPrompt();
+    static void Log(string message, bool isError = false)
+    {
+        var line = $"{DateTime.Now:HH:mm:ss.fff} | {message}";
+        _log?.WriteLine(line);
+        if (isError)
+            Console.Error.WriteLine(line);
+        else
+            Console.WriteLine(line);
+    }
 
-        long startTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        File.WriteAllText("tiempo1.txt", startTime.ToString());
-
-        string? serial = GetSerial();
-        if (serial is null)
+    static void LaunchRefurbishTool()
+    {
+        string[] candidates =
         {
-            Console.Error.WriteLine("No serial provided. Exiting.");
-            Environment.Exit(1);
-        }
-
-        string? deviceName = RunControlsTest();
-        if (deviceName is null)
+            Path.Combine(RootDir, "RefurbishToolArvato", "RefurbishTool.exe"),
+            Path.Combine(BaseDir, "RefurbishToolArvato", "RefurbishTool.exe"),
+        };
+        foreach (var path in candidates)
         {
-            Console.Error.WriteLine("[CONTROLS] Failed - max retries exceeded");
-            Environment.Exit(3);
+            Log($"Checking RefurbishTool path: {path} (exists: {File.Exists(path)})");
+            if (File.Exists(path))
+            {
+                Log($"Opening RefurbishTool: {path}");
+                RunProcess(path, "", wait: true);
+                return;
+            }
         }
-
-        RunAudioTest();
-
-        RunMicrophoneTest();
-
-        int levelVolume = string.Equals(deviceName, "MOMENTUM TW 4", StringComparison.OrdinalIgnoreCase) ? 80 : 100;
-        SetVolume(levelVolume);
-
-        RunLevelTest();
-
-        long endTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        File.WriteAllText("tiempo2.txt", endTime.ToString());
-
-        RunResultsScripts();
-
-        CleanupBluetooth();
-        ShowBluetoothDisconnectPrompt();
-
-        double minutes = Math.Round((endTime - startTime) / 60000.0, 2);
-        File.WriteAllText("diferencia_minutos.txt", minutes.ToString());
-        Console.WriteLine($"Tests completed. Total time: {minutes} min");
+        Log("RefurbishTool.exe not found at any checked path.", isError: true);
     }
 
     static void KillOldProcesses()
@@ -114,17 +156,17 @@ static class Program
 
     static string? RunControlsTest()
     {
-        Console.WriteLine("Setting volume to 50% before controls test...");
+        Log("Setting volume to 50% before controls test...");
         SetVolume(50);
 
         for (int attempt = 1; attempt <= MaxRetries; attempt++)
         {
-            Console.WriteLine($"Controls test attempt {attempt}/{MaxRetries}...");
+            Log($"Controls test attempt {attempt}/{MaxRetries}...");
 
             using var selectForm = new BluetoothHeadphoneTest.DeviceSelectForm();
             if (selectForm.ShowDialog() != DialogResult.OK)
             {
-                Console.Error.WriteLine("Device selection cancelled.");
+                Log("Device selection cancelled.", isError: true);
                 return null;
             }
 
@@ -137,15 +179,15 @@ static class Program
             var resultFile = WaitForFile("Prueba_*.txt", 5);
             if (resultFile is not null)
             {
-                Console.WriteLine("[CONTROLS] PASSED");
+                Log("[CONTROLS] PASSED");
                 string? deviceName = ParseDeviceName(resultFile);
-                Console.WriteLine($"Device: {deviceName}");
-                Console.WriteLine("Setting volume to 100% before audio test...");
+                Log($"Device: {deviceName}");
+                Log("Setting volume to 100% before audio test...");
                 SetVolume(100);
                 return deviceName;
             }
 
-            Console.WriteLine($"[CONTROLS] FAILED - attempt {attempt}/{MaxRetries}");
+            Log($"[CONTROLS] FAILED - attempt {attempt}/{MaxRetries}");
         }
 
         return null;
@@ -155,25 +197,23 @@ static class Program
     {
         for (int attempt = 1; attempt <= MaxRetries; attempt++)
         {
-            Console.WriteLine($"Audio test attempt {attempt}/{MaxRetries}...");
+            Log($"Audio test attempt {attempt}/{MaxRetries}...");
 
             using var form = new AudioTest.Form1();
             form.ShowDialog();
 
-            Thread.Sleep(RetryDelayMs);
-
             if (System.IO.Directory.GetFiles(BaseDir, "hearingPass*.txt").Length > 0)
             {
-                Console.WriteLine("[AUDIO] PASSED");
-                Console.WriteLine("Setting volume to 100% before microphone test...");
+                Log("[AUDIO] PASSED");
+                Log("Setting volume to 100% before microphone test...");
                 SetVolume(100);
                 return;
             }
 
-            Console.WriteLine($"[AUDIO] FAILED - attempt {attempt}/{MaxRetries}");
+            Log($"[AUDIO] FAILED - attempt {attempt}/{MaxRetries}");
         }
 
-        Console.Error.WriteLine("[AUDIO] FAILED - max retries exceeded");
+        Log("[AUDIO] FAILED - max retries exceeded", isError: true);
         Environment.Exit(2);
     }
 
@@ -181,7 +221,7 @@ static class Program
     {
         for (int attempt = 1; attempt <= MaxRetries; attempt++)
         {
-            Console.WriteLine($"Microphone test attempt {attempt}/{MaxRetries}...");
+            Log($"Microphone test attempt {attempt}/{MaxRetries}...");
 
             using var form = new MicroTestCloud.Form1();
             form.ShowDialog();
@@ -189,14 +229,14 @@ static class Program
             var resultFile = WaitForFile("MicroTest_*.txt", 5);
             if (resultFile is not null)
             {
-                Console.WriteLine("[MICROPHONE] PASSED");
+                Log("[MICROPHONE] PASSED");
                 return;
             }
 
-            Console.WriteLine($"[MICROPHONE] FAILED - attempt {attempt}/{MaxRetries}");
+            Log($"[MICROPHONE] FAILED - attempt {attempt}/{MaxRetries}");
         }
 
-        Console.Error.WriteLine("[MICROPHONE] FAILED - max retries exceeded");
+        Log("[MICROPHONE] FAILED - max retries exceeded", isError: true);
         Environment.Exit(4);
     }
 
@@ -206,23 +246,21 @@ static class Program
 
         for (int attempt = 1; attempt <= MaxRetries; attempt++)
         {
-            Console.WriteLine($"Level test attempt {attempt}/{MaxRetries}...");
+            Log($"Level test attempt {attempt}/{MaxRetries}...");
 
             using var form = new HeadPhoneTest2.Form1();
             form.ShowDialog();
 
-            Thread.Sleep(RetryDelayMs);
-
             if (File.Exists(Path.Combine(BaseDir, "results.json")))
             {
-                Console.WriteLine("[LEVELS] PASSED");
+                Log("[LEVELS] PASSED");
                 return;
             }
 
-            Console.WriteLine($"[LEVELS] FAILED - attempt {attempt}/{MaxRetries}");
+            Log($"[LEVELS] FAILED - attempt {attempt}/{MaxRetries}");
         }
 
-        Console.Error.WriteLine("[LEVELS] FAILED - max retries exceeded");
+        Log("[LEVELS] FAILED - max retries exceeded", isError: true);
         Environment.Exit(5);
     }
 
@@ -273,7 +311,7 @@ static class Program
             proc?.WaitForExit(5000);
             if (proc?.ExitCode != 0)
             {
-                Console.WriteLine("Installing requests dependency...");
+                Log("Installing requests dependency...");
                 RunProcess("python", "-m pip install --user requests", wait: true);
             }
         }
@@ -283,22 +321,16 @@ static class Program
     static void SetVolume(int percent)
     {
         percent = Math.Max(0, Math.Min(100, percent));
-        try
+        Log($"Setting volume to {percent}% via VolumeHelper.exe...");
+
+        if (!File.Exists(VolumeHelperExe))
         {
-            var controller = new CoreAudioController();
-            var device = controller.DefaultPlaybackDevice;
-            if (device is null)
-            {
-                Console.Error.WriteLine("No default playback device found for volume control.");
-                return;
-            }
-            device.Volume = percent;
-            device.Mute(false);
+            Log($"VolumeHelper.exe not found at {VolumeHelperExe}", isError: true);
+            return;
         }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Volume control error: {ex.Message}");
-        }
+
+        var exitCode = RunProcess(VolumeHelperExe, percent.ToString(), wait: true);
+        Log($"VolumeHelper.exe exited with code {exitCode}");
     }
 
     static string? ParseDeviceName(string filePath)
@@ -336,6 +368,7 @@ static class Program
     {
         try
         {
+            Log($"Running: {fileName} {arguments}");
             var psi = new ProcessStartInfo(fileName, arguments)
             {
                 UseShellExecute = true,
@@ -344,11 +377,13 @@ static class Program
             using var proc = Process.Start(psi);
             if (wait)
                 proc?.WaitForExit();
-            return proc?.ExitCode ?? -1;
+            var code = proc?.ExitCode ?? -1;
+            Log($"Process exit code: {code}");
+            return code;
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Failed to run {fileName}: {ex.Message}");
+            Log($"Failed to run {fileName}: {ex.Message}", isError: true);
             return -1;
         }
     }

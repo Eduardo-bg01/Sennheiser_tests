@@ -18,10 +18,20 @@ echo.
 echo Creating bin directory...
 if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
 
+echo Building VolumeHelper...
+%DOTNET% publish -c Release %PUBLISH_FLAGS% "%ROOT%tools\VolumeHelper\VolumeHelper.csproj" -o "%BIN_DIR%\temp_vh"
+if errorlevel 1 (
+    echo VolumeHelper build failed!
+    exit /b 1
+)
+robocopy "%BIN_DIR%\temp_vh" "%BIN_DIR%" VolumeHelper.exe /NFL /NDL /NJH /NJS /NP >nul
+if errorlevel 8 exit /b 1
+rmdir /s /q "%BIN_DIR%\temp_vh" >nul 2>&1
+
 echo Building SennheiserTestRunner...
 %DOTNET% publish -c Release %PUBLISH_FLAGS% "%ROOT%apps\SennheiserTestRunner\SennheiserTestRunner.csproj" -o "%BIN_DIR%"
 if errorlevel 1 (
-    echo Build failed!
+    echo SennheiserTestRunner build failed!
     exit /b 1
 )
 
