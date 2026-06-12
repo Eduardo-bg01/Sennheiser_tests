@@ -135,13 +135,10 @@ echo [MICROPHONE] FAILED - Max retries exceeded
 exit /b 4
 
 :SETUP_VOLUME
-if /i "!DEVICE_NAME!"=="MOMENTUM TW 4" (
-    echo Configurando volumen a 80%% antes de la prueba de nivel (MOMENTUM TW 4)...
-    "%APP_DIR%VolumeHelper.exe" 80 >nul 2>&1 || echo No se pudo configurar volumen.
-) else (
-    echo Configurando volumen a 100%% antes de la prueba de nivel...
-    "%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
-)
+set "LEVEL_VOLUME=100"
+if /i "!DEVICE_NAME!"=="MOMENTUM TW 4" set "LEVEL_VOLUME=80"
+echo Configurando volumen a !LEVEL_VOLUME!%% antes de la prueba de nivel...
+"%APP_DIR%VolumeHelper.exe" !LEVEL_VOLUME! >nul 2>&1 || echo No se pudo configurar volumen.
 
 :ENSURE_REQUESTS
 python -c "import requests" >nul 2>&1 || (

@@ -182,7 +182,7 @@ namespace MicroTestCloud
             };
             btnClose.FlatAppearance.BorderSize = 0;
             btnClose.FlatAppearance.MouseOverBackColor = AccentRed;
-            btnClose.Click += (s, e) => Application.Exit();
+            btnClose.Click += (s, e) => this.Close();
             btnClose.MouseEnter += (s, e) => btnClose.ForeColor = Color.White;
             btnClose.MouseLeave += (s, e) => btnClose.ForeColor = TextMuted;
 
@@ -500,7 +500,7 @@ namespace MicroTestCloud
             {
                 _testResult = "N/A";
                 SaveReport2();
-                Application.Exit();
+                this.Close();
             };
             this.Controls.Add(btnNoMicro);
 
@@ -1070,10 +1070,10 @@ namespace MicroTestCloud
                 _testResult = formResultado.TestResult;
 
                 // If user explicitly chose PASS or FAIL, ensure the report is present
-                // and exit the application so the batch runner can detect the result.
+                // and close the form so the launcher can continue with the next stage.
                 if (_testResult == "PASS" || _testResult == "FAIL")
                 {
-                    Application.Exit();
+                    Close();
                 }
         }
 
