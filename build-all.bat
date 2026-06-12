@@ -18,78 +18,39 @@ echo.
 echo Creating bin directory...
 if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
 
-REM Build all projects in sequence
-echo Building projects...
-call :build_project "VolumeHelper" "%ROOT%tools\VolumeHelper\VolumeHelper.csproj" "temp0" "" || goto :fail
-call :build_project "BluetoothHeadphoneTest" "%ROOT%apps\FunctionalButtonTest\BluetoothHeadphoneTest.csproj" "temp1" "" || goto :fail
-call :build_project "MicroTestCloud" "%ROOT%apps\MicroTestCloud\MicroTestCloud\MicroTestCloud.csproj" "temp2" "%ROOT%apps\MicroTestCloud\MicroTestCloud\PistaAudio" || goto :fail
-call :build_project "AskForSerial2" "%ROOT%apps\pruebasAudifonos\AskForSerial2\AskForSerial2\AskForSerial2.csproj" "temp3" "" || goto :fail
-call :build_project "AudioTest" "%ROOT%apps\pruebasAudifonos\AudioTest\AudioTest\AudioTest.csproj" "temp4" "" || goto :fail
-call :copy_audio_asset "%ROOT%apps\pruebasAudifonos\AudioTest\AudioTest\karmaPolice.wav"
-call :build_project "LevelTest" "%ROOT%apps\pruebasAudifonos\LevelTest\HeadPhoneTest2\HeadPhoneTest2.csproj" "temp5" "%ROOT%apps\pruebasAudifonos\LevelTest\HeadPhoneTest2\audio" || goto :fail
+echo Building SennheiserTestRunner...
+%DOTNET% publish -c Release %PUBLISH_FLAGS% "%ROOT%apps\SennheiserTestRunner\SennheiserTestRunner.csproj" -o "%BIN_DIR%"
+if errorlevel 1 (
+    echo Build failed!
+    exit /b 1
+)
 
-echo.
-echo All builds completed successfully.
 echo.
 echo Copying runtime files...
 copy /Y "%ROOT%run.bat" "%BIN_DIR%\run.bat" >nul
 if exist "%ROOT%show_bluetooth_connect.ps1" copy /Y "%ROOT%show_bluetooth_connect.ps1" "%BIN_DIR%\show_bluetooth_connect.ps1" >nul
 if exist "%ROOT%show_bluetooth_disconnect.ps1" copy /Y "%ROOT%show_bluetooth_disconnect.ps1" "%BIN_DIR%\show_bluetooth_disconnect.ps1" >nul
-call :copy_asset_folder "%ROOT%scripts" "%BIN_DIR%\scripts" || goto :fail
+if exist "%ROOT%scripts" (
+    if not exist "%BIN_DIR%\scripts" mkdir "%BIN_DIR%\scripts"
+    xcopy /E /I /Y "%ROOT%scripts\*" "%BIN_DIR%\scripts\" >nul
+)
 if exist "%ROOT%miniDSP.jpg" copy /Y "%ROOT%miniDSP.jpg" "%BIN_DIR%\miniDSP.jpg" >nul
 if exist "%ROOT%serial.txt" copy /Y "%ROOT%serial.txt" "%BIN_DIR%\serial.txt" >nul
 
+REM Copy content assets that are referenced by path (not embedded) from child projects
+if exist "%ROOT%apps\MicroTestCloud\MicroTestCloud\PistaAudio" (
+    if not exist "%BIN_DIR%\PistaAudio" mkdir "%BIN_DIR%\PistaAudio"
+    xcopy /E /I /Y "%ROOT%apps\MicroTestCloud\MicroTestCloud\PistaAudio\*" "%BIN_DIR%\PistaAudio\" >nul
+)
+if exist "%ROOT%apps\pruebasAudifonos\AudioTest\AudioTest\karmaPolice.wav" (
+    copy /Y "%ROOT%apps\pruebasAudifonos\AudioTest\AudioTest\karmaPolice.wav" "%BIN_DIR%\karmaPolice.wav" >nul
+)
+if exist "%ROOT%apps\pruebasAudifonos\LevelTest\HeadPhoneTest2\audio" (
+    if not exist "%BIN_DIR%\audio" mkdir "%BIN_DIR%\audio"
+    xcopy /E /I /Y "%ROOT%apps\pruebasAudifonos\LevelTest\HeadPhoneTest2\audio\*" "%BIN_DIR%\audio\" >nul
+)
+
 echo.
-echo Packaging complete. Executables: %BIN_DIR%
+echo Build complete. Executable: %BIN_DIR%\SennheiserTestRunner.exe
 echo Run tests with: %BIN_DIR%\run.bat
 exit /b 0
-
-REM ========== Subroutines ==========
-
-:build_project
-REM Parameters: %1=name, %2=csproj, %3=tempdir, %4=assets
-echo Building %~1...
-%DOTNET% publish -c Release %PUBLISH_FLAGS% "%~2" -o "%BIN_DIR%\%~3"
-if errorlevel 1 exit /b 1
-call :copy_publish_output "%BIN_DIR%\%~3"
-if errorlevel 1 exit /b 1
-if not "%~4"=="" (
-    for %%F in (%~4) do set "ASSET_NAME=%%~nxF"
-    call :copy_asset_folder "%~4" "%BIN_DIR%\!ASSET_NAME!"
-    if errorlevel 1 exit /b 1
-)
-exit /b 0
-
-:copy_audio_asset
-if exist "%~1" (
-    copy /Y "%~1" "%BIN_DIR%\" >nul
-) else (
-    echo Warning: missing audio asset %~1
-)
-exit /b 0
-
-:copy_publish_output
-set "SOURCE_DIR=%~1"
-robocopy "%SOURCE_DIR%" "%BIN_DIR%" /E /NFL /NDL /NJH /NJS /NP >nul
-if errorlevel 8 exit /b 1
-rmdir /s /q "%SOURCE_DIR%" >nul 2>&1
-exit /b 0
-
-:copy_asset_folder
-set "SOURCE=%~1"
-set "TARGET=%~2"
-if exist "%SOURCE%" (
-    robocopy "%SOURCE%" "%TARGET%" /E /NFL /NDL /NJH /NJS /NP >nul
-) else (
-    echo Warning: asset folder not found %SOURCE%
-    exit /b 0
-)
-exit /b 0
-
-:fail
-echo Build failed!
-exit /b 1
-
-:fail
-echo Build failed.
-exit /b 1

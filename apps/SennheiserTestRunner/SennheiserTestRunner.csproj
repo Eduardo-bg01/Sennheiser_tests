@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>SennheiserTestRunner</AssemblyName>
+    <RootNamespace>SennheiserTestRunner</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AudioSwitcher.AudioApi.CoreAudio" Version="3.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\tools\VolumeHelper\VolumeHelper.csproj" />
+    <ProjectReference Include="..\FunctionalButtonTest\BluetoothHeadphoneTest.csproj" />
+    <ProjectReference Include="..\MicroTestCloud\MicroTestCloud\MicroTestCloud.csproj" />
+    <ProjectReference Include="..\pruebasAudifonos\AskForSerial2\AskForSerial2\AskForSerial2.csproj" />
+    <ProjectReference Include="..\pruebasAudifonos\AudioTest\AudioTest\AudioTest.csproj" />
+    <ProjectReference Include="..\pruebasAudifonos\LevelTest\HeadPhoneTest2\HeadPhoneTest2.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -51,7 +51,7 @@ namespace HeadPhoneTest2
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
-            Application.Exit();
+            this.Close();
         }
 
         private void LoadInputDevices()
@@ -136,7 +136,7 @@ namespace HeadPhoneTest2
             }
             if (step == 2)
             {
-                Application.Exit();
+                this.Close();
                 return;
             }
         }

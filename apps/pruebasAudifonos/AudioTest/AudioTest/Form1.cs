@@ -45,7 +45,7 @@ namespace AudioTest
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
-            Application.Exit();
+            this.Close();
         }
 
         private void btnNext_Click(object sender, EventArgs e)
@@ -75,7 +75,7 @@ namespace AudioTest
             if (step == 3)
             {
                 File.WriteAllText("hearingPassResults.txt", passed.ToString());
-                Application.Exit();
+                this.Close();
                 return;
             }
         }

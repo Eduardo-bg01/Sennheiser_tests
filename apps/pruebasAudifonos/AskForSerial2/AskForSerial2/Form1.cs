@@ -27,7 +27,7 @@ namespace AskForSerial2
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
-            Application.Exit();
+            this.Close();
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -40,7 +40,7 @@ namespace AskForSerial2
             else
             {
                 File.WriteAllText(SERIAL_FILE, serial.Trim());
-                Application.Exit();
+                this.Close();
             }
         }
 
