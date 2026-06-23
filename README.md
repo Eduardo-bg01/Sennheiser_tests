@@ -33,6 +33,17 @@ If you copy the repo to a USB stick:
 
 The `.gitignore` ensures only source code is tracked, so you won't have outdated `.exe` files from different machines.
 
+### Audio + controls only (optional)
+
+If you only need the **audio test** and **functional button test** (skipping microphone and level tests), use the `-some` variant:
+
+```powershell
+build-some.bat
+run-some.bat
+```
+
+Missing tests are auto-filled with `N/A` in the results, and the converter still uploads to the API as normal.
+
 ## Included apps
 
 - `apps/FunctionalButtonTest` - BluetoothHeadphoneTest (controls test)
