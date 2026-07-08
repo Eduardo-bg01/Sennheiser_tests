@@ -64,6 +64,15 @@ namespace BluetoothHeadphoneTest
                 HasVolumeUp      = true,
                 HasVolumeDown    = true,
             },
+              new DeviceProfile("HDB 630")
+            {
+                HasBluetooth     = true,
+                HasPlayPause     = true,
+                HasPreviousTrack = true,
+                HasNextTrack     = true,
+                HasVolumeUp      = true,
+                HasVolumeDown    = true,
+            },
 
             // ════════════════════════════════════════════════════════════════
             //  AGREGA AQUÍ MODELOS NUEVOS (BT, USB-C o USB-A):
@@ -189,6 +198,36 @@ namespace BluetoothHeadphoneTest
             },
 
             new DeviceProfile("RS 275")
+            {
+                HasBluetooth     = false,
+                HasPlayPause     = false,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
+            },
+
+             new DeviceProfile("IE 200")
+            {
+                HasBluetooth     = false,
+                HasPlayPause     = false,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
+            },
+
+              new DeviceProfile("IE 600")
+            {
+                HasBluetooth     = false,
+                HasPlayPause     = false,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
+            },
+
+               new DeviceProfile("IE 900")
             {
                 HasBluetooth     = false,
                 HasPlayPause     = false,
