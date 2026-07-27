@@ -117,7 +117,8 @@ namespace BluetoothHeadphoneTest
             "Speakers/Headphones (Realtek(R) Audio)",
             "Realtek HD Audio 2nd output (Realtek(R) Audio)",
             "2- Synaptics HD Audio",
-            "Synaptics HD Audio"
+            "Synaptics HD Audio",
+            "USB Audio CODEC"
 
         };
 
