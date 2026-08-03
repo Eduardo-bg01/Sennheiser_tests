@@ -236,7 +236,15 @@ namespace BluetoothHeadphoneTest
                 HasVolumeUp      = false,
                 HasVolumeDown    = false,
             },
-
+                 new DeviceProfile("HD 400U")
+            {
+                HasBluetooth     = false,
+                HasPlayPause     = true,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
+            },
             // ════════════════════════════════════════════════════════════════
             //  AGREGA AQUÍ MÁS MODELOS JACK / GENÉRICOS:
             //
