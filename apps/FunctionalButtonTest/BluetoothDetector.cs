@@ -150,9 +150,7 @@ namespace BluetoothHeadphoneTest
                     BluetoothFindRadioClose(hRadioFind);
                 }
             }
-            catch
-            {
-            }
+            catch { }
 
             // 2) Dispositivos de audio cableados (Jack 3.5mm, USB-C, genéricos)
             list.AddRange(DetectWiredAudioDevices());

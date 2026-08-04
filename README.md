@@ -69,4 +69,4 @@ None.
 ## Requirements
 
 - .NET 9 SDK (or higher 8.0 for individual projects)
-- Python 3 (for result aggregation)
+- Python 3.9+ (for result aggregation)

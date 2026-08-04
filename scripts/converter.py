@@ -138,33 +138,6 @@ def build_xml(data):
     ET.SubElement(root,'accesstoken').text = ''
     return root
 
-if not hasattr(ET, 'indent'):
-    def _indent(tree, space="  ", level=0):
-        if not len(tree):
-            return
-        indentations = ["\n" + level * space]
-
-        def _indent_children(elem, level):
-            child_level = level + 1
-            try:
-                child_indentation = indentations[child_level]
-            except IndexError:
-                child_indentation = indentations[level] + space
-                indentations.append(child_indentation)
-            if not elem.text or not elem.text.strip():
-                elem.text = child_indentation
-            for child in elem:
-                if len(child):
-                    _indent_children(child, child_level)
-                if not child.tail or not child.tail.strip():
-                    child.tail = child_indentation
-            if not child.tail.strip():
-                child.tail = indentations[level]
-
-        _indent_children(tree, 0)
-
-    ET.indent = _indent
-
 def pretty_with_ns(elem):
     ET.indent(elem, space='    ')
     xml = ET.tostring(elem, encoding='unicode')
