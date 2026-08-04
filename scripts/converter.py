@@ -1,12 +1,10 @@
 import json
 import xml.etree.ElementTree as ET
-from xml.dom import minidom
 import requests
 import argparse
 from datetime import datetime
 import os
 from pathlib import Path
-import subprocess
 
 # Load API endpoint from environment variable for security
 # To set: $env:AZURE_API_ENDPOINT="https://..."
@@ -20,17 +18,7 @@ if API_ENDPOINT.endswith('aYOBTAzFua5QkRg=='):
     print("[WARNING] Using hardcoded API endpoint. Set AZURE_API_ENDPOINT environment variable for security.")
 
 def get_windows_username():
-    try:
-        result = subprocess.run(
-            ['powershell', '-Command', '$env:USERNAME'],
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        username = result.stdout.strip()
-        return username if username else "tester1"
-    except Exception:
-        return "tester1"
+    return os.environ.get('USERNAME') or "tester1"
 
 # Test configuration defaults
 DEFAULTS = {
@@ -150,10 +138,37 @@ def build_xml(data):
     ET.SubElement(root,'accesstoken').text = ''
     return root
 
+if not hasattr(ET, 'indent'):
+    def _indent(tree, space="  ", level=0):
+        if not len(tree):
+            return
+        indentations = ["\n" + level * space]
+
+        def _indent_children(elem, level):
+            child_level = level + 1
+            try:
+                child_indentation = indentations[child_level]
+            except IndexError:
+                child_indentation = indentations[level] + space
+                indentations.append(child_indentation)
+            if not elem.text or not elem.text.strip():
+                elem.text = child_indentation
+            for child in elem:
+                if len(child):
+                    _indent_children(child, child_level)
+                if not child.tail or not child.tail.strip():
+                    child.tail = child_indentation
+            if not child.tail.strip():
+                child.tail = indentations[level]
+
+        _indent_children(tree, 0)
+
+    ET.indent = _indent
+
 def pretty_with_ns(elem):
-    rough = ET.tostring(elem, encoding='unicode')
-    dom = minidom.parseString(rough)
-    xml = dom.toprettyxml(indent='    ')
+    ET.indent(elem, space='    ')
+    xml = ET.tostring(elem, encoding='unicode')
+    xml = '<?xml version="1.0" ?>\n' + xml
     ns = 'http://winit/webservices/'
     xml = xml.replace('<DataWipeResultV2>', f'<ns0:DataWipeResultV2 xmlns:ns0="{ns}">')
     xml = xml.replace('</DataWipeResultV2>', '</ns0:DataWipeResultV2>')

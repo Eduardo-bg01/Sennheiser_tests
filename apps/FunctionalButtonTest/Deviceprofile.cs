@@ -20,28 +20,5 @@ namespace BluetoothHeadphoneTest
         {
             ModelName = modelName ?? throw new ArgumentNullException(nameof(modelName));
         }
-
-        /// <summary>
-        /// Cantidad total de pasos: 1 preparación + pruebas activas del perfil.
-        /// </summary>
-        public int TotalSteps
-        {
-            get
-            {
-                int count = 1; // HeadphonesOnPanel siempre presente
-                if (HasBluetooth) count++;
-                if (HasPlayPause) count++;
-                if (HasPreviousTrack) count++;
-                if (HasNextTrack) count++;
-                if (HasVolumeUp) count++;
-                if (HasVolumeDown) count++;
-                return count;
-            }
-        }
-
-        /// <summary>
-        /// Pruebas reales (sin contar el paso de preparación).
-        /// </summary>
-        public int TotalRealTests => TotalSteps - 1;
     }
 }

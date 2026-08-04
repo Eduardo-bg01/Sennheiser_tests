@@ -10,9 +10,6 @@ namespace BluetoothHeadphoneTest
         private TestSession _session;
         public TestStepManager stepManager;
 
-        // Hook global activo durante toda la sesión
-        private GlobalKeyHook _globalHook;
-
         public MainForm()
         {
             InitializeComponent();
@@ -23,8 +20,6 @@ namespace BluetoothHeadphoneTest
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            // Arrancar hook global — canal secundario (teclado físico)
-            _globalHook = new GlobalKeyHook();
             stepManager.Initialize();
             UpdateOperatorPanel();
         }
@@ -78,7 +73,6 @@ namespace BluetoothHeadphoneTest
         {
             WriteFallbackReportIfMissing();
             AppCommandRouter.Unregister();
-            _globalHook?.Dispose();
             base.OnFormClosed(e);
         }
 

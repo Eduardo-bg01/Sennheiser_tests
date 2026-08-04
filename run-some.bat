@@ -138,20 +138,12 @@ exit /b 5
 for /f %%i in ('powershell -command "[int64](Get-Date).ToUniversalTime().Subtract([datetime]\"1970-01-01\").TotalMilliseconds"') do set timestamp=%%i
 echo %timestamp% > tiempo2.txt
 
-if exist "%ROOT%scripts\getFinalResults-some.py" (
-    python "%ROOT%scripts\getFinalResults-some.py"
-) else if exist "%ROOT%scripts\getFinalResults.py" (
-    python "%ROOT%scripts\getFinalResults.py"
-)
+python "%ROOT%scripts\getFinalResults.py" --some
 
 for /f "delims=" %%i in ('powershell -command "$t1 = Get-Content tiempo1.txt; $t2 = Get-Content tiempo2.txt; [math]::Round(($t2 - $t1)/60000,2)"') do set diff_min=%%i
 echo %diff_min% > diferencia_minutos.txt
 
-if exist "%ROOT%scripts\converter-some.py" (
-    python "%ROOT%scripts\converter-some.py"
-) else if exist "%ROOT%scripts\converter.py" (
-    python "%ROOT%scripts\converter.py"
-)
+python "%ROOT%scripts\converter.py"
 
 echo Limpiando dispositivos Bluetooth...
 powershell -NoProfile -Command "$ErrorActionPreference = 'SilentlyContinue'; Get-PnpDevice -Class Bluetooth | Where-Object { $_.FriendlyName -and $_.FriendlyName -notmatch 'Radio|Adapter|Enumerator|LE Enumerator|Microsoft|Intel|Qualcomm|Broadcom' } | Remove-PnpDevice -Confirm:$false -Force" >nul 2>&1

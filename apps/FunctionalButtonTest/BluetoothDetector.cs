@@ -152,7 +152,6 @@ namespace BluetoothHeadphoneTest
             }
             catch
             {
-                list.AddRange(GetDevicesFromRegistry());
             }
 
             // 2) Dispositivos de audio cableados (Jack 3.5mm, USB-C, genéricos)
@@ -291,45 +290,6 @@ namespace BluetoothHeadphoneTest
             while (BluetoothFindNextDevice(hDevFind, ref devInfo));
 
             BluetoothFindDeviceClose(hDevFind);
-        }
-
-        private static List<BluetoothDeviceInfo> GetDevicesFromRegistry()
-        {
-            var list = new List<BluetoothDeviceInfo>();
-            try
-            {
-                using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
-                    @"SYSTEM\CurrentControlSet\Services\BTHPORT\Parameters\Devices");
-                if (key == null) return list;
-
-                foreach (var subName in key.GetSubKeyNames())
-                {
-                    using var sub = key.OpenSubKey(subName);
-                    if (sub == null) continue;
-
-                    string name = null;
-                    var rawName = sub.GetValue("Name");
-                    if (rawName is byte[] bytes)
-                        name = System.Text.Encoding.UTF8.GetString(bytes).TrimEnd('\0');
-                    else if (rawName is string s)
-                        name = s;
-
-                    if (string.IsNullOrWhiteSpace(name)) continue;
-
-                    string mac = subName.Length == 12
-                        ? $"{subName[0..2]}:{subName[2..4]}:{subName[4..6]}:{subName[6..8]}:{subName[8..10]}:{subName[10..12]}"
-                        : subName;
-
-                    list.Add(new BluetoothDeviceInfo
-                    {
-                        Name = name,
-                        Address = mac.ToUpper(),
-                        IsConnected = false
-                    });
-                }
-            }
-            catch { }
-            return list;
         }
 
         public static bool IsDeviceConnected(string macAddress)

@@ -3,6 +3,7 @@
 Aggregate test results from multiple output files into final_results.json.
 Consolidates audio measurements, device tests, and microphone results.
 """
+import argparse
 import glob
 import json
 import os
@@ -26,7 +27,6 @@ CLIPPING_THRESHOLD = 0  # dB - any level above 0 is clipping
 # Test result constants
 RESULT_PASS = "PASS"
 RESULT_FAIL = "FAIL"
-RESULT_SKIPPED = "SKIPPED"
 RESULT_TRUE = "True"
 
 # Bluetooth test field names
@@ -39,6 +39,10 @@ BT_FIELD_VOLUME_DOWN = "Bajar Volumen"
 
 # Microphone result field name
 MIC_FIELD_RESULT = "Resultado"
+
+# All possible Bluetooth and level fields
+BT_RESULT_FIELDS = ["bluetooth", "play_pausa", "anterior", "siguiente", "subir_volumen", "bajar_volumen"]
+LEVEL_RESULT_FIELDS = ["left_dbfs", "left_peak", "right_dbfs", "right_peak", "balance", "volume", "clipping"]
 
 def first_match(pattern):
     """Return first file matching glob pattern, or None."""
@@ -70,28 +74,28 @@ def read_ms_file(path):
             pass
     return None
 
-def parse_bluetooth_results(filepath):
+def parse_bluetooth_results(filepath, missing):
     """Extract Bluetooth test results from report file."""
     results = {}
     for line in read_text_file(filepath).splitlines():
         if BT_FIELD_CONNECTION in line:
             parts = line.split()
-            results["bluetooth"] = parts[2] if len(parts) > 2 else RESULT_SKIPPED
+            results["bluetooth"] = parts[2] if len(parts) > 2 else missing
         elif BT_FIELD_PLAY_PAUSE in line:
             parts = line.split()
-            results["play_pausa"] = parts[3] if len(parts) > 3 else RESULT_SKIPPED
+            results["play_pausa"] = parts[3] if len(parts) > 3 else missing
         elif BT_FIELD_PREVIOUS in line:
             parts = line.split()
-            results["anterior"] = parts[1] if len(parts) > 1 else RESULT_SKIPPED
+            results["anterior"] = parts[1] if len(parts) > 1 else missing
         elif BT_FIELD_NEXT in line:
             parts = line.split()
-            results["siguiente"] = parts[1] if len(parts) > 1 else RESULT_SKIPPED
+            results["siguiente"] = parts[1] if len(parts) > 1 else missing
         elif BT_FIELD_VOLUME_UP in line:
             parts = line.split()
-            results["subir_volumen"] = parts[2] if len(parts) > 2 else RESULT_SKIPPED
+            results["subir_volumen"] = parts[2] if len(parts) > 2 else missing
         elif BT_FIELD_VOLUME_DOWN in line:
             parts = line.split()
-            results["bajar_volumen"] = parts[2] if len(parts) > 2 else RESULT_SKIPPED
+            results["bajar_volumen"] = parts[2] if len(parts) > 2 else missing
     return results
 
 def analyze_audio_levels(measurements):
@@ -133,6 +137,12 @@ def analyze_audio_levels(measurements):
 
 def main():
     """Generate final_results.json from test output files."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--some", action="store_true",
+                        help="build-some variant: fill missing tests with N/A")
+    args = parser.parse_args()
+    missing = "N/A" if args.some else "SKIPPED"
+
     final_results = {}
     
     # Read serial number
@@ -140,7 +150,7 @@ def main():
     if serialfile:
         final_results["serial"] = read_text_file(serialfile).strip()
     else:
-        final_results["serial"] = ""
+        final_results["serial"] = missing if args.some else ""
     
     # Read audio distortion test
     audiofile = first_match(FILE_PATTERN_AUDIO)
@@ -148,7 +158,7 @@ def main():
         audio_result = read_text_file(audiofile).strip()
         final_results["distorsion"] = RESULT_PASS if audio_result == RESULT_TRUE else RESULT_FAIL
     else:
-        final_results["distorsion"] = RESULT_SKIPPED
+        final_results["distorsion"] = missing
     
     # Read audio level measurements
     if os.path.exists(FILE_PATTERN_RESULTS):
@@ -156,16 +166,22 @@ def main():
         results = json.loads(results_text)
         audio_analysis = analyze_audio_levels(results.get("measurements", []))
         final_results.update(audio_analysis)
+    elif args.some:
+        for field in LEVEL_RESULT_FIELDS:
+            final_results[field] = missing
     else:
-        final_results["balance"] = RESULT_SKIPPED
-        final_results["volume"] = RESULT_SKIPPED
-        final_results["clipping"] = RESULT_SKIPPED
+        final_results["balance"] = missing
+        final_results["volume"] = missing
+        final_results["clipping"] = missing
     
     # Read Bluetooth control test
     btfile = first_match(FILE_PATTERN_BLUETOOTH)
     if btfile:
-        bt_results = parse_bluetooth_results(btfile)
+        bt_results = parse_bluetooth_results(btfile, missing)
         final_results.update(bt_results)
+    elif args.some:
+        for field in BT_RESULT_FIELDS:
+            final_results[field] = missing
     
     # Read microphone test
     micfile = first_match(FILE_PATTERN_MICROPHONE)
@@ -175,7 +191,7 @@ def main():
                 parts = line.split()
                 final_results["resultado_mic"] = RESULT_PASS if "PAS" in parts[2] else RESULT_FAIL
     else:
-        final_results["resultado_mic"] = RESULT_SKIPPED
+        final_results["resultado_mic"] = missing
     
     # Add timestamps if available
     try:
@@ -197,4 +213,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
