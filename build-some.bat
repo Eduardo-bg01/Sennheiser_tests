@@ -25,6 +25,7 @@ call :build_project "BluetoothHeadphoneTest" "%ROOT%apps\FunctionalButtonTest\Bl
 call :build_project "AskForSerial2" "%ROOT%apps\pruebasAudifonos\AskForSerial2\AskForSerial2\AskForSerial2.csproj" "temp2" "" || goto :fail
 call :build_project "AudioTest" "%ROOT%apps\pruebasAudifonos\AudioTest\AudioTest\AudioTest.csproj" "temp3" "" || goto :fail
 call :copy_audio_asset "%ROOT%apps\pruebasAudifonos\AudioTest\AudioTest\karmaPolice.wav"
+call :build_project "LevelTest" "%ROOT%apps\pruebasAudifonos\LevelTest\HeadPhoneTest2\HeadPhoneTest2.csproj" "temp4" "%ROOT%apps\pruebasAudifonos\LevelTest\HeadPhoneTest2\audio" || goto :fail
 
 echo.
 echo All builds completed successfully.

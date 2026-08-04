@@ -10,17 +10,18 @@ if not exist "%REFURBISH_TOOL%" set "REFURBISH_TOOL=%ROOT%bin\RefurbishToolArvat
 
 if not defined MAX_RETRIES set MAX_RETRIES=5
 if not defined RETRY_DELAY set RETRY_DELAY=2
+set QUICK_AUDIO=1
 
 :: Clean up previous test files and processes
 echo Limpiando archivos y procesos previos...
-for %%p in (AskForSerial2.exe AudioTest.exe BluetoothHeadphoneTest.exe RefurbishTool.exe) do (
+for %%p in (AskForSerial2.exe AudioTest.exe BluetoothHeadphoneTest.exe LevelTest.exe RefurbishTool.exe) do (
     taskkill /f /im %%p >nul 2>&1
 )
-del /q Prueba_* hearingPass* final_results* tiempo* diferen* >nul 2>&1
+del /q Prueba_* hearingPass* recorded* results.json resultado.png final_results* tiempo* diferen* >nul 2>&1
 if not defined SKIP_SERIAL_PROMPT del /q serial* >nul 2>&1
 
 :: Verify all required executables exist
-for %%f in (AskForSerial2.exe BluetoothHeadphoneTest.exe AudioTest.exe VolumeHelper.exe) do (
+for %%f in (AskForSerial2.exe BluetoothHeadphoneTest.exe AudioTest.exe LevelTest.exe VolumeHelper.exe) do (
     if not exist "%APP_DIR%%%f" (
         echo Error: %%f no encontrado. Ejecuta build-some.bat primero.
         exit /b 1
@@ -101,7 +102,7 @@ start /wait "" "%APP_DIR%AudioTest.exe"
 timeout /t %RETRY_DELAY% /nobreak >nul
 if exist hearingPass*.txt (
     echo [AUDIO] PASSED
-    goto GENERATE_RESULTS
+    goto SETUP_VOLUME
 )
 if !AUDIO_ATTEMPTS! LSS %MAX_RETRIES% (
     echo [AUDIO] FAILED - Intento !AUDIO_ATTEMPTS!/%MAX_RETRIES%
@@ -109,6 +110,29 @@ if !AUDIO_ATTEMPTS! LSS %MAX_RETRIES% (
 )
 echo [AUDIO] FAILED - Max retries exceeded
 exit /b 2
+
+:SETUP_VOLUME
+set "LEVEL_VOLUME=100"
+if /i "!DEVICE_NAME!"=="MOMENTUM TW 4" set "LEVEL_VOLUME=80"
+echo Configurando volumen a !LEVEL_VOLUME!%% antes de la prueba de nivel...
+"%APP_DIR%VolumeHelper.exe" !LEVEL_VOLUME! >nul 2>&1 || echo No se pudo configurar volumen.
+
+:TEST_LEVELS
+set /a LEVELS_ATTEMPTS=0
+:RETRY_LEVELS
+set /a LEVELS_ATTEMPTS+=1
+start /wait "" "%APP_DIR%LevelTest.exe"
+timeout /t %RETRY_DELAY% /nobreak >nul
+if exist results.json (
+    echo [LEVELS] PASSED
+    goto GENERATE_RESULTS
+)
+if !LEVELS_ATTEMPTS! LSS %MAX_RETRIES% (
+    echo [LEVELS] FAILED - Intento !LEVELS_ATTEMPTS!/%MAX_RETRIES%
+    goto RETRY_LEVELS
+)
+echo [LEVELS] FAILED - Max retries exceeded
+exit /b 5
 
 :GENERATE_RESULTS
 for /f %%i in ('powershell -command "[int64](Get-Date).ToUniversalTime().Subtract([datetime]\"1970-01-01\").TotalMilliseconds"') do set timestamp=%%i

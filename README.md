@@ -33,16 +33,16 @@ If you copy the repo to a USB stick:
 
 The `.gitignore` ensures only source code is tracked, so you won't have outdated `.exe` files from different machines.
 
-### Audio + controls only (optional)
+### Audio + controls + automatic level test (optional)
 
-If you only need the **audio test** and **functional button test** (skipping microphone and level tests), use the `-some` variant:
+If you only need the **audio test**, **functional button test**, and **automatic level test** (skipping only the microphone test), use the `-some` variant:
 
 ```powershell
 build-some.bat
 run-some.bat
 ```
 
-Missing tests are auto-filled with `N/A` in the results, and the converter still uploads to the API as normal.
+In the `-some` variant the audio clip is shortened to 7 seconds (starting partway through the song), and the level test runs automatically, measuring dB levels / balance / clipping instead of relying on operator input. Missing tests are auto-filled with `N/A` in the results, and the converter still uploads to the API as normal.
 
 ## Included apps
 
@@ -60,7 +60,7 @@ Missing tests are auto-filled with `N/A` in the results, and the converter still
 
 ## Pending source
 
-- `apps/pruebasAudifonos/LevelTest` - Recovered from `origin/LevelTest` under the `HeadPhoneTest2` project folder.
+None.
 
 ## Root solution
 

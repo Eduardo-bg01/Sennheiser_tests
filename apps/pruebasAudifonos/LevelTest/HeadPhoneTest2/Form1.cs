@@ -254,6 +254,11 @@ namespace HeadPhoneTest2
                     ? new Mp3FileReader(audioPath)
                     : new AudioFileReader(audioPath);
 
+                if (Environment.GetEnvironmentVariable("QUICK_AUDIO") == "1")
+                {
+                    seconds2 = (int)Math.Ceiling(audioFile.TotalTime.TotalSeconds) + 1;
+                }
+
                 outputDevice.Volume = 1.0f;
                 outputDevice.Init(audioFile);
                 outputDevice.Play();

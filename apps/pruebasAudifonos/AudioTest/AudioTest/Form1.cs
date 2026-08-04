@@ -36,8 +36,15 @@ namespace AudioTest
 
         public bool passed;
 
+        private readonly bool quickVariant =
+            Environment.GetEnvironmentVariable("QUICK_AUDIO") == "1";
+
         public Form1()
         {
+            if (quickVariant)
+            {
+                seconds = 7;
+            }
             InitializeComponent();
             ApplyCohesiveTheme();
             Resize += (_, _) => ApplyProfessionalLayout();
@@ -63,7 +70,8 @@ namespace AudioTest
 
                 SetPlaybackVolume(100);
                 StartRecording();
-                PlayAudio("karmaPolice.wav",headphonesOutputIndex);
+                PlayAudio("karmaPolice.wav",headphonesOutputIndex,
+                    startOffset: quickVariant ? TimeSpan.FromSeconds(30) : (TimeSpan?)null);
 
                 timer = new System.Windows.Forms.Timer();
                 timer.Interval = 1000;
@@ -165,7 +173,8 @@ namespace AudioTest
         private void PlayAudio(
     string path,
     int outputDeviceIndex,
-    bool loop = false
+    bool loop = false,
+    TimeSpan? startOffset = null
 )
         {
             StopAudio();
@@ -188,6 +197,10 @@ namespace AudioTest
             }
 
             reader = new AudioFileReader(fullPath);
+            if (startOffset.HasValue)
+            {
+                reader.CurrentTime = startOffset.Value;
+            }
 
             output = new WaveOutEvent();
             output.DeviceNumber = outputDeviceIndex;
