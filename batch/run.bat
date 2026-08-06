@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableDelayedExpansion
-set "ROOT=%~dp0"
+set "ROOT=%~dp0.."
 pushd "%ROOT%"
 
 set "APP_DIR=%ROOT%bin\"

@@ -9,12 +9,12 @@ Unified workspace for the Bluetooth headphone test apps recovered from the branc
 1. **Install .NET 9 SDK** from https://aka.ms/dotnet/download if you haven't already.
 2. **Build all projects** from the repo root:
    ```powershell
-   build-all.bat
+   batch\build-all.bat
    ```
    This compiles all 5 test apps to `.exe` files in `bin/`.
 3. **Run all tests in sequence**:
    ```powershell
-   run-auto.bat
+   batch\run.bat
    ```
    This runs the tests without requiring you to manually enter a serial number. If you want to use a custom serial, edit `serial.txt` before running, or use `run.bat` instead.
 
@@ -24,11 +24,11 @@ If you copy the repo to a USB stick:
 1. The source code will be there, but **you must rebuild**.
 2. Open PowerShell on the destination machine, navigate to the repo root, and run:
    ```powershell
-   build-all.bat
+   batch\build-all.bat
    ```
 3. Then execute:
    ```powershell
-   run-auto.bat
+   batch\run.bat
    ```
 
 The `.gitignore` ensures only source code is tracked, so you won't have outdated `.exe` files from different machines.
@@ -38,8 +38,8 @@ The `.gitignore` ensures only source code is tracked, so you won't have outdated
 If you only need the **audio test**, **functional button test**, and **automatic level test** (skipping only the microphone test), use the `-some` variant:
 
 ```powershell
-build-some.bat
-run-some.bat
+batch\build-some.bat
+batch\run-some.bat
 ```
 
 In the `-some` variant the audio clip is shortened to 7 seconds (starting partway through the song), and the level test runs automatically, measuring dB levels / balance / clipping instead of relying on operator input. Missing tests are auto-filled with `N/A` in the results, and the converter still uploads to the API as normal.
@@ -49,8 +49,8 @@ In the `-some` variant the audio clip is shortened to 7 seconds (starting partwa
 If you only need the **audio test** and **functional button test** (skipping the level test and the microphone test), use the `-less` variant:
 
 ```powershell
-build-less.bat
-run-less.bat
+batch\build-less.bat
+batch\run-less.bat
 ```
 
 In the `-less` variant the level test is not built or run; level fields are auto-filled with `N/A` in the results.
@@ -65,9 +65,10 @@ In the `-less` variant the level test is not built or run; level fields are auto
 
 ## Scripts
 
-- `build-all.bat` - Compiles all projects to Release and copies `.exe` files to `bin/`
-- `run.bat` - Orchestrates sequential test execution, file cleanup, and result aggregation
-- `getFinalResults.py` - Parses test output files and creates `final_results.json`
+- `batch/build-all.bat` - Compiles all projects to Release and copies `.exe` files to `bin/`
+- `batch/run.bat` - Orchestrates sequential test execution, file cleanup, and result aggregation
+- `batch/build-some.bat` / `batch/build-less.bat` - Subset variants (see above)
+- `scripts/getFinalResults.py` - Parses test output files and creates `final_results.json`
 
 ## Pending source
 

@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set "ROOT=%~dp0"
+set "ROOT=%~dp0.."
 set "BIN_DIR=%ROOT%bin"
 set "DOTNET=dotnet"
 set "RUNTIME_ID=win-x64"
@@ -31,7 +31,7 @@ echo.
 echo All builds completed successfully.
 echo.
 echo Copying runtime files...
-copy /Y "%ROOT%run-some.bat" "%BIN_DIR%\run-some.bat" >nul
+copy /Y "%~dp0run-some.bat" "%BIN_DIR%\run-some.bat" >nul
 if exist "%ROOT%show_bluetooth_connect.ps1" copy /Y "%ROOT%show_bluetooth_connect.ps1" "%BIN_DIR%\show_bluetooth_connect.ps1" >nul
 if exist "%ROOT%show_bluetooth_disconnect.ps1" copy /Y "%ROOT%show_bluetooth_disconnect.ps1" "%BIN_DIR%\show_bluetooth_disconnect.ps1" >nul
 call :copy_asset_folder "%ROOT%scripts" "%BIN_DIR%\scripts" || goto :fail
