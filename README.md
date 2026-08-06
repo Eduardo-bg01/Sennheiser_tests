@@ -44,6 +44,17 @@ run-some.bat
 
 In the `-some` variant the audio clip is shortened to 7 seconds (starting partway through the song), and the level test runs automatically, measuring dB levels / balance / clipping instead of relying on operator input. Missing tests are auto-filled with `N/A` in the results, and the converter still uploads to the API as normal.
 
+### Audio + controls only (no level test)
+
+If you only need the **audio test** and **functional button test** (skipping the level test and the microphone test), use the `-less` variant:
+
+```powershell
+build-less.bat
+run-less.bat
+```
+
+In the `-less` variant the level test is not built or run; level fields are auto-filled with `N/A` in the results.
+
 ## Included apps
 
 - `apps/FunctionalButtonTest` - BluetoothHeadphoneTest (controls test)

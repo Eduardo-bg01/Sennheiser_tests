@@ -265,7 +265,11 @@ namespace BluetoothHeadphoneTest
                 var sb = new System.Text.StringBuilder();
                 string sep = new string('─', 54);
 
-                sb.AppendLine($"Dispositivo : {session.SelectedDevice?.Name ?? "—"}");
+                var selected = session.SelectedDevice;
+                string displayName = selected != null && selected.IsWired && !string.IsNullOrWhiteSpace(selected.SelectedJackModel)
+                    ? selected.SelectedJackModel
+                    : selected?.Name ?? "—";
+                sb.AppendLine($"Dispositivo : {displayName}");
                 sb.AppendLine($"MAC         : {session.SelectedDevice?.Address ?? "—"}");
                 sb.AppendLine($"Fecha       : {session.StartTime:dd/MM/yyyy  HH:mm}");
                 sb.AppendLine();

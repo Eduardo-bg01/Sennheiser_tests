@@ -40,6 +40,9 @@ BT_FIELD_VOLUME_DOWN = "Bajar Volumen"
 # Microphone result field name
 MIC_FIELD_RESULT = "Resultado"
 
+# Models whose volume result is not applicable (reported as N/A, hidden from UI)
+MODELS_WITHOUT_VOLUME = {"hd550", "hd560s", "hd599", "hd600", "hd650", "hd660s"}
+
 # All possible Bluetooth and level fields
 BT_RESULT_FIELDS = ["bluetooth", "play_pausa", "anterior", "siguiente", "subir_volumen", "bajar_volumen"]
 LEVEL_RESULT_FIELDS = ["left_dbfs", "left_peak", "right_dbfs", "right_peak", "balance", "volume", "clipping"]
@@ -61,6 +64,19 @@ def read_text_file(path):
     # Last resort: ignore errors
     with open(path, "r", encoding="utf-8", errors="ignore") as f:
         return f.read().lstrip("\ufeff")
+
+def normalize_model(name):
+    """Strip non-alphanumerics and lowercase, for model matching."""
+    return "".join(c for c in (name or "").lower() if c.isalnum())
+
+def read_device_model(btfile):
+    """Extract device model name from the Bluetooth report's Dispositivo line."""
+    if not btfile:
+        return ""
+    for line in read_text_file(btfile).splitlines():
+        if "Dispositivo" in line:
+            return line.split(":", 1)[-1].strip()
+    return ""
 
 def read_ms_file(path):
     """Read millisecond timestamp from file."""
@@ -160,11 +176,16 @@ def main():
     else:
         final_results["distorsion"] = missing
     
+    # Read Bluetooth control test (also provides the device model)
+    btfile = first_match(FILE_PATTERN_BLUETOOTH)
+
     # Read audio level measurements
     if os.path.exists(FILE_PATTERN_RESULTS):
         results_text = read_text_file(FILE_PATTERN_RESULTS)
         results = json.loads(results_text)
         audio_analysis = analyze_audio_levels(results.get("measurements", []))
+        if normalize_model(read_device_model(btfile)) in MODELS_WITHOUT_VOLUME:
+            audio_analysis["volume"] = "N/A"
         final_results.update(audio_analysis)
     elif args.some:
         for field in LEVEL_RESULT_FIELDS:
@@ -174,8 +195,6 @@ def main():
         final_results["volume"] = missing
         final_results["clipping"] = missing
     
-    # Read Bluetooth control test
-    btfile = first_match(FILE_PATTERN_BLUETOOTH)
     if btfile:
         bt_results = parse_bluetooth_results(btfile, missing)
         final_results.update(bt_results)

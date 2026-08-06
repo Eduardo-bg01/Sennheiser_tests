@@ -42,6 +42,10 @@ namespace HeadPhoneTest2
         public double level_avg;
         public double peak;
 
+        // Modelos sin prueba de volumen visible (solo balance y clipping)
+        private static readonly string[] NoVolumeModels = { "hd550", "hd560s", "hd599", "hd600", "hd650", "hd660s" };
+        private bool hideVolume;
+
         public Form1()
         {
             InitializeComponent();
@@ -99,6 +103,23 @@ namespace HeadPhoneTest2
             pictureBox1.Image = null;
             pictureBox1.Visible = false;
             ApplyProfessionalLayout();
+            hideVolume = IsNoVolumeModel();
+            ApplyVolumeVisibility();
+        }
+
+        private bool IsNoVolumeModel()
+        {
+            string device = Environment.GetEnvironmentVariable("DEVICE_NAME") ?? "";
+            string norm = new string(device.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
+            return NoVolumeModels.Any(m => norm.Contains(m));
+        }
+
+        private void ApplyVolumeVisibility()
+        {
+            panel10.Visible = !hideVolume;
+            tableLayoutPanel4.ColumnStyles[0].Width = hideVolume ? 50f : 33f;
+            tableLayoutPanel4.ColumnStyles[1].Width = hideVolume ? 0f : 33f;
+            tableLayoutPanel4.ColumnStyles[2].Width = hideVolume ? 50f : 34f;
         }
 
         private void btnNext_Click(object sender, EventArgs e)
@@ -347,6 +368,7 @@ namespace HeadPhoneTest2
 
                 this.Invoke(() =>
                 {
+                    ApplyVolumeVisibility();
                     levelDetails.Text = "I: " + Math.Round(level_left, 2) + " db | D: " + Math.Round(level_right, 2) + " db";
                     balanceDetails.Text = "Diferencia: " + Math.Round(level_diff, 2) + " db";
                     clippingDetails.Text = "Peak: " + Math.Round(peak, 2) + " db";
@@ -356,31 +378,38 @@ namespace HeadPhoneTest2
                     btnRepeat.Left = (panel12.Width - btnRepeat.Width) / 2;
                     btnRepeat.Top = (panel12.Height - btnRepeat.Height) / 2;
 
-                    if (level_diff > 2)
+                    bool balancePass = level_diff <= 2;
+                    balanceImg.Image = balancePass ? Properties.Resources.check : Properties.Resources.x;
+                    balanceDetails.ForeColor = balancePass ? TextPrimary : Danger;
+                    if (!balancePass)
                     {
-                        balanceImg.Image = Properties.Resources.x;
-                    }
-                    else
-                    {
-                        balanceImg.Image = Properties.Resources.check;
-                    }
-
-                    if (level_left<-30 || level_left>-10 || level_right<-30 || level_right>-10)
-                    {
-                        levelImg.Image = Properties.Resources.x;
-                    }
-                    else
-                    {
-                        levelImg.Image = Properties.Resources.check;
+                        balanceDetails.Text += "\n" + (level_left > level_right ? "IZQUIERDO" : "DERECHO") + " más fuerte";
                     }
 
-                    if (peak > 0)
+                    bool leftOk = level_left >= -30 && level_left <= -10;
+                    bool rightOk = level_right >= -30 && level_right <= -10;
+                    if (!hideVolume)
                     {
-                        clippingImg.Image = Properties.Resources.x;
+                        bool volumePass = leftOk && rightOk;
+                        levelImg.Image = volumePass ? Properties.Resources.check : Properties.Resources.x;
+                        levelDetails.ForeColor = volumePass ? TextPrimary : Danger;
+                        if (!volumePass)
+                        {
+                            var issues = new List<string>();
+                            if (!leftOk)
+                                issues.Add("IZQUIERDO " + (level_left < -30 ? "muy bajo (no se escucha)" : "demasiado alto"));
+                            if (!rightOk)
+                                issues.Add("DERECHO " + (level_right < -30 ? "muy bajo (no se escucha)" : "demasiado alto"));
+                            levelDetails.Text += "\nVolumen: " + string.Join(", ", issues);
+                        }
                     }
-                    else
+
+                    bool clippingPass = peak <= 0;
+                    clippingImg.Image = clippingPass ? Properties.Resources.check : Properties.Resources.x;
+                    clippingDetails.ForeColor = clippingPass ? TextPrimary : Danger;
+                    if (!clippingPass)
                     {
-                        clippingImg.Image = Properties.Resources.check;
+                        clippingDetails.Text += "\nVolumen excesivo (clipping)";
                     }
                 });
             }
@@ -526,7 +555,13 @@ namespace HeadPhoneTest2
                 balanceImg.Image = null;
                 levelImg.Image = null;
                 clippingImg.Image = null;
-            
+
+                // notas de fallo
+                balanceDetails.ForeColor = TextPrimary;
+                levelDetails.ForeColor = TextPrimary;
+                clippingDetails.ForeColor = TextPrimary;
+                ApplyVolumeVisibility();
+
         }
 
         private void ApplyCohesiveTheme()
