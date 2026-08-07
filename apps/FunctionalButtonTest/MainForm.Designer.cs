@@ -32,7 +32,6 @@ namespace BluetoothHeadphoneTest
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null)) components.Dispose();
-            if (disposing) _globalHook?.Dispose();
             base.Dispose(disposing);
         }
 
