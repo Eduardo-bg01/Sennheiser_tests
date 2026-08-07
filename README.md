@@ -35,10 +35,12 @@ The `.gitignore` ensures only source code is tracked, so you won't have outdated
 
 ### Audio + controls + automatic level test (optional)
 
+One build produces all executables; the run variant decides which tests to execute.
+
 If you only need the **audio test**, **functional button test**, and **automatic level test** (skipping only the microphone test), use the `-some` variant:
 
 ```powershell
-batch\build-some.bat
+batch\build-all.bat
 batch\run-some.bat
 ```
 
@@ -49,11 +51,11 @@ In the `-some` variant the audio clip is shortened to 7 seconds (starting partwa
 If you only need the **audio test** and **functional button test** (skipping the level test and the microphone test), use the `-less` variant:
 
 ```powershell
-batch\build-less.bat
+batch\build-all.bat
 batch\run-less.bat
 ```
 
-In the `-less` variant the level test is not built or run; level fields are auto-filled with `N/A` in the results.
+In the `-less` variant the level test is not run; level fields are auto-filled with `N/A` in the results.
 
 ## Included apps
 
@@ -65,9 +67,9 @@ In the `-less` variant the level test is not built or run; level fields are auto
 
 ## Scripts
 
-- `batch/build-all.bat` - Compiles all projects to Release and copies `.exe` files to `bin/`
+- `batch/build-all.bat` - Compiles all projects to Release and copies `.exe` files to `bin/` (single build for every run variant)
 - `batch/run.bat` - Orchestrates sequential test execution, file cleanup, and result aggregation
-- `batch/build-some.bat` / `batch/build-less.bat` - Subset variants (see above)
+- `batch/run-some.bat` / `batch/run-less.bat` - Subset run variants (audio + level, or audio only)
 - `scripts/getFinalResults.py` - Parses test output files and creates `final_results.json`
 
 ## Pending source

@@ -1,10 +1,10 @@
 @echo off
 setlocal EnableDelayedExpansion
-set "ROOT=%~dp0.."
+set "ROOT=%~dp0..\"
 pushd "%ROOT%"
 
 set "APP_DIR=%ROOT%bin\"
-if exist "%ROOT%AskForSerial2.exe" set "APP_DIR=%ROOT%"
+if exist "%ROOT%AskForSerial2.exe" set "APP_DIR=%ROOT%\"
 set "REFURBISH_TOOL=%ROOT%RefurbishToolArvato\RefurbishTool.exe"
 if not exist "%REFURBISH_TOOL%" set "REFURBISH_TOOL=%ROOT%bin\RefurbishToolArvato\RefurbishTool.exe"
 
@@ -28,14 +28,13 @@ for %%f in (AskForSerial2.exe BluetoothHeadphoneTest.exe AudioTest.exe MicroTest
 )
 
 if not exist "%REFURBISH_TOOL%" (
-    echo Error: RefurbishTool.exe no encontrado. Ejecuta build-all.bat primero.
-    exit /b 1
+    echo Aviso: RefurbishTool.exe no encontrado, se omite.
+) else (
+    echo.
+    echo Abriendo RefurbishTool...
+    start /wait "" "%REFURBISH_TOOL%"
+    echo.
 )
-
-echo.
-echo Abriendo RefurbishTool...
-start /wait "" "%REFURBISH_TOOL%"
-echo.
 
 :: Show Bluetooth connection instructions
 echo.
