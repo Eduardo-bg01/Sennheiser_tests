@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set "ROOT=%~dp0.."
+set "ROOT=%~dp0..\"
 set "BIN_DIR=%ROOT%bin"
 set "DOTNET=dotnet"
 set "RUNTIME_ID=win-x64"
