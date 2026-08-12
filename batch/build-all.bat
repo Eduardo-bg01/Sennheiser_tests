@@ -89,7 +89,3 @@ exit /b 0
 :fail
 echo Build failed!
 exit /b 1
-
-:fail
-echo Build failed.
-exit /b 1

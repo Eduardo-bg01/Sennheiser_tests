@@ -1,35 +1,44 @@
 import json
+import urllib.request
 import xml.etree.ElementTree as ET
-import requests
 import argparse
 from datetime import datetime
 import os
 from pathlib import Path
 
-# Load API endpoint from environment variable for security
-# To set: $env:AZURE_API_ENDPOINT="https://..."
-API_ENDPOINT = os.getenv(
-    'AZURE_API_ENDPOINT',
-    'https://usengprod-functionapp.azurewebsites.net/api/DataWipeResult?code=qaITPGBWPv55-nnUoXunopRqJIZeyHQwSbo0F0-aYOBTAzFua5QkRg=='
-)
+# Load site config from config.json (next to this script, or cwd).
+# Fields can still be overridden via env vars (AZURE_API_ENDPOINT, USERNAME).
+def load_config():
+    cfg = {}
+    for base in (Path(__file__).resolve().parent, Path.cwd()):
+        p = base / "config.json"
+        if p.exists():
+            try:
+                cfg.update(json.loads(p.read_text(encoding="utf-8")))
+            except Exception:
+                pass
+            break
+    return cfg
 
-# Warning if using default (for development only)
-if API_ENDPOINT.endswith('aYOBTAzFua5QkRg=='):
-    print("[WARNING] Using hardcoded API endpoint. Set AZURE_API_ENDPOINT environment variable for security.")
+CONFIG = load_config()
+
+API_ENDPOINT = os.getenv('AZURE_API_ENDPOINT') or CONFIG.get('endpoint') or ''
+if not API_ENDPOINT:
+    print("[WARNING] No API endpoint configured. Set endpoint in scripts/config.json or AZURE_API_ENDPOINT env var.")
 
 def get_windows_username():
-    return os.environ.get('USERNAME') or "tester1"
+    return os.environ.get('USERNAME') or CONFIG.get('username') or "tester1"
 
-# Test configuration defaults
+# Test configuration defaults (config.json overrides)
 DEFAULTS = {
     "Username": get_windows_username(),
     "StartTime": None,
     "EndTime": None,
-    "Contract": "10083",
-    "MachineName": "AudioTester",
-    "TestArea": "MEXICALI_R2",
-    "Program": "HP_MXLR2",
-    "dbType": "",
+    "Contract": CONFIG.get('contract') or "10083",
+    "MachineName": CONFIG.get('machine_name') or "AudioTester",
+    "TestArea": CONFIG.get('test_area') or "MEXICALI_R2",
+    "Program": CONFIG.get('program') or "HP_MXLR2",
+    "dbType": CONFIG.get('db_type') or "",
 }
 
 # Subtest names matching test results
@@ -157,10 +166,11 @@ def save(xml_str,path):
 
 def upload(xml_str):
     headers = {'Content-Type':'application/xml'}
+    req = urllib.request.Request(API_ENDPOINT, data=xml_str.encode('utf-8'), headers=headers, method='POST')
     try:
-        r = requests.post(API_ENDPOINT, data=xml_str, headers=headers, timeout=15)
-        return r.status_code, r.text
-    except requests.RequestException as exc:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return r.status, r.read().decode('utf-8', errors='replace')
+    except Exception as exc:
         return None, str(exc)
 
 def run():
@@ -181,12 +191,16 @@ def run():
         save(xml_str, args.output)
 
     if not args.no_upload:
-        code, text = upload(xml_str)
-        if code is None:
+        if not API_ENDPOINT:
             print('Upload status: FAILED')
-            print('Upload error:', text)
+            print('Upload error: no API endpoint configured (see config.json)')
         else:
-            print('Upload status:', code)
+            code, text = upload(xml_str)
+            if code is None:
+                print('Upload status: FAILED')
+                print('Upload error:', text)
+            else:
+                print('Upload status:', code)
 
 if __name__=='__main__':
     run()

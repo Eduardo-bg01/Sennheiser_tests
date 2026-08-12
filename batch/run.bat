@@ -10,16 +10,23 @@ if not exist "%REFURBISH_TOOL%" set "REFURBISH_TOOL=%ROOT%bin\RefurbishToolArvat
 if not defined MAX_RETRIES set MAX_RETRIES=5
 if not defined RETRY_DELAY set RETRY_DELAY=2
 
+:: Variant: full (default) | some (no mic) | less (audio only)
+if not defined VARIANT set VARIANT=full
+if /i not "%VARIANT%"=="full" set QUICK_AUDIO=1
+
 :: Clean up previous test files and processes
 echo Limpiando archivos y procesos previos...
 for %%p in (AskForSerial2.exe AudioTest.exe BluetoothHeadphoneTest.exe MicroTestCloud.exe LevelTest.exe RefurbishTool.exe) do (
     taskkill /f /im %%p >nul 2>&1
 )
-del /q Prueba_* results.json MicroTest_* test_results* hearingPass* recorded* final_results* tiempo* diferen* >nul 2>&1
+del /q Prueba_* results.json MicroTest_* test_results* hearingPass* recorded* final_results* tiempo* diferen* resultado.png >nul 2>&1
 if not defined SKIP_SERIAL_PROMPT del /q serial* >nul 2>&1
 
 :: Verify all required executables exist
-for %%f in (AskForSerial2.exe BluetoothHeadphoneTest.exe AudioTest.exe MicroTestCloud.exe LevelTest.exe VolumeHelper.exe) do (
+set "NEEDED=AskForSerial2.exe BluetoothHeadphoneTest.exe AudioTest.exe VolumeHelper.exe"
+if /i not "%VARIANT%"=="less" set "NEEDED=!NEEDED! LevelTest.exe"
+if /i "%VARIANT%"=="full" set "NEEDED=!NEEDED! MicroTestCloud.exe"
+for %%f in (!NEEDED!) do (
     if not exist "%APP_DIR%%%f" (
         echo Error: %%f no encontrado. Ejecuta build-all.bat primero.
         exit /b 1
@@ -63,7 +70,7 @@ if defined SKIP_SERIAL_PROMPT (
 :CHECK_DEVICE_TYPE
 set /p "IS_CABLE=El audifono es por cable (jack 3.5 mm)? [S/N]: "
 if /i "%IS_CABLE%"=="S" goto CABLE_DEVICE
-if /i "%IS_CABLE%"=="N" goto SET_VOLUME_100_BEFORE_CONTROLS
+if /i "%IS_CABLE%"=="N" goto SET_VOLUME_50
 goto CHECK_DEVICE_TYPE
 
 :CABLE_DEVICE
@@ -76,7 +83,7 @@ echo [CONTROLS] SKIPPED - dispositivo por cable (!JACK_MODEL!)
 powershell -NoProfile -Command "$n='!JACK_MODEL!'; $c=[char]0x00F3; Set-Content -Path ('Prueba_cable_!timestamp!.txt') -Encoding UTF8 -Value ('Dispositivo : '+$n,'  Conexi'+$c+'n Bluetooth   N/A','  Play / Pausa     N/A','  Anterior          N/A','  Siguiente         N/A','  Subir Volumen     N/A','  Bajar Volumen     N/A')"
 goto TEST_AUDIO
 
-:SET_VOLUME_100_BEFORE_CONTROLS
+:SET_VOLUME_50
 echo Configurando volumen a 50%% antes de la prueba de controles...
 "%APP_DIR%VolumeHelper.exe" 50 >nul 2>&1 || echo No se pudo configurar volumen.
 
@@ -116,9 +123,7 @@ start /wait "" "%APP_DIR%AudioTest.exe"
 timeout /t %RETRY_DELAY% /nobreak >nul
 if exist hearingPass*.txt (
     echo [AUDIO] PASSED
-    echo Configurando volumen a 100%% antes de la prueba de microfono...
-    "%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
-    goto TEST_MICROPHONE
+    goto POST_AUDIO
 )
 if !AUDIO_ATTEMPTS! LSS %MAX_RETRIES% (
     echo [AUDIO] FAILED - Intento !AUDIO_ATTEMPTS!/%MAX_RETRIES%
@@ -126,6 +131,15 @@ if !AUDIO_ATTEMPTS! LSS %MAX_RETRIES% (
 )
 echo [AUDIO] FAILED - Max retries exceeded
 exit /b 2
+
+:POST_AUDIO
+if /i "%VARIANT%"=="full" (
+    echo Configurando volumen a 100%% antes de la prueba de microfono...
+    "%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
+    goto TEST_MICROPHONE
+)
+if /i "%VARIANT%"=="some" goto SETUP_VOLUME
+goto GENERATE_RESULTS
 
 :TEST_MICROPHONE
 set /a MIC_ATTEMPTS=0
@@ -155,12 +169,6 @@ if /i "!DEVICE_NAME!"=="MOMENTUM TW 4" set "LEVEL_VOLUME=80"
 echo Configurando volumen a !LEVEL_VOLUME!%% antes de la prueba de nivel...
 "%APP_DIR%VolumeHelper.exe" !LEVEL_VOLUME! >nul 2>&1 || echo No se pudo configurar volumen.
 
-:ENSURE_REQUESTS
-python -c "import requests" >nul 2>&1 || (
-    echo Instalando dependencia requests...
-    python -m pip install --user requests >nul 2>&1 || echo No se pudo instalar requests.
-)
-
 :TEST_LEVELS
 set /a LEVELS_ATTEMPTS=0
 :RETRY_LEVELS
@@ -182,7 +190,11 @@ exit /b 5
 for /f %%i in ('powershell -command "[int64](Get-Date).ToUniversalTime().Subtract([datetime]\"1970-01-01\").TotalMilliseconds"') do set timestamp=%%i
 echo %timestamp% > tiempo2.txt
 
-python "%ROOT%scripts\getFinalResults.py"
+if /i "%VARIANT%"=="full" (
+    python "%ROOT%scripts\getFinalResults.py"
+) else (
+    python "%ROOT%scripts\getFinalResults.py" --some
+)
 
 for /f "delims=" %%i in ('powershell -command "$t1 = Get-Content tiempo1.txt; $t2 = Get-Content tiempo2.txt; [math]::Round(($t2 - $t1)/60000,2)"') do set diff_min=%%i
 echo %diff_min% > diferencia_minutos.txt

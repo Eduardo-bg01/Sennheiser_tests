@@ -35,27 +35,35 @@ The `.gitignore` ensures only source code is tracked, so you won't have outdated
 
 ### Audio + controls + automatic level test (optional)
 
-One build produces all executables; the run variant decides which tests to execute.
+One build produces all executables; the run variant decides which tests to execute. Set `VARIANT` before running `bin\run.bat`:
 
-If you only need the **audio test**, **functional button test**, and **automatic level test** (skipping only the microphone test), use the `-some` variant:
-
-```powershell
-batch\build-all.bat
-batch\run-some.bat
-```
-
-In the `-some` variant the audio clip is shortened to 7 seconds (starting partway through the song), and the level test runs automatically, measuring dB levels / balance / clipping instead of relying on operator input. Missing tests are auto-filled with `N/A` in the results, and the converter still uploads to the API as normal.
-
-### Audio + controls only (no level test)
-
-If you only need the **audio test** and **functional button test** (skipping the level test and the microphone test), use the `-less` variant:
+- **`full`** (default) — audio, controls, microphone, and level tests.
+- **`some`** — audio, controls, and level (skips only the microphone test).
+- **`less`** — audio and controls only (skips level and microphone tests).
 
 ```powershell
-batch\build-all.bat
-batch\run-less.bat
+bin\run.bat                          :: full
+set VARIANT=some && bin\run.bat      :: no microphone test
+set VARIANT=less && bin\run.bat      :: audio + controls only
 ```
 
-In the `-less` variant the level test is not run; level fields are auto-filled with `N/A` in the results.
+In the `some`/`less` variants the audio clip is shortened to 7 seconds (starting partway through the song), missing tests are auto-filled with `N/A` in the results, and the converter still uploads to the API as normal.
+
+### Site configuration
+
+Per-unit settings live in `scripts/config.json` (not tracked in git — edit it on each machine after build, it is copied to `bin\scripts\config.json` by `build-all.bat`):
+
+```json
+{
+  "endpoint": "https://.../api/DataWipeResult?code=...",
+  "machine_name": "AudioTester",
+  "contract": "10083",
+  "test_area": "MEXICALI_R2",
+  "program": "HP_MXLR2"
+}
+```
+
+The `endpoint` can also be supplied via the `AZURE_API_ENDPOINT` environment variable, which takes precedence over `config.json`. If neither is set, the converter skips the upload and prints a warning.
 
 ## Included apps
 
@@ -68,9 +76,9 @@ In the `-less` variant the level test is not run; level fields are auto-filled w
 ## Scripts
 
 - `batch/build-all.bat` - Compiles all projects to Release and copies `.exe` files to `bin/` (single build for every run variant)
-- `batch/run.bat` - Orchestrates sequential test execution, file cleanup, and result aggregation
-- `batch/run-some.bat` / `batch/run-less.bat` - Subset run variants (audio + level, or audio only)
+- `batch/run.bat` - Orchestrates sequential test execution, file cleanup, and result aggregation (variant selected via `VARIANT=full|some|less`)
 - `scripts/getFinalResults.py` - Parses test output files and creates `final_results.json`
+- `scripts/converter.py` - Converts `final_results.json` to XML and uploads it (stdlib only, no pip dependencies)
 
 ## Pending source
 
@@ -78,9 +86,9 @@ None.
 
 ## Root solution
 
-[Sennheiser_tests.sln](Sennheiser_tests.sln) groups all four projects for IDE browsing and coordinated builds in Visual Studio.
+Each app ships its own `.sln` (used by the build script); there is no root solution.
 
 ## Requirements
 
 - .NET 9 SDK (or higher 8.0 for individual projects)
-- Python 3.9+ (for result aggregation)
+- Python 3.9+ (for result aggregation and the level-test measurement script)

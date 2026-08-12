@@ -40,4 +40,7 @@ diferencia_minutos.txt
 .venv/
 __pycache__/
 
+# Site config (may contain API endpoint/keys); edit locally, don't commit
+scripts/config.json
+
 .log

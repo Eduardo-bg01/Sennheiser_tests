@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace BluetoothHeadphoneTest
@@ -11,23 +10,6 @@ namespace BluetoothHeadphoneTest
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-
-            // Intentar auto-seleccionar si hay exactamente un dispositivo conectado
-            //try
-            //{
-            //    var devices = BluetoothDetector.GetPairedDevices();
-            //    var connected = devices.Where(d => d.IsConnected).ToList();
-            //    if (connected.Count == 1)
-            //    {
-            //        var device = connected[0];
-            //        DeviceAssets.DeviceName = device.Name;
-            //        var autoForm = new MainForm();
-            //        autoForm.Session.SelectedDevice = device;
-            //        Application.Run(autoForm);
-            //        return;
-            //    }
-            //}
-            //catch { /* no bloquear, caerá a selección manual */ }
 
             using var selectForm = new DeviceSelectForm();
             if (selectForm.ShowDialog() != DialogResult.OK)
