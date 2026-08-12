@@ -7,7 +7,7 @@ import argparse
 import glob
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 # File patterns
 FILE_PATTERN_SERIAL = "serial*"
@@ -217,9 +217,9 @@ def main():
         t1 = read_ms_file(FILE_PATTERN_TIME_START)
         t2 = read_ms_file(FILE_PATTERN_TIME_END)
         if t1 is not None:
-            final_results['StartTime'] = datetime.utcfromtimestamp(t1 / 1000.0).strftime('%Y-%m-%d %H:%M:%S')
+            final_results['StartTime'] = datetime.fromtimestamp(t1 / 1000.0, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
         if t2 is not None:
-            final_results['EndTime'] = datetime.utcfromtimestamp(t2 / 1000.0).strftime('%Y-%m-%d %H:%M:%S')
+            final_results['EndTime'] = datetime.fromtimestamp(t2 / 1000.0, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
     except Exception:
         # Best-effort: if timestamp parsing fails, continue without timestamps
         pass

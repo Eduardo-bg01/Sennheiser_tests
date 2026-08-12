@@ -66,23 +66,9 @@ if defined SKIP_SERIAL_PROMPT (
     )
 )
 
-:: Si el dispositivo es por cable (jack), se omiten las pruebas de controles
-:CHECK_DEVICE_TYPE
-set /p "IS_CABLE=El audifono es por cable (jack 3.5 mm)? [S/N]: "
-if /i "%IS_CABLE%"=="S" goto CABLE_DEVICE
-if /i "%IS_CABLE%"=="N" goto SET_VOLUME_50
-goto CHECK_DEVICE_TYPE
-
-:CABLE_DEVICE
-set /p "JACK_MODEL=Modelo del audifono (ej. HD 560S, HD 650): "
-if "%JACK_MODEL%"=="" set "JACK_MODEL=Jack generico"
-set "DEVICE_NAME=!JACK_MODEL!"
-echo Configurando volumen a 100%% antes de la prueba de audio...
-"%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
-echo [CONTROLS] SKIPPED - dispositivo por cable (!JACK_MODEL!)
-powershell -NoProfile -Command "$n='!JACK_MODEL!'; $c=[char]0x00F3; Set-Content -Path ('Prueba_cable_!timestamp!.txt') -Encoding UTF8 -Value ('Dispositivo : '+$n,'  Conexi'+$c+'n Bluetooth   N/A','  Play / Pausa     N/A','  Anterior          N/A','  Siguiente         N/A','  Subir Volumen     N/A','  Bajar Volumen     N/A')"
-goto TEST_AUDIO
-
+:: La seleccion de dispositivo (BT o jack + modelo) la hace el operador
+:: dentro de BluetoothHeadphoneTest.exe. El reporte Prueba_*.txt que
+:: genera la app es el que usan los scripts aguas abajo.
 :SET_VOLUME_50
 echo Configurando volumen a 50%% antes de la prueba de controles...
 "%APP_DIR%VolumeHelper.exe" 50 >nul 2>&1 || echo No se pudo configurar volumen.
