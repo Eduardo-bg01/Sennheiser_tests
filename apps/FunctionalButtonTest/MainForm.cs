@@ -100,7 +100,12 @@ namespace BluetoothHeadphoneTest
                 if (!hasActivity)
                     return;
 
-                string deviceName = _session.SelectedDevice?.Name ?? "BT";
+                var selected = _session.SelectedDevice;
+                string displayName = selected != null && selected.IsWired && !string.IsNullOrWhiteSpace(selected.SelectedJackModel)
+                    ? selected.SelectedJackModel
+                    : selected?.Name ?? "BT";
+
+                string deviceName = displayName;
                 foreach (char c in Path.GetInvalidFileNameChars())
                 {
                     deviceName = deviceName.Replace(c, '_');
@@ -113,7 +118,7 @@ namespace BluetoothHeadphoneTest
                 var sb = new System.Text.StringBuilder();
                 string sep = new string('─', 54);
 
-                sb.AppendLine($"Dispositivo : {_session.SelectedDevice?.Name ?? "—"}");
+                sb.AppendLine($"Dispositivo : {displayName}");
                 sb.AppendLine($"MAC         : {_session.SelectedDevice?.Address ?? "—"}");
                 sb.AppendLine($"Fecha       : {_session.StartTime:dd/MM/yyyy  HH:mm}");
                 sb.AppendLine();

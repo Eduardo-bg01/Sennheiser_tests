@@ -14,9 +14,9 @@ Unified workspace for the Bluetooth headphone test apps recovered from the branc
    This compiles all 5 test apps to `.exe` files in `bin/`.
 3. **Run all tests in sequence**:
    ```powershell
-   batch\run.bat
+   bin\run.bat
    ```
-   This runs the tests without requiring you to manually enter a serial number. If you want to use a custom serial, edit `serial.txt` before running, or use `run.bat` instead.
+   This runs the tests without requiring you to manually enter a serial number. If you want to use a custom serial, edit `serial.txt` before running.
 
 ### On USB stick setup
 
@@ -28,7 +28,7 @@ If you copy the repo to a USB stick:
    ```
 3. Then execute:
    ```powershell
-   batch\run.bat
+   bin\run.bat
    ```
 
 The `.gitignore` ensures only source code is tracked, so you won't have outdated `.exe` files from different machines.
