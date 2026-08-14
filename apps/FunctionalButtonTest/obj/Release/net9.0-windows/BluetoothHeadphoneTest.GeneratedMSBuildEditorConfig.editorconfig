@@ -14,11 +14,7 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = BluetoothHeadphoneTest
-<<<<<<< HEAD
-build_property.ProjectDir = C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\apps\FunctionalButtonTest\
-=======
 build_property.ProjectDir = C:\Users\hector.conde\Source\Repos\Sennheiser_tests\apps\FunctionalButtonTest\
->>>>>>> bc6a390ef9f32d1e6b95b78714a8e5aa6a4dcdea
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.CsWinRTUseWindowsUIXamlProjections = false

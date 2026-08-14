@@ -10,9 +10,14 @@ if not exist "%REFURBISH_TOOL%" set "REFURBISH_TOOL=%ROOT%bin\RefurbishToolArvat
 if not defined MAX_RETRIES set MAX_RETRIES=5
 if not defined RETRY_DELAY set RETRY_DELAY=2
 
-:: Variant: full (default) | some (no mic) | less (audio only)
-if not defined VARIANT set VARIANT=full
-if /i not "%VARIANT%"=="full" set QUICK_AUDIO=1
+:: Reglas de ejecucion por modelo (automatico, ya no requiere VARIANT):
+::   - AudioTest      -> siempre se ejecuta.
+::   - MicroTestCloud -> desactivado para todos los modelos.
+::   - LevelTest      -> solo modelos de familia HD o IE (ver :detect_level_test).
+:: Para forzar la prueba de microfono en algun caso especial:
+::   set RUN_MICROPHONE=1 && bin\run.bat
+if not defined RUN_MICROPHONE set RUN_MICROPHONE=0
+if /i "%RUN_MICROPHONE%"=="1" (set "QUICK_AUDIO=0") else (if not defined QUICK_AUDIO set QUICK_AUDIO=1)
 
 :: Clean up previous test files and processes
 echo Limpiando archivos y procesos previos...
@@ -23,9 +28,8 @@ del /q Prueba_* results.json MicroTest_* test_results* hearingPass* recorded* fi
 if not defined SKIP_SERIAL_PROMPT del /q serial* >nul 2>&1
 
 :: Verify all required executables exist
-set "NEEDED=AskForSerial2.exe BluetoothHeadphoneTest.exe AudioTest.exe VolumeHelper.exe"
-if /i not "%VARIANT%"=="less" set "NEEDED=!NEEDED! LevelTest.exe"
-if /i "%VARIANT%"=="full" set "NEEDED=!NEEDED! MicroTestCloud.exe"
+set "NEEDED=AskForSerial2.exe BluetoothHeadphoneTest.exe AudioTest.exe VolumeHelper.exe LevelTest.exe"
+if /i "%RUN_MICROPHONE%"=="1" set "NEEDED=!NEEDED! MicroTestCloud.exe"
 for %%f in (!NEEDED!) do (
     if not exist "%APP_DIR%%%f" (
         echo Error: %%f no encontrado. Ejecuta build-all.bat primero.
@@ -82,6 +86,7 @@ call :wait_for_result_file "Prueba_*.txt" "%APP_DIR%Prueba_*.txt" 5
 if exist Prueba_*.txt (
     echo [CONTROLS] PASSED
     for /f "usebackq delims=" %%a in (`powershell -NoProfile -Command "$line = (Select-String -Path Prueba_*.txt -Pattern 'Dispositivo').Line; $name = $line.Substring($line.IndexOf(':') + 1).Trim(); Write-Output $name"`) do set "DEVICE_NAME=%%a"
+    call :detect_level_test
     echo Configurando volumen a 100%% antes de la prueba de audio...
     "%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
     goto TEST_AUDIO
@@ -90,6 +95,7 @@ if exist "%APP_DIR%Prueba_*.txt" (
     copy "%APP_DIR%Prueba_*.txt" . >nul 2>&1
     echo [CONTROLS] PASSED
     for /f "usebackq delims=" %%a in (`powershell -NoProfile -Command "$line = (Select-String -Path Prueba_*.txt -Pattern 'Dispositivo').Line; $name = $line.Substring($line.IndexOf(':') + 1).Trim(); Write-Output $name"`) do set "DEVICE_NAME=%%a"
+    call :detect_level_test
     echo Configurando volumen a 100%% antes de la prueba de audio...
     "%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
     goto TEST_AUDIO
@@ -119,13 +125,12 @@ echo [AUDIO] FAILED - Max retries exceeded
 exit /b 2
 
 :POST_AUDIO
-if /i "%VARIANT%"=="full" (
+if /i "%RUN_MICROPHONE%"=="1" (
     echo Configurando volumen a 100%% antes de la prueba de microfono...
     "%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
     goto TEST_MICROPHONE
 )
-if /i "%VARIANT%"=="some" goto SETUP_VOLUME
-goto GENERATE_RESULTS
+goto SETUP_VOLUME
 
 :TEST_MICROPHONE
 set /a MIC_ATTEMPTS=0
@@ -150,6 +155,10 @@ echo [MICROPHONE] FAILED - Max retries exceeded
 exit /b 4
 
 :SETUP_VOLUME
+if /i "%RUN_LEVEL%"=="0" (
+    echo [LEVELS] Omitido - el modelo "!DEVICE_NAME!" no es familia HD/IE.
+    goto GENERATE_RESULTS
+)
 set "LEVEL_VOLUME=100"
 if /i "!DEVICE_NAME!"=="MOMENTUM TW 4" set "LEVEL_VOLUME=80"
 echo Configurando volumen a !LEVEL_VOLUME!%% antes de la prueba de nivel...
@@ -176,11 +185,7 @@ exit /b 5
 for /f %%i in ('powershell -command "[int64](Get-Date).ToUniversalTime().Subtract([datetime]\"1970-01-01\").TotalMilliseconds"') do set timestamp=%%i
 echo %timestamp% > tiempo2.txt
 
-if /i "%VARIANT%"=="full" (
-    python "%ROOT%scripts\getFinalResults.py"
-) else (
-    python "%ROOT%scripts\getFinalResults.py" --some
-)
+python "%ROOT%scripts\getFinalResults.py" --some
 
 for /f "delims=" %%i in ('powershell -command "$t1 = Get-Content tiempo1.txt; $t2 = Get-Content tiempo2.txt; [math]::Round(($t2 - $t1)/60000,2)"') do set diff_min=%%i
 echo %diff_min% > diferencia_minutos.txt
@@ -196,6 +201,19 @@ echo.
 echo Pruebas completadas. Tiempo total: %diff_min% min
 echo.
 popd
+exit /b 0
+
+:detect_level_test
+:: LevelTest solo aplica a modelos de familia HD o IE (ej. "HD 660S2", "IE 200").
+:: Se compara el nombre normalizado (mayusculas, sin espacios/simbolos) buscando
+:: "HD" o "IE" seguido de un digito, para NO incluir por error otras familias
+:: que tambien empiezan con "HD" pero son distintas, como "HDR 175" o "HDB 630".
+:: Para agregar/quitar familias, ajusta el patron regex de abajo.
+set "RUN_LEVEL=0"
+set "LEVEL_MATCH=NO"
+for /f %%r in ('powershell -NoProfile -Command "if ((($env:DEVICE_NAME) -replace '[^A-Za-z0-9]','').ToUpper() -match '(HD|IE)[0-9]') { 'YES' } else { 'NO' }"') do set "LEVEL_MATCH=%%r"
+if /i "!LEVEL_MATCH!"=="YES" set "RUN_LEVEL=1"
+echo Modelo detectado: !DEVICE_NAME!  ^(LevelTest: !RUN_LEVEL!, MicroTest: %RUN_MICROPHONE%^)
 exit /b 0
 
 :wait_for_result_file
