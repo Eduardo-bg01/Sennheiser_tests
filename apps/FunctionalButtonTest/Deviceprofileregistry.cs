@@ -42,10 +42,10 @@ namespace BluetoothHeadphoneTest
             {
                 HasBluetooth     = false,
                 HasPlayPause     = true,
-                HasPreviousTrack = true,
-                HasNextTrack     = true,
-                HasVolumeUp      = true,
-                HasVolumeDown    = true,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
             },
              new DeviceProfile("ACCENTUM")
             {
