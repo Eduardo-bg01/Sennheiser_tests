@@ -75,6 +75,18 @@ namespace BluetoothHeadphoneTest
                 HasVolumeDown    = true,
             },
 
+                new DeviceProfile("HD 400U")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = true,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+
+
+
             // ════════════════════════════════════════════════════════════════
             //  AGREGA AQUÍ MODELOS NUEVOS (BT, USB-C o USB-A):
             //
