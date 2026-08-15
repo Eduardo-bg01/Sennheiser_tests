@@ -102,16 +102,171 @@ namespace BluetoothHeadphoneTest
             "HDR 175", "RS 120-W", "RS 195", "RS 275", "IE 200", "IE 600", "IE 900", "HD 400U",
         };
 
-        private static readonly List<DeviceProfile> _jackProfiles =
-            JackModelNames.Select(name => new DeviceProfile(name)
-            {
-                HasBluetooth     = false,
-                HasPlayPause     = name == "HD 400U",
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            }).ToList();
+        private static readonly List<DeviceProfile> _jackProfiles = new()
+        {
+                new DeviceProfile("HD 550")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = false,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+
+                new DeviceProfile("HD 560S")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = false,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+                new DeviceProfile("HD 569")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = false,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+                new DeviceProfile("HD 599")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = false,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+                new DeviceProfile("HD 600")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = false,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+                new DeviceProfile("HD 650")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = false,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+                new DeviceProfile("HD 660S2")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = false,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+
+                 new DeviceProfile("HDR 175")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = false,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+
+                  new DeviceProfile("RS 120-W")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = false,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+
+                  new DeviceProfile("RS 195")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = false,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+
+                  new DeviceProfile("RS 275")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = false,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+
+                   new DeviceProfile("IE 200")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = false,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+
+                       new DeviceProfile("IE 600")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = false,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+
+                           new DeviceProfile("IE 900")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = false,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+
+                               new DeviceProfile("HD 400U")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = true,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+
+
+
+
+
+
+        };
+
+
+
+            //JackModelNames.Select(name => new DeviceProfile(name)
+            //{
+            //    HasBluetooth     = false,
+            //    HasPlayPause     = name == "HD 400U",
+            //    HasPreviousTrack = false,
+            //    HasNextTrack     = false,
+            //    HasVolumeUp      = false,
+            //    HasVolumeDown    = false,
+            //}).ToList();
 
         // ════════════════════════════════════════════════════════════════════
         //  NOMBRES GENÉRICOS DE WINDOWS
