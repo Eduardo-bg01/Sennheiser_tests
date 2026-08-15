@@ -43,7 +43,7 @@ namespace HeadPhoneTest2
         public double peak;
 
         // Modelos sin prueba de volumen visible (solo balance y clipping)
-        private static readonly string[] NoVolumeModels = { "hd550", "hd560s", "hd599", "hd600", "hd650", "hd660s" };
+        private static readonly string[] NoVolumeModels = { "hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", "hd660s" };
         private bool hideVolume;
 
         public Form1()
@@ -111,7 +111,7 @@ namespace HeadPhoneTest2
         {
             string device = Environment.GetEnvironmentVariable("DEVICE_NAME") ?? "";
             string norm = new string(device.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
-            return NoVolumeModels.Any(m => norm.Contains(m));
+            return NoVolumeModels.Any(m => norm.Contains(m)) || norm.StartsWith("ie");
         }
 
         private void ApplyVolumeVisibility()

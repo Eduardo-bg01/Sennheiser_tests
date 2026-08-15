@@ -41,7 +41,7 @@ BT_FIELD_VOLUME_DOWN = "Bajar Volumen"
 MIC_FIELD_RESULT = "Resultado"
 
 # Models whose volume result is not applicable (reported as N/A, hidden from UI)
-MODELS_WITHOUT_VOLUME = {"hd550", "hd560s", "hd599", "hd600", "hd650", "hd660s"}
+MODELS_WITHOUT_VOLUME = {"hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", "hd660s"}
 
 # All possible Bluetooth and level fields
 BT_RESULT_FIELDS = ["bluetooth", "play_pausa", "anterior", "siguiente", "subir_volumen", "bajar_volumen"]
@@ -184,7 +184,8 @@ def main():
         results_text = read_text_file(FILE_PATTERN_RESULTS)
         results = json.loads(results_text)
         audio_analysis = analyze_audio_levels(results.get("measurements", []))
-        if normalize_model(read_device_model(btfile)) in MODELS_WITHOUT_VOLUME:
+        model = normalize_model(read_device_model(btfile))
+        if model in MODELS_WITHOUT_VOLUME or model.startswith("ie"):
             audio_analysis["volume"] = "N/A"
         final_results.update(audio_analysis)
     elif args.some:
