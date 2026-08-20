@@ -1,32 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\hector.conde\\source\\repos\\Sennheiser_tests\\apps\\pruebasAudifonos\\AudioTest\\AudioTest\\AudioTest.csproj": {}
+    "/Users/eduardo.beltran/Documents/Sennheiser_tests/apps/pruebasAudifonos/AudioTest/AudioTest/AudioTest.csproj": {}
   },
   "projects": {
-    "C:\\Users\\hector.conde\\source\\repos\\Sennheiser_tests\\apps\\pruebasAudifonos\\AudioTest\\AudioTest\\AudioTest.csproj": {
+    "/Users/eduardo.beltran/Documents/Sennheiser_tests/apps/pruebasAudifonos/AudioTest/AudioTest/AudioTest.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\hector.conde\\source\\repos\\Sennheiser_tests\\apps\\pruebasAudifonos\\AudioTest\\AudioTest\\AudioTest.csproj",
+        "projectUniqueName": "/Users/eduardo.beltran/Documents/Sennheiser_tests/apps/pruebasAudifonos/AudioTest/AudioTest/AudioTest.csproj",
         "projectName": "AudioTest",
-        "projectPath": "C:\\Users\\hector.conde\\source\\repos\\Sennheiser_tests\\apps\\pruebasAudifonos\\AudioTest\\AudioTest\\AudioTest.csproj",
-        "packagesPath": "C:\\Users\\hector.conde\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\hector.conde\\source\\repos\\Sennheiser_tests\\apps\\pruebasAudifonos\\AudioTest\\AudioTest\\obj\\",
+        "projectPath": "/Users/eduardo.beltran/Documents/Sennheiser_tests/apps/pruebasAudifonos/AudioTest/AudioTest/AudioTest.csproj",
+        "packagesPath": "/Users/eduardo.beltran/.nuget/packages/",
+        "outputPath": "/Users/eduardo.beltran/Documents/Sennheiser_tests/apps/pruebasAudifonos/AudioTest/AudioTest/obj/",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\hector.conde\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "/Users/eduardo.beltran/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0-windows"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -51,12 +44,6 @@
         "net8.0-windows7.0": {
           "targetAlias": "net8.0-windows",
           "dependencies": {
-            "Microsoft.NET.ILLink.Tasks": {
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[8.0.27, )",
-              "autoReferenced": true
-            },
             "NAudio": {
               "target": "Package",
               "version": "[2.3.0, )"
@@ -75,16 +62,20 @@
           "warn": true,
           "downloadDependencies": [
             {
-              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
-              "version": "[8.0.27, 8.0.27]"
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.30, 8.0.30]"
             },
             {
-              "name": "Microsoft.NETCore.App.Runtime.win-x64",
-              "version": "[8.0.27, 8.0.27]"
+              "name": "Microsoft.NETCore.App.Host.osx-x64",
+              "version": "[8.0.30, 8.0.30]"
             },
             {
-              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
-              "version": "[8.0.27, 8.0.27]"
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.30, 8.0.30]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.30, 8.0.30]"
             }
           ],
           "frameworkReferences": {
@@ -95,12 +86,7 @@
               "privateAssets": "none"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.314/PortableRuntimeIdentifierGraph.json"
-        }
-      },
-      "runtimes": {
-        "win-x64": {
-          "#import": []
+          "runtimeIdentifierGraphPath": "/Users/eduardo.beltran/.dotnet/sdk/9.0.317/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

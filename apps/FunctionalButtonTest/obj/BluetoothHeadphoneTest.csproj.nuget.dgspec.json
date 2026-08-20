@@ -1,32 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\hector.conde\\Source\\Repos\\Sennheiser_tests\\apps\\FunctionalButtonTest\\BluetoothHeadphoneTest.csproj": {}
+    "/Users/eduardo.beltran/Documents/Sennheiser_tests/apps/FunctionalButtonTest/BluetoothHeadphoneTest.csproj": {}
   },
   "projects": {
-    "C:\\Users\\hector.conde\\Source\\Repos\\Sennheiser_tests\\apps\\FunctionalButtonTest\\BluetoothHeadphoneTest.csproj": {
+    "/Users/eduardo.beltran/Documents/Sennheiser_tests/apps/FunctionalButtonTest/BluetoothHeadphoneTest.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\hector.conde\\Source\\Repos\\Sennheiser_tests\\apps\\FunctionalButtonTest\\BluetoothHeadphoneTest.csproj",
+        "projectUniqueName": "/Users/eduardo.beltran/Documents/Sennheiser_tests/apps/FunctionalButtonTest/BluetoothHeadphoneTest.csproj",
         "projectName": "BluetoothHeadphoneTest",
-        "projectPath": "C:\\Users\\hector.conde\\Source\\Repos\\Sennheiser_tests\\apps\\FunctionalButtonTest\\BluetoothHeadphoneTest.csproj",
-        "packagesPath": "C:\\Users\\hector.conde\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\hector.conde\\Source\\Repos\\Sennheiser_tests\\apps\\FunctionalButtonTest\\obj\\",
+        "projectPath": "/Users/eduardo.beltran/Documents/Sennheiser_tests/apps/FunctionalButtonTest/BluetoothHeadphoneTest.csproj",
+        "packagesPath": "/Users/eduardo.beltran/.nuget/packages/",
+        "outputPath": "/Users/eduardo.beltran/Documents/Sennheiser_tests/apps/FunctionalButtonTest/obj/",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\hector.conde\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "/Users/eduardo.beltran/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0-windows"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -67,6 +60,12 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[9.0.19, 9.0.19]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
@@ -75,7 +74,7 @@
               "privateAssets": "none"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.314/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/Users/eduardo.beltran/.dotnet/sdk/9.0.317/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

@@ -1092,50 +1092,6 @@ namespace MicroTestCloud
             lblStatus.ForeColor = color;
         }
 
-        private static void SetPlaybackVolume(int percent)
-        {
-            try
-            {
-                float scalar = Math.Clamp(percent / 100f, 0f, 1f);
-                using var enumerator = new MMDeviceEnumerator();
-                var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
-
-                foreach (var device in devices)
-                {
-                    device.AudioEndpointVolume.Mute = false;
-                    device.AudioEndpointVolume.MasterVolumeLevelScalar = scalar;
-                }
-
-                return;
-            }
-            catch
-            {
-                string helperPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VolumeHelper.exe");
-                if (!File.Exists(helperPath))
-                {
-                    return;
-                }
-
-                try
-                {
-                    using var process = Process.Start(new ProcessStartInfo
-                    {
-                        FileName = helperPath,
-                        Arguments = percent.ToString(),
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    });
-
-                    process?.WaitForExit(5000);
-                }
-                catch
-                {
-                }
-            }
-        }
-
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             WriteFallbackReportIfMissing();

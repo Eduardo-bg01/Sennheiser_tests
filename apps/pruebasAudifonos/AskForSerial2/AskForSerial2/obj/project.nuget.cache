@@ -1,13 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "l5i2zeH/sB0=",
+  "dgSpecHash": "Fo8UyLLqBAc=",
   "success": true,
-  "projectFilePath": "C:\\Users\\hector.conde\\source\\repos\\Sennheiser_tests\\apps\\pruebasAudifonos\\AskForSerial2\\AskForSerial2\\AskForSerial2.csproj",
+  "projectFilePath": "/Users/eduardo.beltran/Documents/Sennheiser_tests/apps/pruebasAudifonos/AskForSerial2/AskForSerial2/AskForSerial2.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\hector.conde\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.27\\microsoft.net.illink.tasks.8.0.27.nupkg.sha512",
-    "C:\\Users\\hector.conde\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\8.0.27\\microsoft.netcore.app.runtime.win-x64.8.0.27.nupkg.sha512",
-    "C:\\Users\\hector.conde\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\8.0.27\\microsoft.windowsdesktop.app.runtime.win-x64.8.0.27.nupkg.sha512",
-    "C:\\Users\\hector.conde\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\8.0.27\\microsoft.aspnetcore.app.runtime.win-x64.8.0.27.nupkg.sha512"
+    "/Users/eduardo.beltran/.nuget/packages/microsoft.netcore.app.ref/8.0.30/microsoft.netcore.app.ref.8.0.30.nupkg.sha512",
+    "/Users/eduardo.beltran/.nuget/packages/microsoft.windowsdesktop.app.ref/8.0.30/microsoft.windowsdesktop.app.ref.8.0.30.nupkg.sha512",
+    "/Users/eduardo.beltran/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.30/microsoft.aspnetcore.app.ref.8.0.30.nupkg.sha512",
+    "/Users/eduardo.beltran/.nuget/packages/microsoft.netcore.app.host.osx-x64/8.0.30/microsoft.netcore.app.host.osx-x64.8.0.30.nupkg.sha512"
   ],
   "logs": []
 }
