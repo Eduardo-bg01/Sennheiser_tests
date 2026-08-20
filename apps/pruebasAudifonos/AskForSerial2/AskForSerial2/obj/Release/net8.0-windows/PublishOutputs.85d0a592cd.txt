@@ -1,5 +1,0 @@
-C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp3\AskForSerial2.exe
-C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp3\AskForSerial2.dll
-C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp3\AskForSerial2.deps.json
-C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp3\AskForSerial2.runtimeconfig.json
-C:\Users\eduardo.beltran\Documents\Sonova-Sennheiser\Sennheiser\Sennheiser_tests\bin\temp3\AskForSerial2.pdb
