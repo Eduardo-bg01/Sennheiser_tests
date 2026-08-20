@@ -9,15 +9,15 @@ namespace BluetoothHeadphoneTest
     {
         public BluetoothDeviceInfo SelectedDevice { get; private set; }
 
-        private static readonly Color BgDark = ColorTranslator.FromHtml("#F4F7FC");
-        private static readonly Color BgCard = ColorTranslator.FromHtml("#FFFFFF");
-        private static readonly Color AccentCyan = ColorTranslator.FromHtml("#0099BB");
-        private static readonly Color AccentGreen = ColorTranslator.FromHtml("#00A85A");
-        private static readonly Color AccentYellow = ColorTranslator.FromHtml("#D4A000");
+        private static readonly Color BgDark = AppColors.BgDark;
+        private static readonly Color BgCard = AppColors.BgCard;
+        private static readonly Color AccentCyan = AppColors.AccentCyan;
+        private static readonly Color AccentGreen = AppColors.AccentGreen;
+        private static readonly Color AccentYellow = AppColors.AccentYellow;
         private static readonly Color AccentBlue = ColorTranslator.FromHtml("#3B6EC8");
-        private static readonly Color TextPrimary = ColorTranslator.FromHtml("#1A2640");
-        private static readonly Color TextMuted = ColorTranslator.FromHtml("#5A6F90");
-        private static readonly Color BorderColor = ColorTranslator.FromHtml("#C8D4E8");
+        private static readonly Color TextPrimary = AppColors.TextPrimary;
+        private static readonly Color TextMuted = AppColors.TextMuted;
+        private static readonly Color BorderColor = AppColors.BorderColor;
 
         private ListBox listDevices;
         private ComboBox comboJackModel;

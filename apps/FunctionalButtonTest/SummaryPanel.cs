@@ -9,17 +9,17 @@ namespace BluetoothHeadphoneTest
     {
         public event Action<BluetoothDeviceInfo> OnRestart;
 
-        private static readonly Color BgDark = ColorTranslator.FromHtml("#F4F7FC");
-        private static readonly Color BgCard = ColorTranslator.FromHtml("#FFFFFF");
+        private static readonly Color BgDark = AppColors.BgDark;
+        private static readonly Color BgCard = AppColors.BgCard;
         private static readonly Color BgRow = ColorTranslator.FromHtml("#F0F4FB");
         private static readonly Color BgRowAlt = ColorTranslator.FromHtml("#E8EEF8");
-        private static readonly Color AccentCyan = ColorTranslator.FromHtml("#0099BB");
-        private static readonly Color AccentGreen = ColorTranslator.FromHtml("#00A85A");
-        private static readonly Color AccentRed = ColorTranslator.FromHtml("#CC2222");
-        private static readonly Color AccentYellow = ColorTranslator.FromHtml("#D4A000");
-        private static readonly Color TextPrimary = ColorTranslator.FromHtml("#1A2640");
-        private static readonly Color TextMuted = ColorTranslator.FromHtml("#5A6F90");
-        private static readonly Color BorderColor = ColorTranslator.FromHtml("#C8D4E8");
+        private static readonly Color AccentCyan = AppColors.AccentCyan;
+        private static readonly Color AccentGreen = AppColors.AccentGreen;
+        private static readonly Color AccentRed = AppColors.AccentRed;
+        private static readonly Color AccentYellow = AppColors.AccentYellow;
+        private static readonly Color TextPrimary = AppColors.TextPrimary;
+        private static readonly Color TextMuted = AppColors.TextMuted;
+        private static readonly Color BorderColor = AppColors.BorderColor;
 
         public SummaryPanel(TestSession session)
         {
@@ -61,7 +61,6 @@ namespace BluetoothHeadphoneTest
             scroll.Resize += (s, e) =>
             {
                 card.Width = Math.Max(600, scroll.ClientSize.Width - 40);
-                RelayoutCard(card);
             };
 
             Controls.Add(scroll);
@@ -198,23 +197,6 @@ namespace BluetoothHeadphoneTest
             card.Height = y + 44 + 20;
         }
 
-        private void RelayoutCard(Panel card)
-        {
-            // Rebuild card when width changes
-            if (card.Tag is TestSession session)
-                BuildCard(card, session,
-                    session.AllPassed,
-                    CountPassed(session),
-                    DateTime.Now - session.StartTime);
-        }
-
-        private int CountPassed(TestSession s)
-        {
-            int c = 0;
-            foreach (var r in s.Records) if (r.Result == TestResult.Pass) c++;
-            return c;
-        }
-
         private void AddRowLabel(Panel parent, string text, int x, int width,
             Font font, Color color,
             ContentAlignment align = ContentAlignment.MiddleLeft)
@@ -262,48 +244,13 @@ namespace BluetoothHeadphoneTest
                 string baseFilePath = Path.Combine(baseFolder, fileName);
                 string currentFilePath = Path.Combine(currentFolder, fileName);
 
-                var sb = new System.Text.StringBuilder();
-                string sep = new string('─', 54);
+                string report = session.BuildReportText();
 
-                var selected = session.SelectedDevice;
-                string displayName = selected != null && selected.IsWired && !string.IsNullOrWhiteSpace(selected.SelectedJackModel)
-                    ? selected.SelectedJackModel
-                    : selected?.Name ?? "—";
-                sb.AppendLine($"Dispositivo : {displayName}");
-                sb.AppendLine($"MAC         : {session.SelectedDevice?.Address ?? "—"}");
-                sb.AppendLine($"Fecha       : {session.StartTime:dd/MM/yyyy  HH:mm}");
-                sb.AppendLine();
-                sb.AppendLine(sep);
-                sb.AppendLine($"  {"PRUEBA",-32} {"RESULTADO",-10} {"HORA"}");
-                sb.AppendLine(sep);
-
-                foreach (var rec in session.Records)
-                {
-                    string res = rec.Result == TestResult.Pass ? "PASS" :
-                                 rec.Result == TestResult.Fail ? "FAIL" :
-                                 rec.Result == TestResult.NotApplicable ? "N/A" : "PEND";
-                    string time = rec.Result == TestResult.NotApplicable ? "—"
-                        : (rec.Timestamp.HasValue
-                            ? rec.Timestamp.Value.ToString("HH:mm:ss") : "--:--:--");
-                    sb.AppendLine($"  {rec.Name,-32} {res,-10} {time}");
-                }
-
-                sb.AppendLine(sep);
-                int totalApplicable = 0, naCount = 0;
-                foreach (var r in session.Records)
-                {
-                    if (r.Result == TestResult.NotApplicable) naCount++;
-                    else totalApplicable++;
-                }
-
-                sb.AppendLine(sep);
-                sb.AppendLine($"  Resultado final: {(passed ? "APROBADO" : "FALLIDO")}  ({passCount}/{totalApplicable})  •  N/A: {naCount}");
-
-                File.WriteAllText(baseFilePath, sb.ToString(), System.Text.Encoding.UTF8);
+                File.WriteAllText(baseFilePath, report, System.Text.Encoding.UTF8);
 
                 if (!string.Equals(baseFilePath, currentFilePath, StringComparison.OrdinalIgnoreCase))
                 {
-                    File.WriteAllText(currentFilePath, sb.ToString(), System.Text.Encoding.UTF8);
+                    File.WriteAllText(currentFilePath, report, System.Text.Encoding.UTF8);
                 }
             }
             catch { /* Si falla el guardado, continuar sin interrumpir */ }

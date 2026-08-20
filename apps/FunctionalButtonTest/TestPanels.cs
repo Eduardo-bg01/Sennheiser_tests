@@ -13,16 +13,16 @@ namespace BluetoothHeadphoneTest
     // ═══════════════════════════════════════════════════════════════════════════
     public abstract class TestPanel : Panel
     {
-        protected static readonly Color BgDark = ColorTranslator.FromHtml("#F4F7FC");
-        protected static readonly Color BgCard = ColorTranslator.FromHtml("#FFFFFF");
-        protected static readonly Color AccentCyan = ColorTranslator.FromHtml("#0099BB");
-        protected static readonly Color AccentYellow = ColorTranslator.FromHtml("#D4A000");
-        protected static readonly Color AccentGreen = ColorTranslator.FromHtml("#00A85A");
-        protected static readonly Color AccentRed = ColorTranslator.FromHtml("#CC2222");
-        protected static readonly Color AccentOrange = ColorTranslator.FromHtml("#D46800");
-        protected static readonly Color TextPrimary = ColorTranslator.FromHtml("#1A2640");
-        protected static readonly Color TextMuted = ColorTranslator.FromHtml("#5A6F90");
-        protected static readonly Color BorderColor = ColorTranslator.FromHtml("#C8D4E8");
+        protected static readonly Color BgDark = AppColors.BgDark;
+        protected static readonly Color BgCard = AppColors.BgCard;
+        protected static readonly Color AccentCyan = AppColors.AccentCyan;
+        protected static readonly Color AccentYellow = AppColors.AccentYellow;
+        protected static readonly Color AccentGreen = AppColors.AccentGreen;
+        protected static readonly Color AccentRed = AppColors.AccentRed;
+        protected static readonly Color AccentOrange = AppColors.AccentOrange;
+        protected static readonly Color TextPrimary = AppColors.TextPrimary;
+        protected static readonly Color TextMuted = AppColors.TextMuted;
+        protected static readonly Color BorderColor = AppColors.BorderColor;
 
         public event Action<bool> TestCompleted;
         protected void FireTestCompleted(bool passed) => TestCompleted?.Invoke(passed);
@@ -372,12 +372,12 @@ namespace BluetoothHeadphoneTest
         private Panel _vizBar;
         private System.Windows.Forms.Timer _vizTimer;
 
-        private static readonly Color Bg = ColorTranslator.FromHtml("#F4F7FC");
-        private static readonly Color Cyan = ColorTranslator.FromHtml("#0099BB");
-        private static readonly Color Green = ColorTranslator.FromHtml("#00A85A");
-        private static readonly Color Yellow = ColorTranslator.FromHtml("#D4A000");
-        private static readonly Color Muted = ColorTranslator.FromHtml("#5A6F90");
-        private static readonly Color Orange = ColorTranslator.FromHtml("#D46800");
+        private static readonly Color Bg = AppColors.BgDark;
+        private static readonly Color Cyan = AppColors.AccentCyan;
+        private static readonly Color Green = AppColors.AccentGreen;
+        private static readonly Color Yellow = AppColors.AccentYellow;
+        private static readonly Color Muted = AppColors.TextMuted;
+        private static readonly Color Orange = AppColors.AccentOrange;
 
         private int _vizPhase = 0;
 
@@ -785,29 +785,33 @@ namespace BluetoothHeadphoneTest
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    //  3. PREVIOUS TRACK
+    //  3/4. TRACK PANEL (Previous / Next — parametrized)
     // ═══════════════════════════════════════════════════════════════════════════
-    public class PreviousTrackPanel : TestPanel
+    public class TrackPanel : TestPanel
     {
         private System.Windows.Forms.Timer _timeout;
         private bool _done = false;
 
-        public PreviousTrackPanel() : base(4, "Canción Anterior ◀◀", "⏮", withPlayer: true)
+        public TrackPanel(int number, string name, string icon, string gif,
+                          Keys targetKey, string commandName)
+            : base(number, name, icon, withPlayer: true)
         {
             MakeStep(1, "El reproductor está activo.", 14);
-            MakeStep(2, "Presione el botón de Pista Anterior en el audífono.", 56);
+            MakeStep(2, $"Presione el botón de {commandName} en el audífono.", 56);
             MakeStep(3, "El reproductor mostrará el cambio de pista automáticamente.", 98);
-            MakeAnimatedGif("previous.gif");
-            SetStatus("⏳  Esperando comando de Pista Anterior...", AccentYellow);
+            MakeAnimatedGif(gif);
+            SetStatus($"⏳  Esperando comando de {commandName}...", AccentYellow);
 
-            Player.Audio.NextTrack();
+            if (targetKey == Keys.MediaPreviousTrack)
+                Player.Audio.NextTrack();
+
             AppCommandRouter.OnMediaKey += OnMediaKey;
 
             _timeout = new System.Windows.Forms.Timer { Interval = 20000 };
             _timeout.Tick += (s, e) =>
             {
                 _timeout.Stop();
-                if (!_done) AutoFail("No se detectó comando de Pista Anterior");
+                if (!_done) AutoFail($"No se detectó comando de {commandName}");
             };
             _timeout.Start();
         }
@@ -815,13 +819,18 @@ namespace BluetoothHeadphoneTest
         private void OnMediaKey(Keys key)
         {
             if (_done) return;
-            if (key != Keys.MediaPreviousTrack) return;
             if (InvokeRequired) { Invoke(new Action(() => OnMediaKey(key))); return; }
+
+            // Check the actual media key received
+            var expected = ((TrackPanel)this).Name.Contains("Anterior")
+                ? Keys.MediaPreviousTrack : Keys.MediaNextTrack;
+            if (key != expected) return;
 
             _done = true;
             _timeout.Stop();
             AppCommandRouter.OnMediaKey -= OnMediaKey;
-            AutoPass($"Pista Anterior detectada — cambió a {Player.Audio.TrackName}");
+            string label = expected == Keys.MediaPreviousTrack ? "Pista Anterior" : "Pista Siguiente";
+            AutoPass($"{label} detectada — cambió a {Player.Audio.TrackName}");
         }
 
         protected override void Dispose(bool disposing)
@@ -832,218 +841,32 @@ namespace BluetoothHeadphoneTest
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    //  4. NEXT TRACK
+    //  5/6. VOLUME PANEL (Up / Down — parametrized)
     // ═══════════════════════════════════════════════════════════════════════════
-    public class NextTrackPanel : TestPanel
-    {
-        private System.Windows.Forms.Timer _timeout;
-        private bool _done = false;
-
-        public NextTrackPanel() : base(5, "Canción Siguiente ▶▶", "⏭", withPlayer: true)
-        {
-            MakeStep(1, "El reproductor está activo.", 14);
-            MakeStep(2, "Presione el botón de Pista Siguiente en el audífono.", 56);
-            MakeStep(3, "El reproductor mostrará el cambio de pista automáticamente.", 98);
-            MakeAnimatedGif("next.gif");
-            SetStatus("⏳  Esperando comando de Pista Siguiente...", AccentYellow);
-
-            AppCommandRouter.OnMediaKey += OnMediaKey;
-
-            _timeout = new System.Windows.Forms.Timer { Interval = 20000 };
-            _timeout.Tick += (s, e) =>
-            {
-                _timeout.Stop();
-                if (!_done) AutoFail("No se detectó comando de Pista Siguiente");
-            };
-            _timeout.Start();
-        }
-
-        private void OnMediaKey(Keys key)
-        {
-            if (_done) return;
-            if (key != Keys.MediaNextTrack) return;
-            if (InvokeRequired) { Invoke(new Action(() => OnMediaKey(key))); return; }
-
-            _done = true;
-            _timeout.Stop();
-            AppCommandRouter.OnMediaKey -= OnMediaKey;
-            AutoPass($"Pista Siguiente detectada — cambió a {Player.Audio.TrackName}");
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing) { _done = true; AppCommandRouter.OnMediaKey -= OnMediaKey; _timeout?.Dispose(); }
-            base.Dispose(disposing);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  5. VOLUME UP
-    // ═══════════════════════════════════════════════════════════════════════════
-    public class VolumeUpPanel : TestPanel
+    public class VolumePanel : TestPanel
     {
         private VolumeMonitor _monitor;
         private System.Windows.Forms.Timer _timeout;
         private ProgressBar _volBar;
         private Label _volLabel;
         private Label _lblTarget;
-        private float _startVolume;
         private float _targetVolume;
         private const float REQUIRED_DELTA = 20f;
         private bool _completed;
+        private readonly bool _isUp;
 
-        public VolumeUpPanel() : base(6, "Subir Volumen (+)", "🔊", withPlayer: true)
+        public VolumePanel(int number, string name, string icon, string gif, bool isUp)
+            : base(number, name, icon, withPlayer: true)
         {
+            _isUp = isUp;
+            string verb = isUp ? "suba" : "baje";
+            string relDir = isUp ? "por encima" : "por debajo";
+            string sign = isUp ? "(+)" : "(−)";
+
             MakeStep(1, "El sistema registra el volumen inicial automáticamente.", 14);
-            MakeStep(2, "Presione y mantenga el botón (+) del audífono.", 56);
-            MakeStep(3, "Suba el volumen al menos 20 puntos por encima del nivel inicial.", 98);
-            MakeAnimatedGif("volumeup.gif");
-
-            var lblFreq = new Label
-            {
-                Text = "♪  Frecuencias de prueba: Do 261 Hz · Mi 330 Hz · Sol 392 Hz",
-                Font = new Font("Segoe UI", 9f, FontStyle.Italic),
-                ForeColor = AccentCyan,
-                AutoSize = false,
-                Size = new Size(stepsPanel.Width - 32, 24),
-                Location = new Point(16, 138),
-                TextAlign = ContentAlignment.MiddleLeft,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            stepsPanel.Controls.Add(lblFreq);
-            stepsPanel.Resize += (s, e) => lblFreq.Size = new Size(stepsPanel.Width - 32, 24);
-
-            // ── Controles de volumen (posición relativa al card) ─────
-            _lblTarget = new Label
-            {
-                Text = "Registrando nivel inicial...",
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                ForeColor = AccentYellow,
-                AutoSize = false,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            var lblBarTitle = new Label
-            {
-                Text = "NIVEL ACTUAL:",
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                ForeColor = TextMuted,
-                AutoSize = false,
-                Size = new Size(130, 24),
-                TextAlign = ContentAlignment.MiddleLeft,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left
-            };
-            _volBar = new ProgressBar
-            {
-                Minimum = 0,
-                Maximum = 100,
-                Value = 50,
-                Style = ProgressBarStyle.Continuous,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            _volLabel = new Label
-            {
-                Text = "50%",
-                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                ForeColor = AccentYellow,
-                AutoSize = false,
-                Size = new Size(70, 24),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
-            };
-
-            card.Controls.AddRange(new Control[] { _lblTarget, lblBarTitle, _volBar, _volLabel });
-
-            // Posicionamiento relativo de los controles de volumen
-            card.Resize += (s, e) => RelayoutVolumeControls(lblBarTitle);
-            RelayoutVolumeControls(lblBarTitle);
-
-            _monitor = new VolumeMonitor();
-            _startVolume = _monitor.CurrentVolume;
-            _targetVolume = Math.Min(_startVolume + REQUIRED_DELTA, 100f);
-            _lblTarget.Text = $"Nivel inicial: {_startVolume:F0}%   →   Meta mínima: {_targetVolume:F0}%";
-            UpdateBar(_startVolume);
-            SetStatus($"⏳  Suba el volumen hasta {_targetVolume:F0}% o más...", AccentYellow);
-
-            _monitor.VolumeChanged += OnVolumeChanged;
-
-            _timeout = new System.Windows.Forms.Timer { Interval = 25000 };
-            _timeout.Tick += (s, e) =>
-            {
-                _timeout.Stop();
-                if (!_completed) AutoFail("No se alcanzó el nivel de volumen requerido");
-            };
-            _timeout.Start();
-        }
-
-        private void RelayoutVolumeControls(Label lblBarTitle)
-        {
-            // Zona de volumen: debajo del reproductor (~55% ancho, alineado con stepsPanel)
-            int colW = (int)(card.Width * 0.54) - 8;
-            int baseY = 128 + 160 + 110 + 24;   // stepsTop + stepsH + playerH + gap
-            baseY = Math.Min(baseY, card.Height - 200);
-
-            _lblTarget.Location = new Point(16, baseY);
-            _lblTarget.Size = new Size(colW - 16, 28);
-
-            lblBarTitle.Location = new Point(16, baseY + 36);
-
-            _volBar.Location = new Point(16, baseY + 64);
-            _volBar.Size = new Size(Math.Max(80, colW - 90), 24);
-
-            _volLabel.Location = new Point(16 + Math.Max(80, colW - 90) + 4, baseY + 64);
-            _volLabel.Size = new Size(70, 24);
-        }
-
-        private void OnVolumeChanged(float vol)
-        {
-            if (_completed) return;
-            if (InvokeRequired) { Invoke(new Action(() => OnVolumeChanged(vol))); return; }
-            UpdateBar(vol);
-            SetStatus($"⏳  Volumen: {vol:F0}%  →  Meta: {_targetVolume:F0}%", AccentOrange);
-            if (vol >= _targetVolume)
-            {
-                _completed = true;
-                _timeout.Stop();
-                AutoPass($"Volumen subido correctamente a {vol:F0}%");
-            }
-        }
-
-        private void UpdateBar(float vol)
-        {
-            _volBar.Value = (int)Math.Max(0, Math.Min(100, vol));
-            _volLabel.Text = $"{vol:F0}%";
-            _volLabel.ForeColor = vol >= _targetVolume ? AccentGreen : AccentYellow;
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing) { _monitor?.Dispose(); _timeout?.Dispose(); }
-            base.Dispose(disposing);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  6. VOLUME DOWN
-    // ═══════════════════════════════════════════════════════════════════════════
-    public class VolumeDownPanel : TestPanel
-    {
-        private VolumeMonitor _monitor;
-        private System.Windows.Forms.Timer _timeout;
-        private ProgressBar _volBar;
-        private Label _volLabel;
-        private Label _lblTarget;
-        private float _startVolume;
-        private float _targetVolume;
-        private const float REQUIRED_DELTA = 20f;
-        private bool _completed;
-
-        public VolumeDownPanel() : base(7, "Bajar Volumen (−)", "🔉", withPlayer: true)
-        {
-            MakeStep(1, "El sistema registra el volumen inicial automáticamente.", 14);
-            MakeStep(2, "Presione y mantenga el botón (−) del audífono.", 56);
-            MakeStep(3, "Baje el volumen al menos 20 puntos por debajo del nivel inicial.", 98);
-            MakeAnimatedGif("volumedown.gif");
+            MakeStep(2, $"Presione y mantenga el botón {sign} del audífono.", 56);
+            MakeStep(3, $"{verb.Substring(0, 1).ToUpper()}{verb.Substring(1)} el volumen al menos 20 puntos {relDir} del nivel inicial.", 98);
+            MakeAnimatedGif(gif);
 
             var lblFreq = new Label
             {
@@ -1103,11 +926,16 @@ namespace BluetoothHeadphoneTest
             RelayoutVolumeControls(lblBarTitle);
 
             _monitor = new VolumeMonitor();
-            _startVolume = _monitor.CurrentVolume;
-            _targetVolume = Math.Max(_startVolume - REQUIRED_DELTA, 0f);
-            _lblTarget.Text = $"Nivel inicial: {_startVolume:F0}%   →   Meta máxima: {_targetVolume:F0}%";
-            UpdateBar(_startVolume);
-            SetStatus($"⏳  Baje el volumen hasta {_targetVolume:F0}% o menos...", AccentYellow);
+            float startVol = _monitor.CurrentVolume;
+            _targetVolume = isUp
+                ? Math.Min(startVol + REQUIRED_DELTA, 100f)
+                : Math.Max(startVol - REQUIRED_DELTA, 0f);
+            string meta = isUp ? "Meta mínima" : "Meta máxima";
+            _lblTarget.Text = $"Nivel inicial: {startVol:F0}%   →   {meta}: {_targetVolume:F0}%";
+            UpdateBar(startVol);
+            string verbStatus = isUp ? "Suba" : "Baje";
+            string relStatus = isUp ? "o más" : "o menos";
+            SetStatus($"⏳  {verbStatus} el volumen hasta {_targetVolume:F0}% {relStatus}...", AccentYellow);
 
             _monitor.VolumeChanged += OnVolumeChanged;
 
@@ -1144,11 +972,13 @@ namespace BluetoothHeadphoneTest
             if (InvokeRequired) { Invoke(new Action(() => OnVolumeChanged(vol))); return; }
             UpdateBar(vol);
             SetStatus($"⏳  Volumen: {vol:F0}%  →  Meta: {_targetVolume:F0}%", AccentOrange);
-            if (vol <= _targetVolume)
+            bool reached = _isUp ? vol >= _targetVolume : vol <= _targetVolume;
+            if (reached)
             {
                 _completed = true;
                 _timeout.Stop();
-                AutoPass($"Volumen bajado correctamente a {vol:F0}%");
+                string verb = _isUp ? "subido" : "bajado";
+                AutoPass($"Volumen {verb} correctamente a {vol:F0}%");
             }
         }
 
@@ -1156,7 +986,8 @@ namespace BluetoothHeadphoneTest
         {
             _volBar.Value = (int)Math.Max(0, Math.Min(100, vol));
             _volLabel.Text = $"{vol:F0}%";
-            _volLabel.ForeColor = vol <= _targetVolume ? AccentGreen : AccentYellow;
+            bool ok = _isUp ? vol >= _targetVolume : vol <= _targetVolume;
+            _volLabel.ForeColor = ok ? AccentGreen : AccentYellow;
         }
 
         protected override void Dispose(bool disposing)

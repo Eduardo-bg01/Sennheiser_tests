@@ -48,7 +48,7 @@ if not exist "%REFURBISH_TOOL%" (
 
 :: Show Bluetooth connection instructions
 echo.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%show_bluetooth_connect.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%show_bluetooth.ps1" -Mode connect
 echo.
 
 :: Record start time
@@ -159,7 +159,7 @@ if /i "%RUN_LEVEL%"=="0" (
     echo [LEVELS] Omitido - el modelo "!DEVICE_NAME!" no es familia HD/IE.
     goto GENERATE_RESULTS
 )
-set "LEVEL_VOLUME=100"
+set "LEVEL_VOLUME=85"
 if /i "!DEVICE_NAME!"=="MOMENTUM TW 4" set "LEVEL_VOLUME=80"
 echo Configurando volumen a !LEVEL_VOLUME!%% antes de la prueba de nivel...
 "%APP_DIR%VolumeHelper.exe" !LEVEL_VOLUME! >nul 2>&1 || echo No se pudo configurar volumen.
@@ -195,7 +195,7 @@ python "%ROOT%scripts\converter.py"
 echo Limpiando dispositivos Bluetooth...
 powershell -NoProfile -Command "$ErrorActionPreference = 'SilentlyContinue'; Get-PnpDevice -Class Bluetooth | Where-Object { $_.FriendlyName -and $_.FriendlyName -notmatch 'Radio|Adapter|Enumerator|LE Enumerator|Microsoft|Intel|Qualcomm|Broadcom' } | Remove-PnpDevice -Confirm:$false -Force" >nul 2>&1
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%show_bluetooth_disconnect.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%show_bluetooth.ps1" -Mode disconnect
 
 echo.
 echo Pruebas completadas. Tiempo total: %diff_min% min

@@ -2,7 +2,7 @@ import json
 import urllib.request
 import xml.etree.ElementTree as ET
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 from pathlib import Path
 
@@ -26,19 +26,18 @@ API_ENDPOINT = os.getenv('AZURE_API_ENDPOINT') or CONFIG.get('endpoint') or ''
 if not API_ENDPOINT:
     print("[WARNING] No API endpoint configured. Set endpoint in scripts/config.json or AZURE_API_ENDPOINT env var.")
 
-def get_windows_username():
-    return os.environ.get('USERNAME') or CONFIG.get('username') or "tester1"
+def get_username():
+    return os.environ.get('USERNAME') or "tester1"
 
-# Test configuration defaults (config.json overrides)
 DEFAULTS = {
-    "Username": get_windows_username(),
+    "Username": get_username(),
     "StartTime": None,
     "EndTime": None,
-    "Contract": CONFIG.get('contract') or "10083",
-    "MachineName": CONFIG.get('machine_name') or "AudioTester",
-    "TestArea": CONFIG.get('test_area') or "MEXICALI_R2",
-    "Program": CONFIG.get('program') or "HP_MXLR2",
-    "dbType": CONFIG.get('db_type') or "",
+    "Contract": "10083",
+    "MachineName": "AudioTester",
+    "TestArea": "MEXICALI_R2",
+    "Program": "HP_MXLR2",
+    "dbType": "",
 }
 
 # Subtest names matching test results
@@ -62,11 +61,6 @@ def find_input_file(input_arg):
     cwd = Path.cwd()
     script_dir = Path(__file__).resolve().parent
 
-    direct_candidates = [cwd / target, script_dir / target]
-    for candidate in direct_candidates:
-        if candidate.exists():
-            return str(candidate)
-
     search_roots = [cwd]
     if script_dir != cwd:
         search_roots.append(script_dir)
@@ -83,7 +77,7 @@ def find_input_file(input_arg):
     raise FileNotFoundError(f'Could not find {target}.')
 
 def current_timestamp():
-    return datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+    return datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
 def build_xml(data):
     root = ET.Element('DataWipeResultV2')

@@ -79,16 +79,18 @@ namespace BluetoothHeadphoneTest
                 steps.Add(() => new PlayPausePanel());
 
             if (profile.HasPreviousTrack)
-                steps.Add(() => new PreviousTrackPanel());
+                steps.Add(() => new TrackPanel(4, "Canción Anterior ◀◀", "⏮", "previous.gif",
+                    System.Windows.Forms.Keys.MediaPreviousTrack, "Pista Anterior"));
 
             if (profile.HasNextTrack)
-                steps.Add(() => new NextTrackPanel());
+                steps.Add(() => new TrackPanel(5, "Canción Siguiente ▶▶", "⏭", "next.gif",
+                    System.Windows.Forms.Keys.MediaNextTrack, "Pista Siguiente"));
 
             if (profile.HasVolumeUp)
-                steps.Add(() => new VolumeUpPanel());
+                steps.Add(() => new VolumePanel(6, "Subir Volumen (+)", "🔊", "volumeup.gif", isUp: true));
 
             if (profile.HasVolumeDown)
-                steps.Add(() => new VolumeDownPanel());
+                steps.Add(() => new VolumePanel(7, "Bajar Volumen (−)", "🔉", "volumedown.gif", isUp: false));
 
             return steps;
         }

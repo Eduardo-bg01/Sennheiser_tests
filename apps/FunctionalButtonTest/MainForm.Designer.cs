@@ -44,9 +44,6 @@ namespace BluetoothHeadphoneTest
             this.FormBorderStyle = FormBorderStyle.None;
             this.WindowState = FormWindowState.Maximized;
             this.Bounds = Screen.PrimaryScreen.Bounds;
-            this.MinimumSize = new Size(800, 600);
-            // Sin MaximumSize fijo => funciona en cualquier resolución
-
             // ── FORM ──────────────────────────────────────────────
             this.Text = "PRUEBA DE AUDÍFONOS BLUETOOTH";
             this.BackColor = ColorTranslator.FromHtml("#F4F7FC");

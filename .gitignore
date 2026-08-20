@@ -41,6 +41,6 @@ diferencia_minutos.txt
 __pycache__/
 
 # Site config (may contain API endpoint/keys); edit locally, don't commit
-#scripts/config.json
+scripts/config.json
 
 .log

@@ -7,7 +7,7 @@ import struct
 import wave
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 MIN_DB_FLOOR = -120.0  # Minimum dB value for unrepresentable audio
 DEFAULT_CALIBRATION_SPL = 94.0  # Reference SPL for calibration
@@ -22,11 +22,6 @@ PCM_SCALE_32BIT = 2147483648.0
 CHART_FIGSIZE = (8, 4.5)
 CHART_DPI = 150
 ASCII_CHART_WIDTH = 50
-
-# Stereo constants
-STEREO_CHANNELS = 2
-CHANNEL_LEFT = 0
-CHANNEL_RIGHT = 1
 
 
 @dataclass
@@ -84,11 +79,11 @@ def db_from_amplitude(amplitude: float, floor_db: float = MIN_DB_FLOOR) -> float
 
 def split_channels(samples: List[float], channels: int) -> Tuple[List[float], List[float]]:
     """Separate interleaved stereo samples into left and right channels."""
-    if channels < STEREO_CHANNELS:
+    if channels < 2:
         raise ValueError("Input WAV must be stereo (2 channels)")
 
-    left = samples[CHANNEL_LEFT::channels]
-    right = samples[CHANNEL_RIGHT::channels]
+    left = samples[0::channels]
+    right = samples[1::channels]
 
     return left, right
 
@@ -201,7 +196,7 @@ def maybe_save_png(results: List[Measurement], output_png: Path) -> None:
     print(f"\nSaved chart image: {output_png}")
 
 
-def build_json(results: List[Measurement]) -> Dict:
+def build_json(results: List[Measurement]) -> dict:
     return {
         "measurements": [
             {

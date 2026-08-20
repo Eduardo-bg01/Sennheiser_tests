@@ -1,7 +1,5 @@
-﻿using MicroTestCloud;
-using NAudio.CoreAudioApi;
+﻿using NAudio.CoreAudioApi;
 using NAudio.Wave;
-using NAudio.Wave.SampleProviders;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -43,7 +41,6 @@ namespace MicroTestCloud
 
         private bool _modoBocina = false;           // True = modo bocina (pista de audio), False = voz del operador
         private WaveOutEvent _speakerTone;          // Reproductor de la pista de audio en modo bocina
-        private SignalGenerator _toneGenerator;     // Generador de señal (reservado para tonos sintéticos)
 
         // ══════════════════════════════════════════════════════════════
         //  LOG DE RESULTADOS
@@ -52,7 +49,6 @@ namespace MicroTestCloud
         private List<(DateTime Time, int Volume, string Level)> _logEntries = new(); // Historial de muestras tomadas durante el test
         private DateTime _testStartTime;   // Hora en que comenzó el test
         private string _deviceName = "";   // Nombre del micrófono seleccionado
-        private int _secondCounter = 0;    // Contador de ticks para tomar muestras cada ~1 segundo
         private DateTime _lastLogTime;     // Marca de tiempo de la última muestra registrada
 
         // ══════════════════════════════════════════════════════════════
@@ -100,14 +96,6 @@ namespace MicroTestCloud
 
         private ComboBox cmbOutputDevices;
 
-        private Panel panelSummary;
-        private Label lblSummary;
-        private Button btnSaveReport;
-        private Button btnCancelReport;
-
-        private Button _btnPaso;
-        private Button _btnFallo;
-
         // ══════════════════════════════════════════════════════════════
         //  CONSTRUCTOR
         // ══════════════════════════════════════════════════════════════
@@ -120,8 +108,6 @@ namespace MicroTestCloud
             LoadMicrophones();
             LoadOutputDevices();
         }
-
-        private void Form1_Load(object sender, EventArgs e) { }
 
         // ══════════════════════════════════════════════════════════════
         //  CONSTRUCCIÓN DE LA INTERFAZ
@@ -479,18 +465,8 @@ namespace MicroTestCloud
 
             this.Controls.AddRange(new Control[] { btnPlayback, btnStopPlayback });
 
-            // ── Botón: Siguiente prueba ────────────────────────────────
-            int nextY = playY + btnH + pad;
-
-            //var btnSiguiente = MakeButton("PASAR A LA SIGUIENTE PRUEBA",
-            //    rightColX, nextY, rightColW, btnH, AccentCyan, BgDark);
-
-            //btnSiguiente.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
-            //btnSiguiente.Click += (s, e) => Application.Exit();
-            //this.Controls.Add(btnSiguiente);
-
             // ── Botón: Sin micrófono ────────────────────────────────
-            int nextMicY = nextY + btnH + pad; // ✅ ahora va debajo
+            int nextMicY = playY + btnH + pad;
 
             var btnNoMicro = MakeButton("EL DISPOSITIVO NO TIENE MICROFONO",
                 rightColX, nextMicY, rightColW, btnH, AccentRed, BgDark);
@@ -609,17 +585,48 @@ namespace MicroTestCloud
             return card;
         }
 
-        private Label MakeLabel(string text, int x, int y, int pad, Color color, bool upper = false)
+        private static void SetPlaybackVolume(int percent)
         {
-            return new Label
+            try
             {
-                Text = upper ? text.ToUpper() : text,
-                Location = new Point(x, y),
-                AutoSize = true,
-                ForeColor = color,
-                BackColor = Color.Transparent,
-                Padding = new Padding(pad, 0, 0, 0)
-            };
+                float scalar = Math.Clamp(percent / 100f, 0f, 1f);
+                using var enumerator = new MMDeviceEnumerator();
+                var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
+
+                foreach (var device in devices)
+                {
+                    device.AudioEndpointVolume.Mute = false;
+                    device.AudioEndpointVolume.MasterVolumeLevelScalar = scalar;
+                }
+
+                return;
+            }
+            catch
+            {
+                string helperPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VolumeHelper.exe");
+                if (!File.Exists(helperPath))
+                {
+                    return;
+                }
+
+                try
+                {
+                    using var process = Process.Start(new ProcessStartInfo
+                    {
+                        FileName = helperPath,
+                        Arguments = percent.ToString(),
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true
+                    });
+
+                    process?.WaitForExit(5000);
+                }
+                catch
+                {
+                }
+            }
         }
 
         private Button MakeButton(string text, int x, int y, int w, int h, Color accent, Color bg)
@@ -752,7 +759,6 @@ namespace MicroTestCloud
         private void BtnStart_Click(object sender, EventArgs e)
         {
             _logEntries.Clear();
-            _secondCounter = 0;
             _testStartTime = DateTime.Now;
             _lastLogTime = DateTime.Now;
             _deviceName = cmbDevices.SelectedItem?.ToString() ?? "Desconocido";
@@ -885,7 +891,6 @@ namespace MicroTestCloud
                 _speakerTone?.Stop();
                 _speakerTone?.Dispose();
                 _speakerTone = null;
-                _toneGenerator = null;
 
                 _waveWriter?.Flush();
                 _waveWriter?.Dispose();
@@ -1129,33 +1134,6 @@ namespace MicroTestCloud
                 {
                 }
             }
-        }
-
-        /// <summary>
-        /// Intenta obtener el número de serie del micrófono via WMI.
-        /// </summary>
-        private string GetMicrophoneSerial(string productName)
-        {
-            try
-            {
-                var searcher = new System.Management.ManagementObjectSearcher(
-                    "SELECT * FROM Win32_PnPEntity WHERE PNPClass = 'AudioEndpoint' OR PNPClass = 'Media'");
-
-                foreach (System.Management.ManagementObject obj in searcher.Get())
-                {
-                    string name = obj["Name"]?.ToString() ?? "";
-                    if (name.IndexOf(productName, StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        string deviceId = obj["DeviceID"]?.ToString() ?? "";
-                        var parts = deviceId.Split('\\');
-                        if (parts.Length >= 3)
-                            return parts[2];
-                    }
-                }
-            }
-            catch { }
-
-            return "No disponible";
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace BluetoothHeadphoneTest
 {
@@ -16,7 +17,6 @@ namespace BluetoothHeadphoneTest
 
     public class TestSession
     {
-        public string Folio { get; private set; }
         public int CurrentTestIndex { get; set; } = 0;
 
         /// <summary>
@@ -33,7 +33,6 @@ namespace BluetoothHeadphoneTest
         public TestSession()
         {
             Profile = new DeviceProfile("(pendiente)");
-            Folio = GenerateFolio();
             StartTime = DateTime.Now;
             Records = BuildRecords(Profile);
         }
@@ -90,15 +89,8 @@ namespace BluetoothHeadphoneTest
             };
         }
 
-        private string GenerateFolio()
-        {
-            var rng = new Random();
-            return $"BT-{DateTime.Now:yyMMdd}-{rng.Next(1000, 9999)}";
-        }
-
         public void Reset()
         {
-            Folio = GenerateFolio();
             StartTime = DateTime.Now;
             CurrentTestIndex = 0;
             Records = BuildRecords(Profile);
@@ -119,6 +111,55 @@ namespace BluetoothHeadphoneTest
                         return false;
                 return true;
             }
+        }
+
+        public string GetDisplayName()
+        {
+            var selected = SelectedDevice;
+            return selected != null && selected.IsWired && !string.IsNullOrWhiteSpace(selected.SelectedJackModel)
+                ? selected.SelectedJackModel
+                : selected?.Name ?? "—";
+        }
+
+        public string BuildReportText()
+        {
+            var sb = new StringBuilder();
+            string sep = new string('─', 54);
+
+            int passCount = 0;
+            foreach (var r in Records) if (r.Result == TestResult.Pass) passCount++;
+
+            sb.AppendLine($"Dispositivo : {GetDisplayName()}");
+            sb.AppendLine($"MAC         : {SelectedDevice?.Address ?? "—"}");
+            sb.AppendLine($"Fecha       : {StartTime:dd/MM/yyyy  HH:mm}");
+            sb.AppendLine();
+            sb.AppendLine(sep);
+            sb.AppendLine($"  {"PRUEBA",-32} {"RESULTADO",-10} {"HORA"}");
+            sb.AppendLine(sep);
+
+            foreach (var rec in Records)
+            {
+                string res = rec.Result == TestResult.Pass ? "PASS" :
+                             rec.Result == TestResult.Fail ? "FAIL" :
+                             rec.Result == TestResult.NotApplicable ? "N/A" : "PEND";
+                string time = rec.Result == TestResult.NotApplicable ? "—"
+                    : (rec.Timestamp.HasValue
+                        ? rec.Timestamp.Value.ToString("HH:mm:ss") : "--:--:--");
+                sb.AppendLine($"  {rec.Name,-32} {res,-10} {time}");
+            }
+
+            sb.AppendLine(sep);
+            int totalApplicable = 0, naCount = 0;
+            foreach (var r in Records)
+            {
+                if (r.Result == TestResult.NotApplicable) naCount++;
+                else totalApplicable++;
+            }
+
+            sb.AppendLine(sep);
+            sb.AppendLine($"  Resultado final: {(AllPassed ? "APROBADO" : "FALLIDO")}  ({passCount}/{totalApplicable})  •  N/A: {naCount}");
+
+            return sb.ToString();
         }
     }
 }
