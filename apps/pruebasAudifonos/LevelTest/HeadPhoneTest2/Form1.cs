@@ -24,6 +24,12 @@ namespace HeadPhoneTest2
 
         public bool hearing_pass = false;
 
+        // Modo calibracion diaria: graba el ruido ambiente sin reproducir audio
+        // y guarda calibracion.txt como linea base del dia (CALIBRATION=1).
+        public bool calibrationMode;
+        private const int CalibrationSeconds = 30;
+        private int seconds3;
+
         private System.Windows.Forms.Timer timer;
         private int seconds = 5;
         private int seconds2 = 40;
@@ -42,6 +48,12 @@ namespace HeadPhoneTest2
         public double level_avg;
         public double peak;
 
+        // Veredicto de presencia de senal calculado por db_chart.py
+        public bool? signal_present;
+        public string signal_reason;
+
+        private Label signalWarnLabel;
+
         // Modelos sin prueba de volumen visible (solo balance y clipping)
         private static readonly string[] NoVolumeModels = { "hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", "hd660s" };
         private bool hideVolume;
@@ -50,7 +62,28 @@ namespace HeadPhoneTest2
         {
             InitializeComponent();
             ApplyCohesiveTheme();
+            // Despues del theming: ApplyThemeToControlTree repinta los labels.
+            CreateSignalWarningLabel();
             Resize += (_, _) => ApplyProfessionalLayout();
+        }
+
+        private void CreateSignalWarningLabel()
+        {
+            signalWarnLabel = new Label
+            {
+                Dock = DockStyle.Top,
+                Height = 70,
+                ForeColor = Danger,
+                BackColor = Color.FromArgb(255, 235, 235),
+                Font = new Font("Segoe UI", 13F, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Visible = false,
+            };
+            signalWarnLabel.Text = "Parece que no se está detectando suficiente audio.\r\n" +
+                "Asegúrese de que los audífonos estén reproduciendo sonido.";
+            content6.Controls.Add(signalWarnLabel);
+            // Queda entre el titulo y los paneles de resultado.
+            content6.Controls.SetChildIndex(signalWarnLabel, 2);
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
@@ -105,6 +138,14 @@ namespace HeadPhoneTest2
             ApplyProfessionalLayout();
             hideVolume = IsNoVolumeModel();
             ApplyVolumeVisibility();
+
+            calibrationMode = Environment.GetEnvironmentVariable("CALIBRATION") == "1";
+            if (calibrationMode)
+            {
+                label1.Text = "CALIBRACIÓN DIARIA\r\nSeleccione el dispositivo E.A.R.S. (no se reproduce audio)";
+                btnNext.Text = "Iniciar calibración";
+                Text = "Calibración";
+            }
         }
 
         private bool IsNoVolumeModel()
@@ -126,16 +167,11 @@ namespace HeadPhoneTest2
         {
             if (step == 0)
             {
-                // Seleccion de dispositivos; pasar directo a la prueba automatica.
+                // Seleccion de dispositivos.
                 inputIndex = comboBoxIn.SelectedIndex;
                 outputIndex = comboBoxOut.SelectedIndex;
                 content1.Visible = false;
-                MMDeviceEnumerator enumerator = new MMDeviceEnumerator();
-                MMDevice device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-                //device.AudioEndpointVolume.MasterVolumeLevelScalar = 0.5f;
 
-                currentTimer = 2;
-                seconds2 = 40;
                 btnNext.BackColor = Color.FromArgb(80, SystemColors.InactiveCaption);
                 btnNext.Enabled = false;
                 btnCancel.BackColor = Color.FromArgb(80, SystemColors.InactiveCaption);
@@ -143,6 +179,29 @@ namespace HeadPhoneTest2
 
                 EnsureTimer();
                 timer.Start();
+
+                if (calibrationMode)
+                {
+                    // Calibracion: solo se escucha el ambiente, nada se reproduce.
+                    currentTimer = 3;
+                    seconds3 = CalibrationSeconds;
+                    startRecording();
+                    content2.Visible = false;
+                    content3.Visible = false;
+                    content4.Visible = false;
+                    content6.Visible = false;
+                    lblPlay.Text = "CALIBRACIÓN: NO coloque nada en las copas\r\nEscuchando el ambiente (" + seconds3 + ")";
+                    content5.Visible = true;
+                    step = 2;
+                    return;
+                }
+
+                MMDeviceEnumerator enumerator = new MMDeviceEnumerator();
+                MMDevice device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+                //device.AudioEndpointVolume.MasterVolumeLevelScalar = 0.5f;
+
+                currentTimer = 2;
+                seconds2 = 40;
 
                 outputDevice.PlaybackStopped -= stopActions;
                 outputDevice.PlaybackStopped += stopActions;
@@ -201,6 +260,54 @@ namespace HeadPhoneTest2
                     timer.Stop();
                     activateButtons();
                 }
+            }
+            if (currentTimer == 3)
+            {
+                seconds3--;
+                lblPlay.Text = "CALIBRACIÓN: NO coloque nada en las copas\r\nEscuchando el ambiente (" + seconds3 + ")";
+                if (seconds3 <= 0)
+                {
+                    timer.Stop();
+                    FinishCalibration();
+                }
+            }
+        }
+
+        private void FinishCalibration()
+        {
+            stopRecording();
+            try
+            {
+                RunPythonScript("recorded.wav");
+
+                string jsonText = File.ReadAllText("results.json");
+                MeasurementsResult result = JsonSerializer.Deserialize<MeasurementsResult>(jsonText);
+                var left = result.measurements.FirstOrDefault(m => m.channel == "Left");
+                var right = result.measurements.FirstOrDefault(m => m.channel == "Right");
+                if (left == null || right == null)
+                    throw new Exception("results.json no contiene mediciones L/R");
+
+                var payload = new
+                {
+                    date = DateTime.Now.ToString("yyyy-MM-dd"),
+                    time = DateTime.Now.ToString("HH:mm:ss"),
+                    left_dbfs = Math.Round(left.dbfs, 2),
+                    left_peak = Math.Round(left.peak_dbfs, 2),
+                    right_dbfs = Math.Round(right.dbfs, 2),
+                    right_peak = Math.Round(right.peak_dbfs, 2),
+                };
+                File.WriteAllText("calibracion.txt", JsonSerializer.Serialize(payload));
+
+                this.Invoke(() =>
+                {
+                    lblPlay.Text = "Calibración guardada:\r\nI: " + payload.left_dbfs + " db | D: " + payload.right_dbfs + " db";
+                    activateButtons();
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error en la calibración: " + ex.Message, "Calibración", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                BeginInvoke(() => Application.Exit());
             }
         }
 
@@ -364,7 +471,6 @@ namespace HeadPhoneTest2
                 string scriptOutput = RunPythonScript("recorded.wav");
 
                 EvaluateResults("results.json");
-                File.WriteAllText("hearingPassResults.txt", "True");
 
                 this.Invoke(() =>
                 {
@@ -411,6 +517,9 @@ namespace HeadPhoneTest2
                     {
                         clippingDetails.Text += "\nVolumen excesivo (clipping)";
                     }
+
+                    // Aviso de presencia de senal (calculado por db_chart.py).
+                    signalWarnLabel.Visible = (signal_present == false);
                 });
             }
             catch (Exception ex)
@@ -428,6 +537,11 @@ namespace HeadPhoneTest2
             string jsonFile = "results.json";
             string pngFile = "resultado.png";
             string args = $"--input \"{wavPath}\" --json-out \"{jsonFile}\" --png-out \"{pngFile}\"";
+
+            // Linea base del dia para detectar "solo ruido ambiente".
+            string baselinePath = Path.Combine(Directory.GetCurrentDirectory(), "calibracion.txt");
+            if (!calibrationMode && File.Exists(baselinePath))
+                args += $" --baseline \"{baselinePath}\"";
 
             ProcessStartInfo psi = new ProcessStartInfo();
             psi.FileName = "python";
@@ -500,6 +614,8 @@ namespace HeadPhoneTest2
             peak_right = right.peak_dbfs;
             level_avg = (level_left + level_right) / 2;
             peak = Math.Max(peak_left, peak_right);
+            signal_present = result.signal_present;
+            signal_reason = result.signal_reason;
         }
 
         private void btnRepeat_Click(object sender, EventArgs e)
@@ -555,6 +671,9 @@ namespace HeadPhoneTest2
                 balanceImg.Image = null;
                 levelImg.Image = null;
                 clippingImg.Image = null;
+
+                // aviso de presencia de senal
+                signalWarnLabel.Visible = false;
 
                 // notas de fallo
                 balanceDetails.ForeColor = TextPrimary;
@@ -720,4 +839,6 @@ public class Measurement
 public class MeasurementsResult
 {
     public List<Measurement> measurements { get; set; }
+    public bool? signal_present { get; set; }
+    public string signal_reason { get; set; }
 }

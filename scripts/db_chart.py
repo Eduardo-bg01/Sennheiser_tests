@@ -12,6 +12,13 @@ from typing import List, Tuple
 MIN_DB_FLOOR = -120.0  # Minimum dB value for unrepresentable audio
 DEFAULT_CALIBRATION_SPL = 94.0  # Reference SPL for calibration
 
+# Signal-presence thresholds.
+# ponytail: provisional values until calibrated against known-good units in the field.
+# Tune after a week of real data (see README "Signal presence detection").
+SIGNAL_MIN_DBFS = -30.0     # absolute floor: below this nothing meaningful was captured
+SIGNAL_MAX_CREST_DB = 20.0  # peak-to-RMS: real sweeps/music sit lower, ambient clicks higher
+SIGNAL_MIN_SNR_DB = 6.0     # measured level must clear the daily ambient baseline by this much
+
 # PCM sample width scaling factors
 PCM_SCALE_8BIT = 128.0
 PCM_SCALE_16BIT = 32768.0
@@ -31,6 +38,7 @@ class Measurement:
     dbfs: float
     dbspl: float | None
     peak_dbfs: float
+    crest_db: float
     duration_sec: float
 
 
@@ -119,6 +127,7 @@ def measure_from_samples(
 
     dbfs = db_from_amplitude(rms)
     peak_dbfs = db_from_amplitude(peak)
+    crest_db = peak_dbfs - dbfs
 
     dbspl = None if calibration_offset_db is None else dbfs + calibration_offset_db
 
@@ -128,6 +137,7 @@ def measure_from_samples(
         dbfs=dbfs,
         dbspl=dbspl,
         peak_dbfs=peak_dbfs,
+        crest_db=crest_db,
         duration_sec=duration,
     )
 
@@ -136,18 +146,18 @@ def print_table(results: List[Measurement]) -> None:
     """Print results as formatted ASCII table."""
     use_spl = any(r.dbspl is not None for r in results)
     print("\nChannel Loudness Results")
-    print("-" * 78)
+    print("-" * 90)
     if use_spl:
-        print(f"{'Channel':<12} {'RMS':>10} {'dBFS':>10} {'dBSPL':>10} {'Peak dBFS':>12} {'Sec':>8}")
+        print(f"{'Channel':<12} {'RMS':>10} {'dBFS':>10} {'dBSPL':>10} {'Peak dBFS':>12} {'Crest dB':>10} {'Sec':>8}")
     else:
-        print(f"{'Channel':<12} {'RMS':>10} {'dBFS':>10} {'Peak dBFS':>12} {'Sec':>8}")
+        print(f"{'Channel':<12} {'RMS':>10} {'dBFS':>10} {'Peak dBFS':>12} {'Crest dB':>10} {'Sec':>8}")
 
     for r in results:
         if use_spl:
             spl = f"{r.dbspl:0.2f}" if r.dbspl is not None else "N/A"
-            print(f"{r.label:<12} {r.rms:>10.6f} {r.dbfs:>10.2f} {spl:>10} {r.peak_dbfs:>12.2f} {r.duration_sec:>8.2f}")
+            print(f"{r.label:<12} {r.rms:>10.6f} {r.dbfs:>10.2f} {spl:>10} {r.peak_dbfs:>12.2f} {r.crest_db:>10.2f} {r.duration_sec:>8.2f}")
         else:
-            print(f"{r.label:<12} {r.rms:>10.6f} {r.dbfs:>10.2f} {r.peak_dbfs:>12.2f} {r.duration_sec:>8.2f}")
+            print(f"{r.label:<12} {r.rms:>10.6f} {r.dbfs:>10.2f} {r.peak_dbfs:>12.2f} {r.crest_db:>10.2f} {r.duration_sec:>8.2f}")
 
 
 def print_ascii_chart(results: List[Measurement]) -> None:
@@ -196,7 +206,7 @@ def maybe_save_png(results: List[Measurement], output_png: Path) -> None:
     print(f"\nSaved chart image: {output_png}")
 
 
-def build_json(results: List[Measurement]) -> dict:
+def build_json(results: List[Measurement], signal_present: bool, signal_reason: str) -> dict:
     return {
         "measurements": [
             {
@@ -205,11 +215,59 @@ def build_json(results: List[Measurement]) -> dict:
                 "dbfs": r.dbfs,
                 "dbspl": r.dbspl,
                 "peak_dbfs": r.peak_dbfs,
+                "crest_db": r.crest_db,
                 "duration_sec": r.duration_sec,
             }
             for r in results
-        ]
+        ],
+        "signal_present": signal_present,
+        "signal_reason": signal_reason,
     }
+
+
+def load_baseline(path: Path | None) -> dict | None:
+    """Load calibracion.txt (JSON with left_dbfs/right_dbfs from the daily ambient capture)."""
+    if path is None:
+        return None
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+        baseline = {"Left": data.get("left_dbfs"), "Right": data.get("right_dbfs")}
+        if baseline["Left"] is None or baseline["Right"] is None:
+            return None
+        return baseline
+    except Exception:
+        print(f"[WARNING] Could not read baseline file: {path}. Using fixed thresholds only.")
+        return None
+
+
+def evaluate_signal(results: List[Measurement], baseline: dict | None) -> tuple[bool, str]:
+    """Decide whether both channels captured a real stimulus instead of ambient noise.
+
+    Fails when ANY channel trips one of:
+      - dbfs below SIGNAL_MIN_DBFS (absolute floor)
+      - crest_db above SIGNAL_MAX_CREST_DB (sparse transients = ambient noise shape)
+      - snr over the ambient baseline below SIGNAL_MIN_SNR_DB (when baseline available)
+    """
+    reasons = []
+    for r in results:
+        if r.label == "Both":
+            continue
+        if r.dbfs < SIGNAL_MIN_DBFS:
+            reasons.append(
+                f"{r.label}: {r.dbfs:.2f} dBFS < piso absoluto {SIGNAL_MIN_DBFS} dBFS"
+            )
+        if r.crest_db > SIGNAL_MAX_CREST_DB:
+            reasons.append(
+                f"{r.label}: factor cresta {r.crest_db:.1f} dB > {SIGNAL_MAX_CREST_DB} dB (solo ruido ambiente)"
+            )
+        base = baseline.get(r.label) if baseline else None
+        if base is not None:
+            snr = r.dbfs - base
+            if snr < SIGNAL_MIN_SNR_DB:
+                reasons.append(
+                    f"{r.label}: SNR {snr:.1f} dB sobre ambiente < {SIGNAL_MIN_SNR_DB} dB"
+                )
+    return (len(reasons) == 0, "; ".join(reasons))
 
 
 def main() -> int:
@@ -228,6 +286,8 @@ def main() -> int:
                         help="Measured dBFS for your calibration tone")
     parser.add_argument("--calibration-spl", type=float, default=94.0,
                         help="Known SPL of calibration tone (default: 94 dB SPL)")
+    parser.add_argument("--baseline", type=Path, default=None,
+                        help="Optional calibracion.txt with the daily ambient-noise baseline")
 
     parser.add_argument("--json", action="store_true",
                         help="Print machine-readable JSON to stdout (for C# integration)")
@@ -273,13 +333,27 @@ def main() -> int:
         both_measure
     ]
 
+    baseline = load_baseline(args.baseline)
+    if baseline is not None:
+        loudest_ambient = max(baseline["Left"], baseline["Right"])
+        if loudest_ambient > SIGNAL_MIN_DBFS:
+            print(
+                f"[WARNING] Ambient baseline is very loud ({loudest_ambient:.2f} dBFS > {SIGNAL_MIN_DBFS} dBFS). "
+                "Check for background music, mic gain, or a bad E.A.R.S. connection."
+            )
+    signal_present, signal_reason = evaluate_signal(results, baseline)
+    if signal_present:
+        print("\nSignal presence: OK")
+    else:
+        print(f"\nSignal presence: NOT DETECTED - {signal_reason}")
+
     print_table(results)
     print_ascii_chart(results)
 
     if args.png_out:
         maybe_save_png(results, args.png_out)
 
-    payload = build_json(results)
+    payload = build_json(results, signal_present, signal_reason)
     if args.json_out:
         args.json_out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         print(f"\nSaved JSON: {args.json_out}")

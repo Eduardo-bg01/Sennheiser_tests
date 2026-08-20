@@ -46,6 +46,27 @@ if not exist "%REFURBISH_TOOL%" (
     echo.
 )
 
+:: Calibracion diaria del ruido ambiente (una vez por dia, por maquina).
+:: LevelTest con CALIBRATION=1 graba 30s sin reproducir audio y guarda calibracion.txt,
+:: que db_chart.py usa como linea base para detectar "solo se escucha ruido ambiente".
+set "CALIB_NEEDED=1"
+set "CALDATE="
+set "TODAY="
+if exist calibracion.txt (
+    for /f %%d in ('powershell -NoProfile -Command "try { (Get-Content calibracion.txt -Raw | ConvertFrom-Json).date } catch { '' }"') do set "CALDATE=%%d"
+    for /f %%t in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd"') do set "TODAY=%%t"
+    if "!CALDATE!"=="!TODAY!" set "CALIB_NEEDED=0"
+)
+if "%CALIB_NEEDED%"=="1" (
+    echo Calibracion diaria requerida - midiendo ruido ambiente...
+    set "CALIBRATION=1"
+    start /wait "" "%APP_DIR%LevelTest.exe"
+    set "CALIBRATION="
+) else (
+    echo Calibracion del dia vigente ^(calibracion.txt: !CALDATE!^).
+)
+echo.
+
 :: Show Bluetooth connection instructions
 echo.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%show_bluetooth.ps1" -Mode connect
@@ -113,8 +134,15 @@ set /a AUDIO_ATTEMPTS=0
 set /a AUDIO_ATTEMPTS+=1
 start /wait "" "%APP_DIR%AudioTest.exe"
 timeout /t %RETRY_DELAY% /nobreak >nul
-if exist hearingPass*.txt (
-    echo [AUDIO] PASSED
+if exist hearingPassResults.txt (
+    findstr /x /c:"True" hearingPassResults.txt >nul 2>&1
+    if !errorlevel! EQU 0 (
+        echo [AUDIO] PASSED
+        goto POST_AUDIO
+    )
+    rem El operador rechazo la unidad: se registra el fallo y se continua,
+    rem el veredicto sobrevive en hearingPassResults.txt para getFinalResults.py.
+    echo [AUDIO] FAILED por operador - se registra el fallo y se continua.
     goto POST_AUDIO
 )
 if !AUDIO_ATTEMPTS! LSS %MAX_RETRIES% (

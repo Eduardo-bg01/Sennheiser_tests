@@ -40,11 +40,13 @@ DEFAULTS = {
     "dbType": "",
 }
 
-# Subtest names matching test results
+# Subtest names matching test results.
+# Appended entries keep existing TestIDNumber values stable for the backend.
 SUBTESTS = [
     "distorsion", "left_dbfs", "left_peak", "right_dbfs", "right_peak",
     "balance", "volume", "clipping", "bluetooth", "play_pausa",
-    "anterior", "siguiente", "subir_volumen", "bajar_volumen", "resultado_mic"
+    "anterior", "siguiente", "subir_volumen", "bajar_volumen", "resultado_mic",
+    "deteccion_senal", "audio_fail"
 ]
 
 def load_json(path):

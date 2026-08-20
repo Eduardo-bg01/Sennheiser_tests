@@ -45,7 +45,7 @@ MODELS_WITHOUT_VOLUME = {"hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", 
 
 # All possible Bluetooth and level fields
 BT_RESULT_FIELDS = ["bluetooth", "play_pausa", "anterior", "siguiente", "subir_volumen", "bajar_volumen"]
-LEVEL_RESULT_FIELDS = ["left_dbfs", "left_peak", "right_dbfs", "right_peak", "balance", "volume", "clipping"]
+LEVEL_RESULT_FIELDS = ["left_dbfs", "left_peak", "right_dbfs", "right_peak", "balance", "volume", "clipping", "deteccion_senal"]
 
 def first_match(pattern):
     """Return first file matching glob pattern, or None."""
@@ -175,6 +175,11 @@ def main():
         final_results["distorsion"] = RESULT_PASS if audio_result == RESULT_TRUE else RESULT_FAIL
     else:
         final_results["distorsion"] = missing
+
+    # Dedicated failing subtest so an operator-rejected unit is visible in the XML
+    # even if other fields end up N/A. converter.py flips the overall result on it.
+    if final_results["distorsion"] == RESULT_FAIL:
+        final_results["audio_fail"] = RESULT_FAIL
     
     # Read Bluetooth control test (also provides the device model)
     btfile = first_match(FILE_PATTERN_BLUETOOTH)
@@ -184,6 +189,8 @@ def main():
         results_text = read_text_file(FILE_PATTERN_RESULTS)
         results = json.loads(results_text)
         audio_analysis = analyze_audio_levels(results.get("measurements", []))
+        # Signal-presence verdict is computed by db_chart.py (single source of truth).
+        audio_analysis["deteccion_senal"] = RESULT_PASS if results.get("signal_present") is True else RESULT_FAIL
         model = normalize_model(read_device_model(btfile))
         if model in MODELS_WITHOUT_VOLUME or model.startswith("ie"):
             audio_analysis["volume"] = "N/A"
