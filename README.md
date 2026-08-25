@@ -105,6 +105,8 @@ On failure the operator sees a red banner on the LevelTest results screen:
 *"Parece que no se está detectando suficiente audio. Asegúrese de que los
 audífonos estén reproduciendo sonido."*
 
+For models without a volume check (HD 400U, HD 550/560S/569/599/600/650/660S, IE* — see `volume` row below) the banner is suppressed when both `balance` and `clipping` pass; it is still shown if either `balance` or `clipping` fails. Volume level numbers (`I: … | D: …`) remain visible but without a pass/fail icon.
+
 A sanity warning is printed if the ambient baseline itself is louder than
 −30 dBFS (background music, mic gain too high, or a bad E.A.R.S. connection).
 
@@ -146,7 +148,7 @@ AudioTest writes `hearingPassResults.txt` containing `True` or `False`
 | `audio_fail` | derived | present only when `distorsion == FAIL` |
 | `left_dbfs`, `left_peak`, `right_dbfs`, `right_peak` | results.json | numbers |
 | `balance` | \|L−R\| ≤ 2 dB | PASS / FAIL |
-| `volume` | −30 ≤ dbfs ≤ −10 (skipped for HD550/560S/569/599/600/650/660S and IE*) | PASS / FAIL / N/A |
+| `volume` | −30 ≤ dbfs ≤ −10 (N/A for HD 400U, HD 550/560S/569/599/600/650/660S and IE*; values still displayed without a pass/fail icon) | PASS / FAIL / N/A |
 | `clipping` | peak ≤ 0 dBFS | PASS / FAIL |
 | `deteccion_senal` | results.json `signal_present` | PASS / FAIL |
 | `bluetooth`, `play_pausa`, `anterior`, `siguiente`, `subir_volumen`, `bajar_volumen` | Prueba_*.txt | PASS / FAIL / N/A |
