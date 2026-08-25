@@ -41,7 +41,7 @@ BT_FIELD_VOLUME_DOWN = "Bajar Volumen"
 MIC_FIELD_RESULT = "Resultado"
 
 # Models whose volume result is not applicable (reported as N/A, hidden from UI)
-MODELS_WITHOUT_VOLUME = {"hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", "hd660s"}
+MODELS_WITHOUT_VOLUME = {"hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", "hd660s", "hd400u"}
 
 # All possible Bluetooth and level fields
 BT_RESULT_FIELDS = ["bluetooth", "play_pausa", "anterior", "siguiente", "subir_volumen", "bajar_volumen"]
