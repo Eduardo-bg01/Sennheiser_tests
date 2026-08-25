@@ -72,12 +72,13 @@ namespace HeadPhoneTest2
             signalWarnLabel = new Label
             {
                 Dock = DockStyle.Top,
-                Height = 70,
+                Height = 90,
                 ForeColor = Danger,
                 BackColor = Color.FromArgb(255, 235, 235),
-                Font = new Font("Segoe UI", 13F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Visible = false,
+                AutoSize = false,
             };
             signalWarnLabel.Text = "Parece que no se está detectando suficiente audio.\r\n" +
                 "Asegúrese de que los audífonos estén reproduciendo sonido.";
@@ -157,7 +158,9 @@ namespace HeadPhoneTest2
 
         private void ApplyVolumeVisibility()
         {
-            panel10.Visible = !hideVolume;
+            // ponytail: show volume values for all models (HD/IE neutral, no ✔/✖)
+            panel10.Visible = true;
+            levelImg.Visible = !hideVolume;
             tableLayoutPanel4.ColumnStyles[0].Width = hideVolume ? 50f : 33f;
             tableLayoutPanel4.ColumnStyles[1].Width = hideVolume ? 0f : 33f;
             tableLayoutPanel4.ColumnStyles[2].Width = hideVolume ? 50f : 34f;
@@ -509,6 +512,12 @@ namespace HeadPhoneTest2
                             levelDetails.Text += "\nVolumen: " + string.Join(", ", issues);
                         }
                     }
+                    else
+                    {
+                        // HD/IE: show L/R values neutrally, no ✔/✖ — visible & understandable
+                        levelImg.Image = null;
+                        levelDetails.ForeColor = TextPrimary;
+                    }
 
                     bool clippingPass = peak <= 0;
                     clippingImg.Image = clippingPass ? Properties.Resources.check : Properties.Resources.x;
@@ -518,8 +527,17 @@ namespace HeadPhoneTest2
                         clippingDetails.Text += "\nVolumen excesivo (clipping)";
                     }
 
-                    // Aviso de presencia de senal (calculado por db_chart.py).
-                    signalWarnLabel.Visible = (signal_present == false);
+                    // Aviso de presencia de senal (calculado por db_chart.py) — visible with justification for all models
+                    if (signal_present == false)
+                    {
+                        string baseMsg = "Parece que no se está detectando suficiente audio.\r\nAsegúrese de que los audífonos estén reproduciendo sonido.";
+                        signalWarnLabel.Text = string.IsNullOrWhiteSpace(signal_reason) ? baseMsg : baseMsg + "\r\nMotivo: " + signal_reason;
+                        signalWarnLabel.Visible = true;
+                    }
+                    else
+                    {
+                        signalWarnLabel.Visible = false;
+                    }
                 });
             }
             catch (Exception ex)

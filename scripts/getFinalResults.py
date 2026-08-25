@@ -189,8 +189,13 @@ def main():
         results_text = read_text_file(FILE_PATTERN_RESULTS)
         results = json.loads(results_text)
         audio_analysis = analyze_audio_levels(results.get("measurements", []))
-        # Signal-presence verdict is computed by db_chart.py (single source of truth).
-        audio_analysis["deteccion_senal"] = RESULT_PASS if results.get("signal_present") is True else RESULT_FAIL
+        # deteccion_senal mirrors the operator's AudioTest verdict (visible choice),
+        # not the auto signal detector (which stays as informational warning only).
+        # This avoids false negatives / invisible FAILs for HD/IE families.
+        if final_results.get("distorsion") in (RESULT_PASS, RESULT_FAIL):
+            audio_analysis["deteccion_senal"] = final_results["distorsion"]
+        else:
+            audio_analysis["deteccion_senal"] = missing
         model = normalize_model(read_device_model(btfile))
         if model in MODELS_WITHOUT_VOLUME or model.startswith("ie"):
             audio_analysis["volume"] = "N/A"
