@@ -55,7 +55,7 @@ namespace HeadPhoneTest2
         private Label signalWarnLabel;
 
         // Modelos sin prueba de volumen visible (solo balance y clipping)
-        private static readonly string[] NoVolumeModels = { "hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", "hd660s" };
+        private static readonly string[] NoVolumeModels = { "hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", "hd660s", "hd400u"  };
         private bool hideVolume;
 
         public Form1()
