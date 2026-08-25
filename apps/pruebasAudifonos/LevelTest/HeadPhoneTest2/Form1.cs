@@ -527,12 +527,20 @@ namespace HeadPhoneTest2
                         clippingDetails.Text += "\nVolumen excesivo (clipping)";
                     }
 
-                    // Aviso de presencia de senal (calculado por db_chart.py) — visible with justification for all models
+                    // ponytail: for no-volume models hide banner only when balance+clipping both pass (volume-only ignore)
                     if (signal_present == false)
                     {
-                        string baseMsg = "Parece que no se está detectando suficiente audio.\r\nAsegúrese de que los audífonos estén reproduciendo sonido.";
-                        signalWarnLabel.Text = string.IsNullOrWhiteSpace(signal_reason) ? baseMsg : baseMsg + "\r\nMotivo: " + signal_reason;
-                        signalWarnLabel.Visible = true;
+                        bool suppressForNoVolume = hideVolume && balancePass && clippingPass;
+                        if (suppressForNoVolume)
+                        {
+                            signalWarnLabel.Visible = false;
+                        }
+                        else
+                        {
+                            string baseMsg = "Parece que no se está detectando suficiente audio.\r\nAsegúrese de que los audífonos estén reproduciendo sonido.";
+                            signalWarnLabel.Text = string.IsNullOrWhiteSpace(signal_reason) ? baseMsg : baseMsg + "\r\nMotivo: " + signal_reason;
+                            signalWarnLabel.Visible = true;
+                        }
                     }
                     else
                     {
