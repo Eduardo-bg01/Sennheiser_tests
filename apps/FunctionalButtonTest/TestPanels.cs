@@ -791,11 +791,15 @@ namespace BluetoothHeadphoneTest
     {
         private System.Windows.Forms.Timer _timeout;
         private bool _done = false;
+        private readonly Keys _targetKey;
 
         public TrackPanel(int number, string name, string icon, string gif,
                           Keys targetKey, string commandName)
             : base(number, name, icon, withPlayer: true)
         {
+
+            _targetKey = targetKey;
+
             MakeStep(1, "El reproductor está activo.", 14);
             MakeStep(2, $"Presione el botón de {commandName} en el audífono.", 56);
             MakeStep(3, "El reproductor mostrará el cambio de pista automáticamente.", 98);
@@ -821,15 +825,13 @@ namespace BluetoothHeadphoneTest
             if (_done) return;
             if (InvokeRequired) { Invoke(new Action(() => OnMediaKey(key))); return; }
 
-            // Check the actual media key received
-            var expected = ((TrackPanel)this).Name.Contains("Anterior")
-                ? Keys.MediaPreviousTrack : Keys.MediaNextTrack;
-            if (key != expected) return;
+            
+            if (key != _targetKey) return;
 
             _done = true;
             _timeout.Stop();
             AppCommandRouter.OnMediaKey -= OnMediaKey;
-            string label = expected == Keys.MediaPreviousTrack ? "Pista Anterior" : "Pista Siguiente";
+            string label = _targetKey == Keys.MediaPreviousTrack ? "Pista Anterior" : "Pista Siguiente";
             AutoPass($"{label} detectada — cambió a {Player.Audio.TrackName}");
         }
 
