@@ -111,7 +111,7 @@ namespace BluetoothHeadphoneTest
         private static readonly string[] JackModelNames = new[]
         {
             "HD 550", "HD 560S", "HD 569", "HD 599", "HD 600", "HD 650", "HD 660S2",
-            "HDR 175", "RS 120-W", "RS 195", "RS 275", "IE 200", "IE 600", "IE 900", "HD 400U",
+            "HDR 175", "RS 120-W", "RS 195", "RS 255", "RS 275", "IE 200", "IE 600", "IE 900", "HD 400U",
         };
 
         private static readonly List<DeviceProfile> _jackProfiles =
