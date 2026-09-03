@@ -95,8 +95,8 @@ if defined SKIP_SERIAL_PROMPT (
 :: dentro de BluetoothHeadphoneTest.exe. El reporte Prueba_*.txt que
 :: genera la app es el que usan los scripts aguas abajo.
 :SET_VOLUME_50
-echo Configurando volumen a 50%% antes de la prueba de controles...
-"%APP_DIR%VolumeHelper.exe" 50 >nul 2>&1 || echo No se pudo configurar volumen.
+echo Configurando volumen a 85%% antes de la prueba de controles...
+"%APP_DIR%VolumeHelper.exe" 85 >nul 2>&1 || echo No se pudo configurar volumen.
 
 :TEST_CONTROLS
 set /a CONTROLS_ATTEMPTS=0
@@ -108,8 +108,8 @@ if exist Prueba_*.txt (
     echo [CONTROLS] PASSED
     for /f "usebackq delims=" %%a in (`powershell -NoProfile -Command "$line = (Select-String -Path Prueba_*.txt -Pattern 'Dispositivo').Line; $name = $line.Substring($line.IndexOf(':') + 1).Trim(); Write-Output $name"`) do set "DEVICE_NAME=%%a"
     call :detect_level_test
-    echo Configurando volumen a 100%% antes de la prueba de audio...
-    "%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
+    echo Configurando volumen a 85%% antes de la prueba de audio...
+    "%APP_DIR%VolumeHelper.exe" 85 >nul 2>&1 || echo No se pudo configurar volumen.
     goto TEST_AUDIO
 )
 if exist "%APP_DIR%Prueba_*.txt" (
@@ -117,8 +117,8 @@ if exist "%APP_DIR%Prueba_*.txt" (
     echo [CONTROLS] PASSED
     for /f "usebackq delims=" %%a in (`powershell -NoProfile -Command "$line = (Select-String -Path Prueba_*.txt -Pattern 'Dispositivo').Line; $name = $line.Substring($line.IndexOf(':') + 1).Trim(); Write-Output $name"`) do set "DEVICE_NAME=%%a"
     call :detect_level_test
-    echo Configurando volumen a 100%% antes de la prueba de audio...
-    "%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
+    echo Configurando volumen a 85%% antes de la prueba de audio...
+    "%APP_DIR%VolumeHelper.exe" 85 >nul 2>&1 || echo No se pudo configurar volumen.
     goto TEST_AUDIO
 )
 if !CONTROLS_ATTEMPTS! LSS %MAX_RETRIES% (
@@ -154,8 +154,8 @@ exit /b 2
 
 :POST_AUDIO
 if /i "%RUN_MICROPHONE%"=="1" (
-    echo Configurando volumen a 100%% antes de la prueba de microfono...
-    "%APP_DIR%VolumeHelper.exe" 100 >nul 2>&1 || echo No se pudo configurar volumen.
+    echo Configurando volumen a 85%% antes de la prueba de microfono...
+    "%APP_DIR%VolumeHelper.exe" 85 >nul 2>&1 || echo No se pudo configurar volumen.
     goto TEST_MICROPHONE
 )
 goto SETUP_VOLUME
@@ -188,7 +188,6 @@ if /i "%RUN_LEVEL%"=="0" (
     goto GENERATE_RESULTS
 )
 set "LEVEL_VOLUME=85"
-if /i "!DEVICE_NAME!"=="MOMENTUM TW 4" set "LEVEL_VOLUME=80"
 echo Configurando volumen a !LEVEL_VOLUME!%% antes de la prueba de nivel...
 "%APP_DIR%VolumeHelper.exe" !LEVEL_VOLUME! >nul 2>&1 || echo No se pudo configurar volumen.
 
