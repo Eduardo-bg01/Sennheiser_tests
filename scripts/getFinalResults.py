@@ -197,7 +197,7 @@ def main():
         else:
             audio_analysis["deteccion_senal"] = missing
         model = normalize_model(read_device_model(btfile))
-        if model in MODELS_WITHOUT_VOLUME or model.startswith("ie"):
+        if any(m in model for m in MODELS_WITHOUT_VOLUME) or model.startswith("ie"):
             audio_analysis["volume"] = "N/A"
         final_results.update(audio_analysis)
     elif args.some:
