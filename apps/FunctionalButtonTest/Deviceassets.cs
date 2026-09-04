@@ -3,7 +3,6 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Windows.Forms;
 
 namespace BluetoothHeadphoneTest
 {
@@ -12,17 +11,6 @@ namespace BluetoothHeadphoneTest
         // Se asigna en Program.cs con el valor de SelectedDevice.Name
         // Ejemplo: "TRUEFREE 01", "Momentum 4"
         public static string DeviceName { get; set; } = string.Empty;
-
-        // ── DEBUG temporal: muestra todos los recursos embebidos ─────────────
-        // Llama a DeviceAssets.DumpResources() en Program.cs para diagnosticar.
-        public static void DumpResources()
-        {
-            var all = Assembly.GetExecutingAssembly().GetManifestResourceNames();
-            string list = string.Join("\n", all);
-            MessageBox.Show(
-                $"DeviceName: \"{DeviceName}\"\n\nRecursos:\n{list}",
-                "DEBUG", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
 
         // ── Imagen del dispositivo ───────────────────────────────────────────
         public static Image LoadDeviceImage()

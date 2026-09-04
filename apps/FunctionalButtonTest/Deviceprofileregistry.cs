@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace BluetoothHeadphoneTest
 {
@@ -41,10 +42,10 @@ namespace BluetoothHeadphoneTest
             {
                 HasBluetooth     = false,
                 HasPlayPause     = true,
-                HasPreviousTrack = true,
-                HasNextTrack     = true,
-                HasVolumeUp      = true,
-                HasVolumeDown    = true,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
             },
              new DeviceProfile("ACCENTUM")
             {
@@ -64,6 +65,27 @@ namespace BluetoothHeadphoneTest
                 HasVolumeUp      = true,
                 HasVolumeDown    = true,
             },
+              new DeviceProfile("HDB 630")
+            {
+                HasBluetooth     = true,
+                HasPlayPause     = true,
+                HasPreviousTrack = true,
+                HasNextTrack     = true,
+                HasVolumeUp      = true,
+                HasVolumeDown    = true,
+            },
+
+                new DeviceProfile("HD 400U")
+              {
+                  HasBluetooth     = false,
+                  HasPlayPause     = true,
+                  HasPreviousTrack = false,
+                  HasNextTrack     = false,
+                  HasVolumeUp      = false,
+                  HasVolumeDown    = false,
+              },
+
+
 
             // ════════════════════════════════════════════════════════════════
             //  AGREGA AQUÍ MODELOS NUEVOS (BT, USB-C o USB-A):
@@ -86,132 +108,22 @@ namespace BluetoothHeadphoneTest
         //  "Speakers/Headphones", "Headphones", etc.
         //  El nombre aquí es el nombre comercial que el operador elige.
         // ════════════════════════════════════════════════════════════════════
-        private static readonly List<DeviceProfile> _jackProfiles = new()
+        private static readonly string[] JackModelNames = new[]
         {
-            new DeviceProfile("HD 550")
-            {
-                HasBluetooth     = false,
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-            new DeviceProfile("HD 560S")
-            {
-                HasBluetooth     = false,
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-            new DeviceProfile("HD 569")
-            {
-                HasBluetooth     = false,
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-            new DeviceProfile("HD 599")
-            {
-                HasBluetooth     = false,
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-            new DeviceProfile("HD 600")
-            {
-                HasBluetooth     = false,
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-            new DeviceProfile("HD 650")
-            {
-                HasBluetooth     = false,
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-            new DeviceProfile("HD 660S2")
-            {
-                HasBluetooth     = false,
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-            new DeviceProfile("HDR 175")
-            {
-                HasBluetooth     = false,
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-            new DeviceProfile("RS 120-W")
-            {
-                HasBluetooth     = false,
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-            new DeviceProfile("RS 195")
-            {
-                HasBluetooth     = false,
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-            new DeviceProfile("RS 275")
-            {
-                HasBluetooth     = false,
-                HasPlayPause     = false,
-                HasPreviousTrack = false,
-                HasNextTrack     = false,
-                HasVolumeUp      = false,
-                HasVolumeDown    = false,
-            },
-
-            // ════════════════════════════════════════════════════════════════
-            //  AGREGA AQUÍ MÁS MODELOS JACK / GENÉRICOS:
-            //
-            //  new DeviceProfile("Nombre Comercial")
-            //  {
-            //      HasBluetooth     = false,
-            //      HasPlayPause     = true/false,
-            //      HasPreviousTrack = true/false,
-            //      HasNextTrack     = true/false,
-            //      HasVolumeUp      = true/false,
-            //      HasVolumeDown    = true/false,
-            //  },
-            // ════════════════════════════════════════════════════════════════
+            "HD 550", "HD 560S", "HD 569", "HD 599", "HD 600", "HD 650", "HD 660S2",
+            "HDR 175", "RS 120-W", "RS 195", "RS 255", "RS 275", "IE 200", "IE 600", "IE 900", "HD 400U",
         };
+
+        private static readonly List<DeviceProfile> _jackProfiles =
+            JackModelNames.Select(name => new DeviceProfile(name)
+            {
+                HasBluetooth     = false,
+                HasPlayPause     = name == "HD 400U",
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
+            }).ToList();
 
         // ════════════════════════════════════════════════════════════════════
         //  NOMBRES GENÉRICOS DE WINDOWS

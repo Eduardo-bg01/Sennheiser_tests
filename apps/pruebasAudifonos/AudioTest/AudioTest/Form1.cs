@@ -1,5 +1,7 @@
 using NAudio.Wave;
 using System.Diagnostics;
+using System.Text;
+using System.Text.Json;
 
 namespace AudioTest
 {
@@ -36,16 +38,99 @@ namespace AudioTest
 
         public bool passed;
 
+        private readonly bool quickVariant =
+            Environment.GetEnvironmentVariable("QUICK_AUDIO") == "1";
+
+        // Ciclo de repeticiones de la prueba auditiva, una por cada tipo de conexion fisica.
+        // - RS 255 y RS 275: 3 conexiones (USB, Optico, Analogico).
+        // - RS 195: 2 conexiones (Optico, Analogico) - no tiene entrada USB.
+        // - El resto de los modelos: flujo de una sola prueba, sin cambios.
+        private static readonly string[] FullConnectionTypes = { "1. USB", "2. Óptico", "3. Analógico 3.5" };
+        private static readonly string[] FullConnectionFileSuffixes = { "USB", "Optico", "Analogico" };
+        private static readonly string[] NoUsbConnectionTypes = { "1. Óptico", "2. Analógico 3.5" };
+        private static readonly string[] NoUsbConnectionFileSuffixes = { "Optico", "Analogico" };
+
+        private static readonly string[] FullCycleModels = { "rs255", "rs275" };
+        private static readonly string[] NoUsbCycleModels = { "rs195" };
+
+        private int connectionIndex = 0;
+        private readonly bool isRSModel;
+        private readonly string[] ConnectionTypes;
+        private readonly string[] ConnectionFileSuffixes;
+        private Label? connectionInfoLabel;
+        private readonly List<HearingRunSummary> connectionResults = new List<HearingRunSummary>();
+
+        // Nombre de archivo separado por conexion (solo modelos con ciclo); el resto de los
+        // modelos usa el nombre de siempre.
+        private string RecordedAudioPath() => isRSModel
+            ? $"ear_microphone_capture_{ConnectionFileSuffixes[connectionIndex]}.wav"
+            : recordedAudioPath;
+
         public Form1()
         {
+            if (quickVariant)
+            {
+                seconds = 7;
+            }
+
+            string device = Environment.GetEnvironmentVariable("DEVICE_NAME") ?? "";
+            string norm = new string(device.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
+
+            if (FullCycleModels.Any(m => norm.Contains(m)))
+            {
+                isRSModel = true;
+                ConnectionTypes = FullConnectionTypes;
+                ConnectionFileSuffixes = FullConnectionFileSuffixes;
+            }
+            else if (NoUsbCycleModels.Any(m => norm.Contains(m)))
+            {
+                isRSModel = true;
+                ConnectionTypes = NoUsbConnectionTypes;
+                ConnectionFileSuffixes = NoUsbConnectionFileSuffixes;
+            }
+            else
+            {
+                isRSModel = false;
+                ConnectionTypes = Array.Empty<string>();
+                ConnectionFileSuffixes = Array.Empty<string>();
+            }
+
             InitializeComponent();
             ApplyCohesiveTheme();
+            CreateConnectionInfoLabel();
             Resize += (_, _) => ApplyProfessionalLayout();
+        }
+
+        private void CreateConnectionInfoLabel()
+        {
+            // Se agrega a la fila 0 de tableLayoutPanel1 (siempre visible, sin importar
+            // que "content" este activo) para recordar en todo momento la conexion actual.
+            // Solo se muestra para modelos RS, que son los unicos con base multi-entrada.
+            connectionInfoLabel = new Label
+            {
+                Dock = DockStyle.Fill,
+                ForeColor = Accent,
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleCenter,
+                AutoSize = false,
+                Visible = isRSModel,
+            };
+            tableLayoutPanel1.Controls.Add(connectionInfoLabel, 0, 0);
+            UpdateConnectionInfoLabel();
+        }
+
+        private void UpdateConnectionInfoLabel()
+        {
+            if (connectionInfoLabel == null)
+                return;
+
+            connectionInfoLabel.Text = "Tipo de conexión: " + ConnectionTypes[connectionIndex] +
+                "   (prueba " + (connectionIndex + 1) + " de " + ConnectionTypes.Length + ")";
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
-            this.Close();
+            Application.Exit();
         }
 
         private void btnNext_Click(object sender, EventArgs e)
@@ -55,6 +140,18 @@ namespace AudioTest
                 headphonesOutputIndex = comboHeadphones.SelectedIndex;
                 speakerOutputIndex = comboSpeakers.SelectedIndex;
                 microphoneInputIndex = comboMicrophones.SelectedIndex;
+
+                if (isRSModel && connectionIndex == 0)
+                {
+                    MessageBox.Show(
+                        "Se probará la siguiente entrada:\r\n\r\n" +
+                        ConnectionTypes[0] +
+                        "\r\n\r\nAsegúrese de que los audífonos estén conectados de esta forma antes de continuar.",
+                        "Iniciar prueba de conexión",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
+
                 content1.Visible = false;
                 content3.Visible = true;
 
@@ -63,7 +160,8 @@ namespace AudioTest
 
                 SetPlaybackVolume(100);
                 StartRecording();
-                PlayAudio("karmaPolice.wav",headphonesOutputIndex);
+                PlayAudio("karmaPolice.wav", headphonesOutputIndex,
+                    startOffset: quickVariant ? TimeSpan.FromSeconds(30) : (TimeSpan?)null);
 
                 timer = new System.Windows.Forms.Timer();
                 timer.Interval = 1000;
@@ -74,9 +172,107 @@ namespace AudioTest
             }
             if (step == 3)
             {
-                File.WriteAllText("hearingPassResults.txt", passed.ToString());
-                this.Close();
-                return;
+                if (!isRSModel)
+                {
+                    File.WriteAllText("hearingPassResults.txt", passed.ToString());
+                    Application.Exit();
+                    return;
+                }
+
+                // Guarda el resultado de esta conexion para el resumen final del ciclo.
+                connectionResults.Add(new HearingRunSummary
+                {
+                    connection = ConnectionTypes[connectionIndex],
+                    passed = passed,
+                });
+
+                if (connectionIndex < ConnectionTypes.Length - 1)
+                {
+                    connectionIndex++;
+                    MessageBox.Show(
+                        "Cambie el tipo de conexión de los audífonos a:\r\n\r\n" +
+                        ConnectionTypes[connectionIndex] +
+                        "\r\n\r\nUna vez conectado, presione OK para continuar con la siguiente prueba.",
+                        "Cambiar tipo de conexión",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+
+                    UpdateConnectionInfoLabel();
+                    ResetForNextConnection();
+                    return;
+                }
+                else
+                {
+                    SaveConnectionSummary();
+                    MessageBox.Show(
+                        "Se completaron las pruebas para las 3 conexiones (USB, Óptico y Analógico 3.5).\r\n\r\n" +
+                        "Resumen guardado en tests_conexiones.json",
+                        "Ciclo de pruebas completo",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+
+                    File.WriteAllText("hearingPassResults.txt", passed.ToString());
+                    Application.Exit();
+                    return;
+                }
+            }
+        }
+
+        private void ResetForNextConnection()
+        {
+            step = 1;
+            passed = false;
+            seconds = quickVariant ? 7 : 15;
+
+            if (timer != null)
+            {
+                timer.Stop();
+            }
+
+            StopAudio();
+            try { StopRecording(); } catch { }
+
+            content3.Visible = false;
+            content1.Visible = true;
+
+            btnNext.Enabled = true;
+            btnCancel.Enabled = true;
+            btnPass.Enabled = false;
+            btnFail.Enabled = false;
+            btnPass.Visible = false;
+            btnFail.Visible = false;
+
+            label2.Text = "";
+            label4.Text = "";
+        }
+
+        private void SaveConnectionSummary()
+        {
+            try
+            {
+                var payload = new
+                {
+                    date = DateTime.Now.ToString("yyyy-MM-dd"),
+                    time = DateTime.Now.ToString("HH:mm:ss"),
+                    results = connectionResults
+                };
+                File.WriteAllText("tests_conexiones.json",
+                    JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true }));
+
+                var sb = new StringBuilder();
+                sb.AppendLine("Resumen de prueba auditiva (AudioTest) - " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                sb.AppendLine();
+                foreach (var r in connectionResults)
+                {
+                    sb.AppendLine("Conexión: " + r.connection);
+                    sb.AppendLine("  Resultado: " + (r.passed ? "PASS" : "FAIL"));
+                    sb.AppendLine();
+                }
+                File.WriteAllText("tests_conexiones.txt", sb.ToString());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error guardando el resumen: " + ex.Message, "Resumen", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -95,7 +291,7 @@ namespace AudioTest
                 timer.Stop();
                 StopRecording();
                 StopAudio();
-                PlayAudio(recordedAudioPath, speakerOutputIndex,true);
+                PlayAudio(RecordedAudioPath(), speakerOutputIndex, true);
             }
         }
 
@@ -165,7 +361,8 @@ namespace AudioTest
         private void PlayAudio(
     string path,
     int outputDeviceIndex,
-    bool loop = false
+    bool loop = false,
+    TimeSpan? startOffset = null
 )
         {
             StopAudio();
@@ -188,6 +385,10 @@ namespace AudioTest
             }
 
             reader = new AudioFileReader(fullPath);
+            if (startOffset.HasValue)
+            {
+                reader.CurrentTime = startOffset.Value;
+            }
 
             output = new WaveOutEvent();
             output.DeviceNumber = outputDeviceIndex;
@@ -208,9 +409,10 @@ namespace AudioTest
 
         private void StartRecording()
         {
-            if (File.Exists(recordedAudioPath))
+            string audioPath = RecordedAudioPath();
+            if (File.Exists(audioPath))
             {
-                File.Delete(recordedAudioPath);
+                File.Delete(audioPath);
             }
 
             waveIn = new WaveInEvent();
@@ -219,7 +421,7 @@ namespace AudioTest
             waveIn.WaveFormat = new WaveFormat(44100, 1);
 
             writer = new WaveFileWriter(
-                recordedAudioPath,
+                audioPath,
                 waveIn.WaveFormat
             );
 
@@ -298,12 +500,12 @@ namespace AudioTest
                 comboSpeakers,
                 comboMicrophones
             })
-                        {
-                            combo.BackColor = Color.White;
-                            combo.ForeColor = TextPrimary;
-                            combo.Font = new Font("Segoe UI", 13F);
-                            combo.FlatStyle = FlatStyle.Flat;
-                        }
+            {
+                combo.BackColor = Color.White;
+                combo.ForeColor = TextPrimary;
+                combo.Font = new Font("Segoe UI", 13F);
+                combo.FlatStyle = FlatStyle.Flat;
+            }
 
             ApplyProfessionalLayout();
         }
@@ -493,5 +695,11 @@ namespace AudioTest
 
             return totalBytesRead;
         }
+    }
+
+    public class HearingRunSummary
+    {
+        public string connection { get; set; }
+        public bool passed { get; set; }
     }
 }

@@ -10,9 +10,6 @@ namespace BluetoothHeadphoneTest
         private TestSession _session;
         public TestStepManager stepManager;
 
-        // Hook global activo durante toda la sesión
-        private GlobalKeyHook _globalHook;
-
         public MainForm()
         {
             InitializeComponent();
@@ -23,8 +20,6 @@ namespace BluetoothHeadphoneTest
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            // Arrancar hook global — canal secundario (teclado físico)
-            _globalHook = new GlobalKeyHook();
             stepManager.Initialize();
             UpdateOperatorPanel();
         }
@@ -78,7 +73,6 @@ namespace BluetoothHeadphoneTest
         {
             WriteFallbackReportIfMissing();
             AppCommandRouter.Unregister();
-            _globalHook?.Dispose();
             base.OnFormClosed(e);
         }
 
@@ -106,7 +100,8 @@ namespace BluetoothHeadphoneTest
                 if (!hasActivity)
                     return;
 
-                string deviceName = _session.SelectedDevice?.Name ?? "BT";
+                string displayName = _session.GetDisplayName();
+                string deviceName = displayName;
                 foreach (char c in Path.GetInvalidFileNameChars())
                 {
                     deviceName = deviceName.Replace(c, '_');
@@ -116,40 +111,9 @@ namespace BluetoothHeadphoneTest
                 string filePath = Path.Combine(baseDir, fileName);
                 string currentDir = Environment.CurrentDirectory;
 
-                var sb = new System.Text.StringBuilder();
-                string sep = new string('─', 54);
+                string report = _session.BuildReportText();
 
-                sb.AppendLine($"Dispositivo : {_session.SelectedDevice?.Name ?? "—"}");
-                sb.AppendLine($"MAC         : {_session.SelectedDevice?.Address ?? "—"}");
-                sb.AppendLine($"Fecha       : {_session.StartTime:dd/MM/yyyy  HH:mm}");
-                sb.AppendLine();
-                sb.AppendLine(sep);
-                sb.AppendLine($"  {"PRUEBA",-32} {"RESULTADO",-10} {"HORA"}");
-                sb.AppendLine(sep);
-
-                foreach (var rec in _session.Records)
-                {
-                    string res = rec.Result == TestResult.Pass ? "PASS" :
-                                 rec.Result == TestResult.Fail ? "FAIL" :
-                                 rec.Result == TestResult.NotApplicable ? "N/A" : "PEND";
-                    string time = rec.Result == TestResult.NotApplicable ? "—"
-                        : (rec.Timestamp.HasValue
-                            ? rec.Timestamp.Value.ToString("HH:mm:ss") : "--:--:--");
-                    sb.AppendLine($"  {rec.Name,-32} {res,-10} {time}");
-                }
-
-                sb.AppendLine(sep);
-                int totalApplicable = 0, naCount = 0;
-                foreach (var r in _session.Records)
-                {
-                    if (r.Result == TestResult.NotApplicable) naCount++;
-                    else totalApplicable++;
-                }
-
-                sb.AppendLine(sep);
-                sb.AppendLine($"  Resultado final: {(_session.AllPassed ? "APROBADO" : "FALLIDO")}  ({CountPassed()}/{totalApplicable})  •  N/A: {naCount}");
-
-                File.WriteAllText(filePath, sb.ToString(), System.Text.Encoding.UTF8);
+                File.WriteAllText(filePath, report, System.Text.Encoding.UTF8);
 
                 if (!string.Equals(baseDir, currentDir, StringComparison.OrdinalIgnoreCase))
                 {
@@ -160,18 +124,6 @@ namespace BluetoothHeadphoneTest
             {
                 // Best-effort fallback, never block app shutdown.
             }
-        }
-
-        private int CountPassed()
-        {
-            int count = 0;
-            foreach (var rec in _session.Records)
-            {
-                if (rec.Result == TestResult.Pass)
-                    count++;
-            }
-
-            return count;
         }
 
         public void RefreshDateTime() =>
