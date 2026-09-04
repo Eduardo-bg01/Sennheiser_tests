@@ -45,9 +45,9 @@ namespace AudioTest
         // - RS 255 y RS 275: 3 conexiones (USB, Optico, Analogico).
         // - RS 195: 2 conexiones (Optico, Analogico) - no tiene entrada USB.
         // - El resto de los modelos: flujo de una sola prueba, sin cambios.
-        private static readonly string[] FullConnectionTypes = { "1. USB", "2. Óptico", "3. Analógico 3.5" };
+        private static readonly string[] FullConnectionTypes = { "1. USB", "2. ï¿½ptico", "3. Analï¿½gico 3.5" };
         private static readonly string[] FullConnectionFileSuffixes = { "USB", "Optico", "Analogico" };
-        private static readonly string[] NoUsbConnectionTypes = { "1. Óptico", "2. Analógico 3.5" };
+        private static readonly string[] NoUsbConnectionTypes = { "1. ï¿½ptico", "2. Analï¿½gico 3.5" };
         private static readonly string[] NoUsbConnectionFileSuffixes = { "Optico", "Analogico" };
 
         private static readonly string[] FullCycleModels = { "rs255", "rs275" };
@@ -99,6 +99,7 @@ namespace AudioTest
             ApplyCohesiveTheme();
             CreateConnectionInfoLabel();
             Resize += (_, _) => ApplyProfessionalLayout();
+            FormClosing += (s, e) => { try { if (!File.Exists("hearingPassResults.txt")) File.WriteAllText("hearingPassResults.txt", "False"); } catch { } };
         }
 
         private void CreateConnectionInfoLabel()
@@ -124,12 +125,14 @@ namespace AudioTest
             if (connectionInfoLabel == null)
                 return;
 
-            connectionInfoLabel.Text = "Tipo de conexión: " + ConnectionTypes[connectionIndex] +
+            connectionInfoLabel.Text = "Tipo de conexiï¿½n: " + ConnectionTypes[connectionIndex] +
                 "   (prueba " + (connectionIndex + 1) + " de " + ConnectionTypes.Length + ")";
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
+            // ponytail: write FAIL so batch/run.bat can continue with operator FAIL instead of 5 retries -> exit 2
+            try { if (!File.Exists("hearingPassResults.txt")) File.WriteAllText("hearingPassResults.txt", "False"); } catch { }
             Application.Exit();
         }
 
@@ -144,10 +147,10 @@ namespace AudioTest
                 if (isRSModel && connectionIndex == 0)
                 {
                     MessageBox.Show(
-                        "Se probará la siguiente entrada:\r\n\r\n" +
+                        "Se probarï¿½ la siguiente entrada:\r\n\r\n" +
                         ConnectionTypes[0] +
-                        "\r\n\r\nAsegúrese de que los audífonos estén conectados de esta forma antes de continuar.",
-                        "Iniciar prueba de conexión",
+                        "\r\n\r\nAsegï¿½rese de que los audï¿½fonos estï¿½n conectados de esta forma antes de continuar.",
+                        "Iniciar prueba de conexiï¿½n",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
                 }
@@ -158,10 +161,35 @@ namespace AudioTest
                 btnNext.Enabled = false;
                 btnCancel.Enabled = false;
 
+                // ponytail: clamp indices, guard no-device crash that leaves hearingPassResults missing -> batch retries auto-fail
+                if (headphonesOutputIndex < 0) headphonesOutputIndex = 0;
+                if (speakerOutputIndex < 0) speakerOutputIndex = 0;
+                if (microphoneInputIndex < 0) microphoneInputIndex = 0;
+                if (WaveOut.DeviceCount == 0 || WaveIn.DeviceCount == 0 || comboHeadphones.Items.Count == 0 || comboMicrophones.Items.Count == 0)
+                {
+                    MessageBox.Show("No se detectaron dispositivos de audio. Verifique que los audifonos/microfono esten conectados.", "AudioTest", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    try { File.WriteAllText("hearingPassResults.txt", "False"); } catch { }
+                    Application.Exit();
+                    return;
+                }
+
                 SetPlaybackVolume(100);
-                StartRecording();
-                PlayAudio("karmaPolice.wav", headphonesOutputIndex,
-                    startOffset: quickVariant ? TimeSpan.FromSeconds(30) : (TimeSpan?)null);
+                try
+                {
+                    StartRecording();
+                    // ponytail: clamp 30s offset if file shorter
+                    TimeSpan? offset = quickVariant ? TimeSpan.FromSeconds(30) : null;
+                    PlayAudio("karmaPolice.wav", headphonesOutputIndex, startOffset: offset);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error al iniciar audio/grabacion:\n" + ex.Message, "AudioTest", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    try { File.WriteAllText("hearingPassResults.txt", "False"); } catch { }
+                    try { StopRecording(); } catch { }
+                    try { StopAudio(); } catch { }
+                    Application.Exit();
+                    return;
+                }
 
                 timer = new System.Windows.Forms.Timer();
                 timer.Interval = 1000;
@@ -190,10 +218,10 @@ namespace AudioTest
                 {
                     connectionIndex++;
                     MessageBox.Show(
-                        "Cambie el tipo de conexión de los audífonos a:\r\n\r\n" +
+                        "Cambie el tipo de conexiï¿½n de los audï¿½fonos a:\r\n\r\n" +
                         ConnectionTypes[connectionIndex] +
                         "\r\n\r\nUna vez conectado, presione OK para continuar con la siguiente prueba.",
-                        "Cambiar tipo de conexión",
+                        "Cambiar tipo de conexiï¿½n",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
 
@@ -205,7 +233,7 @@ namespace AudioTest
                 {
                     SaveConnectionSummary();
                     MessageBox.Show(
-                        "Se completaron las pruebas para las 3 conexiones (USB, Óptico y Analógico 3.5).\r\n\r\n" +
+                        "Se completaron las pruebas para las 3 conexiones (USB, ï¿½ptico y Analï¿½gico 3.5).\r\n\r\n" +
                         "Resumen guardado en tests_conexiones.json",
                         "Ciclo de pruebas completo",
                         MessageBoxButtons.OK,
@@ -264,7 +292,7 @@ namespace AudioTest
                 sb.AppendLine();
                 foreach (var r in connectionResults)
                 {
-                    sb.AppendLine("Conexión: " + r.connection);
+                    sb.AppendLine("Conexiï¿½n: " + r.connection);
                     sb.AppendLine("  Resultado: " + (r.passed ? "PASS" : "FAIL"));
                     sb.AppendLine();
                 }
@@ -288,10 +316,16 @@ namespace AudioTest
                 btnFail.Enabled = true;
                 btnFail.Visible = true;
                 btnPass.Visible = true;
-                timer.Stop();
-                StopRecording();
-                StopAudio();
-                PlayAudio(RecordedAudioPath(), speakerOutputIndex, true);
+                try { timer.Stop(); } catch { }
+                try { StopRecording(); } catch { }
+                try { StopAudio(); } catch { }
+                try { PlayAudio(RecordedAudioPath(), speakerOutputIndex, true); }
+                catch (Exception ex)
+                {
+                    // ponytail: don't leave hearingPass missing -> batch auto-retry loop
+                    label2.Text = "Error al reproducir grabaci\u00f3n: " + ex.Message;
+                    // still allow Si/No so operator can decide
+                }
             }
         }
 
@@ -387,7 +421,14 @@ namespace AudioTest
             reader = new AudioFileReader(fullPath);
             if (startOffset.HasValue)
             {
-                reader.CurrentTime = startOffset.Value;
+                // ponytail: clamp offset inside file duration (e.g. short test file)
+                var dur = reader.TotalTime;
+                var off = startOffset.Value;
+                if (off < TimeSpan.Zero) off = TimeSpan.Zero;
+                if (off >= dur) off = TimeSpan.Zero; // fallback to start if beyond
+                else if (dur - off < TimeSpan.FromSeconds(2)) off = dur - TimeSpan.FromSeconds(2);
+                if (off < TimeSpan.Zero) off = TimeSpan.Zero;
+                reader.CurrentTime = off;
             }
 
             output = new WaveOutEvent();
