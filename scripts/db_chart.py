@@ -206,7 +206,7 @@ def maybe_save_png(results: List[Measurement], output_png: Path) -> None:
     print(f"\nSaved chart image: {output_png}")
 
 
-def build_json(results: List[Measurement], signal_present: bool, signal_reason: str) -> dict:
+def build_json(results: List[Measurement], signal_present: bool, signal_reason: str, active: str) -> dict:
     return {
         "measurements": [
             {
@@ -222,6 +222,7 @@ def build_json(results: List[Measurement], signal_present: bool, signal_reason: 
         ],
         "signal_present": signal_present,
         "signal_reason": signal_reason,
+        "channel_active": active,
     }
 
 
@@ -240,34 +241,65 @@ def load_baseline(path: Path | None) -> dict | None:
         return None
 
 
-def evaluate_signal(results: List[Measurement], baseline: dict | None) -> tuple[bool, str]:
-    """Decide whether both channels captured a real stimulus instead of ambient noise.
+def channel_signal_ok(r: Measurement, baseline: dict | None) -> tuple[bool, list[str]]:
+    """Whether a single channel captured a real stimulus instead of ambient noise.
 
-    Fails when ANY channel trips one of:
+    Fails when the channel trips one of:
       - dbfs below SIGNAL_MIN_DBFS (absolute floor)
       - crest_db above SIGNAL_MAX_CREST_DB (sparse transients = ambient noise shape)
       - snr over the ambient baseline below SIGNAL_MIN_SNR_DB (when baseline available)
     """
     reasons = []
+    if r.dbfs < SIGNAL_MIN_DBFS:
+        reasons.append(
+            f"{r.label}: {r.dbfs:.2f} dBFS < piso absoluto {SIGNAL_MIN_DBFS} dBFS"
+        )
+    if r.crest_db > SIGNAL_MAX_CREST_DB:
+        reasons.append(
+            f"{r.label}: factor cresta {r.crest_db:.1f} dB > {SIGNAL_MAX_CREST_DB} dB (solo ruido ambiente)"
+        )
+    base = baseline.get(r.label) if baseline else None
+    if base is not None:
+        snr = r.dbfs - base
+        if snr < SIGNAL_MIN_SNR_DB:
+            reasons.append(
+                f"{r.label}: SNR {snr:.1f} dB sobre ambiente < {SIGNAL_MIN_SNR_DB} dB"
+            )
+    return (len(reasons) == 0, reasons)
+
+
+def evaluate_signal(results: List[Measurement], baseline: dict | None) -> tuple[bool, str]:
+    """Decide whether both channels captured a real stimulus instead of ambient noise.
+
+    Fails when ANY channel trips a signal check (see channel_signal_ok).
+    """
+    reasons = []
     for r in results:
         if r.label == "Both":
             continue
-        if r.dbfs < SIGNAL_MIN_DBFS:
-            reasons.append(
-                f"{r.label}: {r.dbfs:.2f} dBFS < piso absoluto {SIGNAL_MIN_DBFS} dBFS"
-            )
-        if r.crest_db > SIGNAL_MAX_CREST_DB:
-            reasons.append(
-                f"{r.label}: factor cresta {r.crest_db:.1f} dB > {SIGNAL_MAX_CREST_DB} dB (solo ruido ambiente)"
-            )
-        base = baseline.get(r.label) if baseline else None
-        if base is not None:
-            snr = r.dbfs - base
-            if snr < SIGNAL_MIN_SNR_DB:
-                reasons.append(
-                    f"{r.label}: SNR {snr:.1f} dB sobre ambiente < {SIGNAL_MIN_SNR_DB} dB"
-                )
+        ok, channel_reasons = channel_signal_ok(r, baseline)
+        if not ok:
+            reasons.extend(channel_reasons)
     return (len(reasons) == 0, "; ".join(reasons))
+
+
+def channel_active(results: List[Measurement], baseline: dict | None) -> tuple[str, str]:
+    """Which channel(s) carry a real signal: left | right | both | none.
+
+    Used by the RS195 knob test, where the operator's knob position should leave
+    exactly one driver sounding. Channels are E.A.R.S.-referenced (the jig sits
+    mirrored, so headphone left driver lands on the E.A.R.S. right channel).
+    """
+    by_label = {r.label: r for r in results}
+    left_ok, left_reasons = channel_signal_ok(by_label["Left"], baseline)
+    right_ok, right_reasons = channel_signal_ok(by_label["Right"], baseline)
+    if left_ok and right_ok:
+        return "both", ""
+    if left_ok:
+        return "left", "; ".join(right_reasons)
+    if right_ok:
+        return "right", "; ".join(left_reasons)
+    return "none", "; ".join(left_reasons + right_reasons)
 
 
 def main() -> int:
@@ -342,10 +374,12 @@ def main() -> int:
                 "Check for background music, mic gain, or a bad E.A.R.S. connection."
             )
     signal_present, signal_reason = evaluate_signal(results, baseline)
+    active, _ = channel_active(results, baseline)
     if signal_present:
         print("\nSignal presence: OK")
     else:
         print(f"\nSignal presence: NOT DETECTED - {signal_reason}")
+    print(f"Channel active: {active}")
 
     print_table(results)
     print_ascii_chart(results)
@@ -353,7 +387,7 @@ def main() -> int:
     if args.png_out:
         maybe_save_png(results, args.png_out)
 
-    payload = build_json(results, signal_present, signal_reason)
+    payload = build_json(results, signal_present, signal_reason, active)
     if args.json_out:
         args.json_out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         print(f"\nSaved JSON: {args.json_out}")

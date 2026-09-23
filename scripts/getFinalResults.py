@@ -13,6 +13,8 @@ from datetime import datetime, timezone
 FILE_PATTERN_SERIAL = "serial*"
 FILE_PATTERN_AUDIO = "hearingPass*"
 FILE_PATTERN_RESULTS = "results.json"
+FILE_PATTERN_KNOB_LEFT = "knob_left.json"
+FILE_PATTERN_KNOB_RIGHT = "knob_right.json"
 FILE_PATTERN_BLUETOOTH = "Prueba_*"
 FILE_PATTERN_MICROPHONE = "MicroTest_*"
 FILE_PATTERN_TIME_START = "tiempo1.txt"
@@ -43,9 +45,12 @@ MIC_FIELD_RESULT = "Resultado"
 # Models whose volume result is not applicable (reported as N/A, hidden from UI)
 MODELS_WITHOUT_VOLUME = {"hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", "hd660s", "hd400u"}
 
+# RS195 knob test: the active EARS channel must clear the muted one by this much (provisional).
+KNOB_SEPARATION_DB = 15.0
+
 # All possible Bluetooth and level fields
 BT_RESULT_FIELDS = ["bluetooth", "play_pausa", "anterior", "siguiente", "subir_volumen", "bajar_volumen"]
-LEVEL_RESULT_FIELDS = ["left_dbfs", "left_peak", "right_dbfs", "right_peak", "balance", "volume", "clipping", "deteccion_senal"]
+LEVEL_RESULT_FIELDS = ["left_dbfs", "left_peak", "right_dbfs", "right_peak", "balance", "volume", "clipping", "deteccion_senal", "balance_knob"]
 
 def first_match(pattern):
     """Return first file matching glob pattern, or None."""
@@ -151,6 +156,57 @@ def analyze_audio_levels(measurements):
     
     return results
 
+def _channel_dbfs(data, channel):
+    """Look up a channel's dBFS from a db_chart JSON payload."""
+    for m in data.get("measurements", []):
+        if str(m.get("channel", "")).lower() == channel:
+            return m.get("dbfs")
+    return None
+
+def knob_verdict(left_take, right_take):
+    """Verdict for the RS195 balance knob from the two db_chart JSON payloads.
+
+    Mirror-agnostic: the E.A.R.S. jig sits flipped vs the headset, so we never
+    assume which physical ear maps to which channel. Each take must leave exactly
+    one channel sounding (knob hard to a side), the two takes must light opposite
+    channels (knob actually swaps the driver), and the active channel must clear
+    the muted one by KNOB_SEPARATION_DB.
+    """
+    reason = []
+    verdicts = {}
+    for name, take in (("left", left_take), ("right", right_take)):
+        active = take.get("channel_active")
+        if active not in ("left", "right"):
+            verdicts[name] = RESULT_FAIL
+            reason.append(f"toma {name}: canal activo '{active}' (se espera un solo canal)")
+            continue
+        muted = "right" if active == "left" else "left"
+        active_dbfs = _channel_dbfs(take, active)
+        muted_dbfs = _channel_dbfs(take, muted)
+        sep = None if active_dbfs is None or muted_dbfs is None else active_dbfs - muted_dbfs
+        if sep is not None and sep >= KNOB_SEPARATION_DB:
+            verdicts[name] = RESULT_PASS
+        else:
+            verdicts[name] = RESULT_FAIL
+            sep_txt = f"{sep:.1f}" if sep is not None else "n/d"
+            reason.append(f"toma {name}: separación {sep_txt} dB < {KNOB_SEPARATION_DB} dB")
+
+    active_left = left_take.get("channel_active")
+    active_right = right_take.get("channel_active")
+    differ = active_left in ("left", "right") and active_left != active_right
+    if not differ:
+        reason.append("ambas tomas activaron el mismo canal")
+
+    ok = all(v == RESULT_PASS for v in verdicts.values()) and differ
+    return {
+        "left": verdicts.get("left"),
+        "right": verdicts.get("right"),
+        "left_channel_active": active_left,
+        "right_channel_active": active_right,
+        "balance_knob": RESULT_PASS if ok else RESULT_FAIL,
+        "reason": "; ".join(reason),
+    }
+
 def main():
     """Generate final_results.json from test output files."""
     parser = argparse.ArgumentParser()
@@ -207,6 +263,7 @@ def main():
         final_results["balance"] = missing
         final_results["volume"] = missing
         final_results["clipping"] = missing
+        final_results["balance_knob"] = missing
     
     if btfile:
         bt_results = parse_bluetooth_results(btfile, missing)
@@ -224,6 +281,22 @@ def main():
                 final_results["resultado_mic"] = RESULT_PASS if "PAS" in parts[2] else RESULT_FAIL
     else:
         final_results["resultado_mic"] = missing
+
+    # Read knob balance test (RS195). LevelTest writes the two db_chart outputs
+    # (knob_left.json / knob_right.json); the verdict is computed here so the
+    # rule lives in one testable place.
+    knob_left = first_match(FILE_PATTERN_KNOB_LEFT)
+    knob_right = first_match(FILE_PATTERN_KNOB_RIGHT)
+    if knob_left and knob_right:
+        try:
+            left_data = json.loads(read_text_file(knob_left))
+            right_data = json.loads(read_text_file(knob_right))
+            knob = knob_verdict(left_data, right_data)
+            final_results["balance_knob"] = knob["balance_knob"]
+        except Exception:
+            final_results["balance_knob"] = missing
+    elif args.some and "balance_knob" not in final_results:
+        final_results["balance_knob"] = missing
     
     # Add timestamps if available
     try:

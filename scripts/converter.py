@@ -46,7 +46,7 @@ SUBTESTS = [
     "distorsion", "left_dbfs", "left_peak", "right_dbfs", "right_peak",
     "balance", "volume", "clipping", "bluetooth", "play_pausa",
     "anterior", "siguiente", "subir_volumen", "bajar_volumen", "resultado_mic",
-    "deteccion_senal", "audio_fail"
+    "deteccion_senal", "audio_fail", "balance_knob"
 ]
 
 def load_json(path):

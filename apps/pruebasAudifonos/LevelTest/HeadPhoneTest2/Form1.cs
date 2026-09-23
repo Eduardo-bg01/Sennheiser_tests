@@ -58,8 +58,28 @@ namespace HeadPhoneTest2
         private static readonly string[] NoVolumeModels = { "hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", "hd660s", "hd400u"  };
         private bool hideVolume;
 
+        // Prueba de perilla de balance (solo RS195). El operador gira la perilla
+        // completamente a un lado; cada toma debe activar exactamente UN canal del
+        // E.A.R.S. y las dos tomas deben activar canales opuestos. Mirror-agnostic:
+        // el jig E.A.R.S. queda invertido vs el audifono, asique nunca se asume que
+        // oido fisico cae en cada canal.
+        private const double KNOB_SEPARATION_DB = 15.0; // provisional: recalibrar con datos de campo
+        private const int KnobSegment1Seconds = 10;
+        private const int KnobSegment2Seconds = 7;
+        private const int KnobFlipTimeoutSeconds = 30;
+        private static readonly Random _rng = new Random();
+        private readonly bool isRS195;
+        private int knobState; // 0=sin iniciar, 1=toma IZQ, 2=esperando giro a DER, 3=toma DER, 4=fin
+        private int knobCountdown;
+        private bool knobAwaitingFlip;
+        private System.Windows.Forms.Timer knobTimer;
+
         public Form1()
         {
+            string device = Environment.GetEnvironmentVariable("DEVICE_NAME") ?? "";
+            string norm = new string(device.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
+            isRS195 = norm.Contains("rs195");
+
             InitializeComponent();
             ApplyCohesiveTheme();
             // Despues del theming: ApplyThemeToControlTree repinta los labels.
@@ -219,6 +239,12 @@ namespace HeadPhoneTest2
             }
             if (step == 2)
             {
+                // RS195: after the sweep results, "Siguiente" runs the balance-knob take.
+                if (isRS195 && !calibrationMode)
+                {
+                    KnobNextButton();
+                    return;
+                }
                 this.Close();
                 return;
             }
@@ -343,10 +369,15 @@ namespace HeadPhoneTest2
             activateButtons();
         }
 
-        void startRecording()
+        void startRecording() => startRecording("recorded.wav");
+
+        void startRecording(string recordingPath)
         {
+            if (File.Exists(recordingPath))
+                File.Delete(recordingPath);
+
             waveIn.WaveFormat = new WaveFormat(44100, 16, 2);
-            writer = new WaveFileWriter("recorded.wav", waveIn.WaveFormat);
+            writer = new WaveFileWriter(recordingPath, waveIn.WaveFormat);
 
             waveIn.DataAvailable -= WaveIn_DataAvailable;
             waveIn.DataAvailable += WaveIn_DataAvailable;
@@ -367,7 +398,7 @@ namespace HeadPhoneTest2
             writer = null;
         }
 
-        void playAudio(string audioTitle)
+        void playAudio(string audioTitle, TimeSpan? startOffset = null)
         {
             try
             {
@@ -384,6 +415,18 @@ namespace HeadPhoneTest2
                 audioFile = Path.GetExtension(audioPath).Equals(".mp3", StringComparison.OrdinalIgnoreCase)
                     ? new Mp3FileReader(audioPath)
                     : new AudioFileReader(audioPath);
+
+                if (startOffset.HasValue)
+                {
+                    // ponytail: clamp offset inside file duration so short files still play
+                    var dur = audioFile.TotalTime;
+                    var off = startOffset.Value;
+                    if (off < TimeSpan.Zero) off = TimeSpan.Zero;
+                    if (off >= dur) off = TimeSpan.Zero;
+                    else if (dur - off < TimeSpan.FromSeconds(2)) off = dur - TimeSpan.FromSeconds(2);
+                    if (off < TimeSpan.Zero) off = TimeSpan.Zero;
+                    audioFile.CurrentTime = off;
+                }
 
                 if (Environment.GetEnvironmentVariable("QUICK_AUDIO") == "1")
                 {
@@ -556,12 +599,12 @@ namespace HeadPhoneTest2
 
         }
 
-        private string RunPythonScript(string wavPath)
+        private string RunPythonScript(string wavPath) => RunPythonScript(wavPath, "results.json", "resultado.png");
+
+        private string RunPythonScript(string wavPath, string jsonFile, string pngFile)
         {
             string script = "db_chart.py";
             string scriptPath = ResolvePythonScriptPath(script);
-            string jsonFile = "results.json";
-            string pngFile = "resultado.png";
             string args = $"--input \"{wavPath}\" --json-out \"{jsonFile}\" --png-out \"{pngFile}\"";
 
             // Linea base del dia para detectar "solo ruido ambiente".
@@ -707,6 +750,272 @@ namespace HeadPhoneTest2
                 clippingDetails.ForeColor = TextPrimary;
                 ApplyVolumeVisibility();
 
+        }
+
+        private void KnobNextButton()
+        {
+            switch (knobState)
+            {
+                case 0:
+                    StartKnobPhase();
+                    break;
+                case 2:
+                    ConfirmKnobFlip();
+                    break;
+                case 4:
+                    this.Close();
+                    break;
+            }
+        }
+
+        private void StartKnobPhase()
+        {
+            // delete stale files so an aborted take never feeds old data to getFinalResults
+            foreach (var f in new[] { "knob_left.json", "knob_right.json", "recorded_knob_left.wav", "recorded_knob_right.wav" })
+            {
+                try { if (File.Exists(f)) File.Delete(f); } catch { }
+            }
+
+            MessageBox.Show(
+                "Prueba de perilla de balance (RS195).\r\n\r\n" +
+                "1. Gire la perilla COMPLETAMENTE a la IZQUIERDA (hasta el tope).\r\n" +
+                "2. Pulse OK: se reproducirá la música.\r\n\r\n" +
+                "Solo debe oírse UN oído.",
+                "Perilla de balance",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+
+            content6.Visible = false;
+            content5.Visible = true;
+
+            BeginKnobTake(take1: true);
+        }
+
+        private void BeginKnobTake(bool take1)
+        {
+            if (take1)
+                playAudio("karmaPolice", RandomKnobOffset());
+
+            knobState = take1 ? 1 : 3;
+            knobCountdown = take1 ? KnobSegment1Seconds : KnobSegment2Seconds;
+            knobAwaitingFlip = false;
+
+            btnNext.Enabled = false;
+            btnCancel.Enabled = false;
+
+            lblPlay.Text = take1
+                ? "Prueba de perilla: IZQUIERDA\r\nReproduciendo música (" + knobCountdown + ")"
+                : "Prueba de perilla: DERECHA\r\nLa música se detendrá sola (" + knobCountdown + ")";
+
+            try
+            {
+                startRecording(take1 ? "recorded_knob_left.wav" : "recorded_knob_right.wav");
+            }
+            catch (Exception ex)
+            {
+                knobTimer?.Stop();
+                MessageBox.Show("Error al comenzar la grabación de la perilla:\n" + ex.Message,
+                    "Perilla de balance", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                knobState = 4;
+                btnNext.Text = "Finalizar";
+                btnNext.Enabled = true;
+                btnCancel.Enabled = true;
+                return;
+            }
+
+            EnsureKnobTimer();
+            knobTimer.Start();
+        }
+
+        private void EnsureKnobTimer()
+        {
+            if (knobTimer != null)
+                return;
+
+            knobTimer = new System.Windows.Forms.Timer();
+            knobTimer.Interval = 1000;
+            knobTimer.Tick += KnobTimer_Tick;
+        }
+
+        private void KnobTimer_Tick(object sender, EventArgs e)
+        {
+            knobCountdown--;
+
+            if (knobState == 1)
+            {
+                if (!knobAwaitingFlip)
+                {
+                    if (knobCountdown <= 0)
+                    {
+                        knobAwaitingFlip = true;
+                        knobCountdown = KnobFlipTimeoutSeconds;
+                        lblPlay.Text = "Ahora gire la perilla COMPLETAMENTE a la DERECHA (hasta el tope).\r\n" +
+                            "La música sigue sonando — presione SIGUIENTE al terminar (" + knobCountdown + ")";
+                        btnNext.Enabled = true;
+                    }
+                    else
+                    {
+                        lblPlay.Text = "Prueba de perilla: IZQUIERDA\r\nReproduciendo música (" + knobCountdown + ")";
+                    }
+                }
+                else
+                {
+                    lblPlay.Text = "Gire la perilla a la DERECHA y presione SIGUIENTE (" + knobCountdown + ")";
+                    if (knobCountdown <= 0)
+                    {
+                        // timeout: assume the operator turned it, keep the flow moving
+                        ConfirmKnobFlip();
+                    }
+                }
+            }
+            else if (knobState == 3)
+            {
+                lblPlay.Text = "Prueba de perilla: DERECHA\r\nLa música se detendrá sola (" + knobCountdown + ")";
+                if (knobCountdown <= 0)
+                {
+                    knobTimer.Stop();
+                    FinishKnobTake();
+                }
+            }
+        }
+
+        private void ConfirmKnobFlip()
+        {
+            try { stopRecording(); } catch { }
+            BeginKnobTake(take1: false);
+        }
+
+        private void FinishKnobTake()
+        {
+            try { stopRecording(); } catch { }
+            stopAudio();
+
+            string leftText = "n/d", rightText = "n/d";
+            string reason = "";
+            bool leftOk = false, rightOk = false, pass = false;
+            try
+            {
+                RunPythonScript("recorded_knob_left.wav", "knob_left.json", "knob_left.png");
+                RunPythonScript("recorded_knob_right.wav", "knob_right.json", "knob_right.png");
+                var verdict = KnobVerdict();
+                leftOk = verdict.leftOk;
+                rightOk = verdict.rightOk;
+                leftText = verdict.leftText;
+                rightText = verdict.rightText;
+                pass = verdict.pass;
+                reason = verdict.reason;
+            }
+            catch (Exception ex)
+            {
+                reason = "Error procesando la grabación: " + ex.Message;
+            }
+
+            string summary =
+                "Toma IZQUIERDA: " + leftText + (leftOk ? "  ✔\r\n" : "  ✘\r\n") +
+                "Toma DERECHA : " + rightText + (rightOk ? "  ✔\r\n" : "  ✘\r\n") +
+                "Resultado perilla: " + (pass ? "PASS" : "FAIL");
+            if (!string.IsNullOrWhiteSpace(reason))
+                summary += "\r\nMotivo: " + reason;
+
+            knobState = 4;
+            btnNext.Text = "Finalizar";
+            btnNext.Enabled = true;
+            btnCancel.Enabled = true;
+            lblPlay.Text = summary;
+
+            var dlg = MessageBox.Show(summary + "\r\n\r\n¿Desea repetir la prueba de perilla?",
+                "Perilla de balance",
+                MessageBoxButtons.YesNo,
+                pass ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+            if (dlg == DialogResult.Yes)
+            {
+                StartKnobPhase();
+            }
+        }
+
+        private (bool leftOk, bool rightOk, string leftText, string rightText, bool pass, string reason) KnobVerdict()
+        {
+            using var leftDoc = JsonDocument.Parse(File.ReadAllText("knob_left.json"));
+            using var rightDoc = JsonDocument.Parse(File.ReadAllText("knob_right.json"));
+
+            string leftActive = ActiveChannel(leftDoc);
+            string rightActive = ActiveChannel(rightDoc);
+            double? leftSep = ChannelSeparation(leftDoc);
+            double? rightSep = ChannelSeparation(rightDoc);
+
+            bool leftSingle = leftActive is "left" or "right";
+            bool rightSingle = rightActive is "left" or "right";
+            bool leftStrong = leftSingle && leftSep.HasValue && leftSep.Value >= KNOB_SEPARATION_DB;
+            bool rightStrong = rightSingle && rightSep.HasValue && rightSep.Value >= KNOB_SEPARATION_DB;
+            bool differ = leftSingle && rightSingle && leftActive != rightActive;
+            bool pass = differ && leftStrong && rightStrong;
+
+            var reasons = new List<string>();
+            if (!leftStrong)
+            {
+                if (!leftSingle) reasons.Add("toma IZQUIERDA: no se captó exactamente un canal");
+                else reasons.Add("toma IZQUIERDA: separación " + (leftSep.HasValue ? Math.Round(leftSep.Value, 1) + "dB" : "n/d") + " < " + KNOB_SEPARATION_DB + "dB");
+            }
+            if (!rightStrong)
+            {
+                if (!rightSingle) reasons.Add("toma DERECHA: no se captó exactamente un canal");
+                else reasons.Add("toma DERECHA: separación " + (rightSep.HasValue ? Math.Round(rightSep.Value, 1) + "dB" : "n/d") + " < " + KNOB_SEPARATION_DB + "dB");
+            }
+            if (leftSingle && rightSingle && !differ)
+                reasons.Add(leftActive + " activo en ambas tomas");
+
+            string leftActiveText = leftActive == "none" ? "nada" : leftActive;
+            string rightActiveText = rightActive == "none" ? "nada" : rightActive;
+            return (
+                "canal activo " + leftActiveText,
+                "canal activo " + rightActiveText,
+                leftStrong,
+                rightStrong,
+                pass,
+                string.Join("; ", reasons));
+        }
+
+        private static string ActiveChannel(JsonDocument doc)
+        {
+            return doc.RootElement.TryGetProperty("channel_active", out var c)
+                ? c.GetString() ?? "none"
+                : "none";
+        }
+
+        private static double? ChannelSeparation(JsonDocument doc)
+        {
+            if (!doc.RootElement.TryGetProperty("measurements", out var ms))
+                return null;
+
+            double? left = null, right = null;
+            foreach (var m in ms.EnumerateArray())
+            {
+                string channel = m.TryGetProperty("channel", out var ch) ? ch.GetString() ?? "" : "";
+                double dbfs = m.TryGetProperty("dbfs", out var d) ? d.GetDouble() : 0;
+                if (channel.Equals("Left", StringComparison.OrdinalIgnoreCase)) left = dbfs;
+                else if (channel.Equals("Right", StringComparison.OrdinalIgnoreCase)) right = dbfs;
+            }
+
+            if (left.HasValue && right.HasValue)
+                return Math.Abs(left.Value - right.Value);
+            return null;
+        }
+
+        private TimeSpan? RandomKnobOffset()
+        {
+            try
+            {
+                string audioPath = ResolveAudioPath("karmaPolice");
+                using var probe = new AudioFileReader(audioPath);
+                var maxStart = probe.TotalTime - TimeSpan.FromSeconds(KnobSegment1Seconds + KnobSegment2Seconds + KnobFlipTimeoutSeconds);
+                if (maxStart <= TimeSpan.Zero)
+                    return TimeSpan.Zero;
+                return TimeSpan.FromSeconds(_rng.NextDouble() * maxStart.TotalSeconds);
+            }
+            catch
+            {
+                return TimeSpan.Zero;
+            }
         }
 
         private void ApplyCohesiveTheme()

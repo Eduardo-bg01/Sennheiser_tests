@@ -59,6 +59,11 @@ if exist "%ROOT%apps\pruebasAudifonos\LevelTest\HeadPhoneTest2\audio" (
     if not exist "%BIN_DIR%\audio" mkdir "%BIN_DIR%\audio"
     xcopy /E /I /Y "%ROOT%apps\pruebasAudifonos\LevelTest\HeadPhoneTest2\audio\*" "%BIN_DIR%\audio\" >nul
 )
+if exist "%ROOT%apps\pruebasAudifonos\LevelTest\HeadPhoneTest2\audio\karmaPolice.wav" goto :hasKarmaInAudio
+if exist "%ROOT%apps\pruebasAudifonos\AudioTest\AudioTest\karmaPolice.wav" (
+    copy /Y "%ROOT%apps\pruebasAudifonos\AudioTest\AudioTest\karmaPolice.wav" "%BIN_DIR%\audio\karmaPolice.wav" >nul
+)
+:hasKarmaInAudio
 
 echo.
 echo Build complete. Executable: %BIN_DIR%\SennheiserTestRunner.exe

@@ -122,7 +122,7 @@ static class Program
 
     static void CleanOldFiles()
     {
-        foreach (var pattern in new[] { "Prueba_*", "results.json", "MicroTest_*", "test_results*", "hearingPass*", "recorded*", "final_results*", "tiempo*", "diferen*" })
+        foreach (var pattern in new[] { "Prueba_*", "results.json", "MicroTest_*", "test_results*", "hearingPass*", "recorded*", "final_results*", "tiempo*", "diferen*", "knob_*" })
         {
             foreach (var f in System.IO.Directory.GetFiles(BaseDir, pattern))
             {
@@ -170,7 +170,17 @@ static class Program
                 return null;
             }
 
-            BluetoothHeadphoneTest.DeviceAssets.DeviceName = selectForm.SelectedDevice?.Name ?? string.Empty;
+            var selected = selectForm.SelectedDevice;
+            BluetoothHeadphoneTest.DeviceAssets.DeviceName = selected?.Name ?? string.Empty;
+
+            // Plumb the selected model to AudioTest/LevelTest (both run in this process).
+            // Wired devices carry the operator's choice from the jack-model combo (e.g. "RS 195"),
+            // which AudioTest/LevelTest normalize to "rs195" to enable RS-specific flows.
+            string model = selected is { IsWired: true } && !string.IsNullOrWhiteSpace(selected.SelectedJackModel)
+                ? selected.SelectedJackModel
+                : selected?.Name ?? string.Empty;
+            Environment.SetEnvironmentVariable("DEVICE_NAME", model);
+            Log($"DEVICE_NAME set to: {model}");
 
             using var mainForm = new BluetoothHeadphoneTest.MainForm();
             mainForm.Session.SelectedDevice = selectForm.SelectedDevice;

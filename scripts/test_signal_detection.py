@@ -67,6 +67,22 @@ def stereo_of(generator):
     return s, s  # identical channels keep it simple
 
 
+def analyze_wav(path):
+    """Run the db_chart measurement + channel_active path on a WAV file."""
+    left, right, dur = db_chart.read_stereo_wav(path)
+    results = [
+        db_chart.measure_from_samples("Left", left, dur, None),
+        db_chart.measure_from_samples("Right", right, dur, None),
+    ]
+    active, reason = db_chart.channel_active(results, None)
+    return results, active, reason
+
+
+def payload(path):
+    results, active, reason = analyze_wav(path)
+    return db_chart.build_json(results, True, reason, active)
+
+
 def test_loud_sweep_detected(tmp):
     l, r = stereo_of(make_chirp)
     write_stereo_wav(tmp / "sweep.wav", l, r)
@@ -113,10 +129,45 @@ def test_json_payload_shape(tmp):
     l, r = stereo_of(make_chirp)
     write_stereo_wav(tmp / "sweep.wav", l, r)
     results = [measure(l), measure(r)]
-    payload = db_chart.build_json(results, True, "")
+    payload = db_chart.build_json(results, True, "", "both")
     assert payload["signal_present"] is True
     assert payload["measurements"][0]["crest_db"] == results[0].crest_db
     assert "signal_reason" in payload
+    assert payload["channel_active"] == "both"
+
+
+def test_knob_channel_active(tmp):
+    write_stereo_wav(tmp / "both.wav", make_chirp(), make_chirp())
+    results, active, reason = analyze_wav(tmp / "both.wav")
+    assert active == "both", reason
+
+    write_stereo_wav(tmp / "left.wav", make_chirp(), make_ambient())
+    results, active, reason = analyze_wav(tmp / "left.wav")
+    assert active == "left", reason
+
+    write_stereo_wav(tmp / "right.wav", make_ambient(), make_chirp())
+    results, active, reason = analyze_wav(tmp / "right.wav")
+    assert active == "right", reason
+
+    write_stereo_wav(tmp / "none.wav", make_ambient(), make_ambient())
+    results, active, reason = analyze_wav(tmp / "none.wav")
+    assert active == "none", reason
+
+
+def test_knob_verdict(tmp):
+    write_stereo_wav(tmp / "left.wav", make_chirp(), make_ambient())
+    write_stereo_wav(tmp / "right.wav", make_ambient(), make_chirp())
+    write_stereo_wav(tmp / "both.wav", make_chirp(), make_chirp())
+    left_take = payload(tmp / "left.wav")
+    right_take = payload(tmp / "right.wav")
+    both = payload(tmp / "both.wav")
+
+    assert getFinalResults.knob_verdict(left_take, right_take)["balance_knob"] == "PASS"
+    assert getFinalResults.knob_verdict(right_take, left_take)["balance_knob"] == "PASS"
+    assert getFinalResults.knob_verdict(left_take, left_take)["balance_knob"] == "FAIL"  # same channel twice
+    assert getFinalResults.knob_verdict(both, both)["balance_knob"] == "FAIL"  # no single-sided take
+    assert getFinalResults.knob_verdict(left_take, both)["balance_knob"] == "FAIL"  # one take both channels
+    assert getFinalResults.knob_verdict(both, right_take)["balance_knob"] == "FAIL"
 
 
 def xml_result(data):

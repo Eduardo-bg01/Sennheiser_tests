@@ -41,6 +41,8 @@ namespace AudioTest
         private readonly bool quickVariant =
             Environment.GetEnvironmentVariable("QUICK_AUDIO") == "1";
 
+        private static readonly Random _rng = new Random();
+
         // Ciclo de repeticiones de la prueba auditiva, una por cada tipo de conexion fisica.
         // - RS 255 y RS 275: 3 conexiones (USB, Optico, Analogico).
         // - RS 195: 2 conexiones (Optico, Analogico) - no tiene entrada USB.
@@ -177,8 +179,7 @@ namespace AudioTest
                 try
                 {
                     StartRecording();
-                    // ponytail: clamp 30s offset if file shorter
-                    TimeSpan? offset = quickVariant ? TimeSpan.FromSeconds(30) : null;
+                    TimeSpan? offset = RandomStartOffset();
                     PlayAudio("karmaPolice.wav", headphonesOutputIndex, startOffset: offset);
                 }
                 catch (Exception ex)
@@ -232,17 +233,40 @@ namespace AudioTest
                 else
                 {
                     SaveConnectionSummary();
+                    string conexionesLista = string.Join(", ", ConnectionTypes);
                     MessageBox.Show(
-                        "Se completaron las pruebas para las 3 conexiones (USB, �ptico y Anal�gico 3.5).\r\n\r\n" +
+                        "Se completaron las pruebas para las " + ConnectionTypes.Length +
+                        " conexiones (" + conexionesLista + ").\r\n\r\n" +
                         "Resumen guardado en tests_conexiones.json",
                         "Ciclo de pruebas completo",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
 
-                    File.WriteAllText("hearingPassResults.txt", passed.ToString());
+                    // If ANY connection failed, the whole cycle fails (operator decision).
+                    File.WriteAllText("hearingPassResults.txt", connectionResults.All(r => r.passed).ToString());
                     Application.Exit();
                     return;
                 }
+            }
+        }
+
+        // Random snippet of karmaPolice so every test / listening round samples a different part.
+        private TimeSpan? RandomStartOffset()
+        {
+            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "karmaPolice.wav");
+            if (!File.Exists(path)) path = "karmaPolice.wav";
+            if (!File.Exists(path)) return quickVariant ? TimeSpan.FromSeconds(30) : null;
+
+            try
+            {
+                using var probe = new AudioFileReader(path);
+                var maxStart = probe.TotalTime - TimeSpan.FromSeconds(seconds);
+                if (maxStart <= TimeSpan.Zero) return TimeSpan.Zero;
+                return TimeSpan.FromSeconds(_rng.NextDouble() * maxStart.TotalSeconds);
+            }
+            catch
+            {
+                return quickVariant ? TimeSpan.FromSeconds(30) : null;
             }
         }
 
