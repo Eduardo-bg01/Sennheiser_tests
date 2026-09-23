@@ -46,7 +46,8 @@ SUBTESTS = [
     "distorsion", "left_dbfs", "left_peak", "right_dbfs", "right_peak",
     "balance", "volume", "clipping", "bluetooth", "play_pausa",
     "anterior", "siguiente", "subir_volumen", "bajar_volumen", "resultado_mic",
-    "deteccion_senal", "audio_fail", "balance_knob", "station_calibration"
+    "deteccion_senal", "audio_fail", "balance_knob", "station_calibration",
+    "balance_knob_left", "balance_knob_right", "audio_test"
 ]
 
 def load_json(path):
@@ -87,7 +88,8 @@ def build_xml(data):
     rec = ET.SubElement(xdoc,'record')
 
     ET.SubElement(rec,'SerialNumber').text = str(data.get('serial',''))
-    ET.SubElement(rec,'PartNumber').text = ''
+    model = str(data.get('model') or '')
+    ET.SubElement(rec,'PartNumber').text = model
     start_time = data.get('StartTime') or DEFAULTS['StartTime'] or current_timestamp()
     end_time = data.get('EndTime') or DEFAULTS['EndTime'] or start_time
     ET.SubElement(rec,'StartTime').text = start_time
@@ -96,14 +98,29 @@ def build_xml(data):
 
     overall = 'PASS'
     for k,v in data.items():
-        if k!='serial' and isinstance(v,str) and v.upper()=='FAIL':
+        if k=='serial':
+            continue
+        if isinstance(v,str) and v.upper()=='FAIL':
+            overall='FAIL'
+            break
+        if isinstance(v,dict) and str(v.get('result','')).upper()=='FAIL':
             overall='FAIL'
             break
     ET.SubElement(rec,'Result').text = overall
     ET.SubElement(rec,'TestArea').text = DEFAULTS['TestArea']
     ET.SubElement(rec,'CellNumber').text = ''
     ET.SubElement(rec,'Program').text = DEFAULTS['Program']
-    ET.SubElement(rec,'MiscInfo').text = ''
+    misc_parts = []
+    if model:
+        misc_parts.append(f"model={model}")
+    station = data.get('station_calibration')
+    station_time = data.get('station_calibration_time')
+    if station in ('PASS', 'FAIL'):
+        misc_parts.append(f"station_calibration={station}@{station_time if station_time else 'n/a'}")
+    audio_test = data.get('audio_test')
+    if isinstance(audio_test, dict) and audio_test.get('runs') is not None:
+        misc_parts.append(f"audio_test={audio_test.get('passed')}/{audio_test.get('runs')} {audio_test.get('result')}")
+    ET.SubElement(rec,'MiscInfo').text = '; '.join(misc_parts)
     ET.SubElement(rec,'MACAddress').text = ''
     ET.SubElement(rec,'Msg').text = ''
     ET.SubElement(rec,'LogFile').text = ''
@@ -129,7 +146,11 @@ def build_xml(data):
         ET.SubElement(st,'StartTime').text = ''
         ET.SubElement(st,'EndTime').text = ''
         val = data[name]
-        if isinstance(val, str):
+        if isinstance(val, dict) and name == 'audio_test':
+            ET.SubElement(st,'Result').text = val.get('result', 'FAIL')
+            ET.SubElement(st,'ErrorMessage').text = ''
+            ET.SubElement(st,'ResultMessage').text = f"{val.get('passed')}/{val.get('runs')} plays passed"
+        elif isinstance(val, str):
             ET.SubElement(st,'Result').text = val
             ET.SubElement(st,'ErrorMessage').text = ''
             ET.SubElement(st,'ResultMessage').text = ''

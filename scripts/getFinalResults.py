@@ -20,6 +20,7 @@ FILE_PATTERN_MICROPHONE = "MicroTest_*"
 FILE_PATTERN_TIME_START = "tiempo1.txt"
 FILE_PATTERN_TIME_END = "tiempo2.txt"
 FILE_PATTERN_STATION_CALIB = "station_calibration.json"
+FILE_PATTERN_AUDIO_PLAYS = "audio_plays.json"
 
 # Audio measurement thresholds
 CHANNEL_BALANCE_THRESHOLD = 2  # dB difference acceptable
@@ -49,6 +50,9 @@ MODELS_WITHOUT_VOLUME = {"hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", 
 # RS195 knob test: the active EARS channel must clear the muted one by this much (provisional).
 KNOB_SEPARATION_DB = 15.0
 
+# Models with a balance knob: per-take verdicts are recorded. Other models report SKIPPED.
+KNOB_MODELS = {"rs195"}
+
 # All possible Bluetooth and level fields
 BT_RESULT_FIELDS = ["bluetooth", "play_pausa", "anterior", "siguiente", "subir_volumen", "bajar_volumen"]
 LEVEL_RESULT_FIELDS = ["left_dbfs", "left_peak", "right_dbfs", "right_peak", "balance", "volume", "clipping", "deteccion_senal", "balance_knob"]
@@ -59,17 +63,21 @@ def first_match(pattern):
     return matches[0] if matches else None
 
 def _stamp_station_calibration(final_results, missing):
-    """Copy the station calibration verdict into final_results (best-effort)."""
+    """Copy the station calibration verdict (and its ISO-8601 UTC time) into final_results (best-effort)."""
     station_file = first_match(FILE_PATTERN_STATION_CALIB)
     if station_file:
         try:
             station = json.loads(read_text_file(station_file))
             value = str(station.get("station_calibration", "")).upper()
             final_results["station_calibration"] = value if value in (RESULT_PASS, RESULT_FAIL) else missing
+            time_val = station.get("time")
+            final_results["station_calibration_time"] = str(time_val) if time_val else missing
         except Exception:
             final_results["station_calibration"] = missing
+            final_results["station_calibration_time"] = missing
     else:
         final_results["station_calibration"] = missing
+        final_results["station_calibration_time"] = missing
 
 def read_text_file(path):
     """Read text file with fallback encodings."""
@@ -221,6 +229,46 @@ def knob_verdict(left_take, right_take):
         "reason": "; ".join(reason),
     }
 
+def _build_audio_test(final_results, missing):
+    """Aggregate the LevelTest playback log into {runs, passed, result}.
+
+    runs = every recorded playback (sweep + RS195 knob takes); passed = the
+    plays whose own verdict is PASS. A sweep passes when balance and clipping
+    pass; each knob take passes when its per-take verdict passes. No log file
+    means this unit never ran a level test -> stays neutral (missing).
+    """
+    play_file = first_match(FILE_PATTERN_AUDIO_PLAYS)
+    if not play_file:
+        final_results["audio_test"] = missing
+        return
+    try:
+        plays = json.loads(read_text_file(play_file)).get("plays", [])
+    except Exception:
+        final_results["audio_test"] = missing
+        return
+
+    sweep_pass = final_results.get("balance") == RESULT_PASS and final_results.get("clipping") == RESULT_PASS
+    runs = len(plays)
+    passed = 0
+    for play in plays:
+        title = str(play.get("title", "")).lower()
+        recorded = str(play.get("recorded", "")).lower()
+        if title.startswith("audiosweep"):
+            if sweep_pass:
+                passed += 1
+        elif "knob_left" in recorded:
+            if final_results.get("balance_knob_left") == RESULT_PASS:
+                passed += 1
+        elif "knob_right" in recorded:
+            if final_results.get("balance_knob_right") == RESULT_PASS:
+                passed += 1
+
+    final_results["audio_test"] = {
+        "runs": runs,
+        "passed": passed,
+        "result": RESULT_PASS if runs > 0 and passed == runs else RESULT_FAIL,
+    }
+
 def main():
     """Generate final_results.json from test output files."""
     parser = argparse.ArgumentParser()
@@ -253,6 +301,10 @@ def main():
     
     # Read Bluetooth control test (also provides the device model)
     btfile = first_match(FILE_PATTERN_BLUETOOTH)
+
+    model_raw = read_device_model(btfile)
+    model = normalize_model(model_raw)
+    final_results["model"] = model_raw if model_raw else missing
 
     # Read audio level measurements
     if os.path.exists(FILE_PATTERN_RESULTS):
@@ -296,26 +348,41 @@ def main():
     else:
         final_results["resultado_mic"] = missing
 
-    # Read knob balance test (RS195). LevelTest writes the two db_chart outputs
-    # (knob_left.json / knob_right.json); the verdict is computed here so the
-    # rule lives in one testable place.
-    knob_left = first_match(FILE_PATTERN_KNOB_LEFT)
-    knob_right = first_match(FILE_PATTERN_KNOB_RIGHT)
-    if knob_left and knob_right:
-        try:
-            left_data = json.loads(read_text_file(knob_left))
-            right_data = json.loads(read_text_file(knob_right))
-            knob = knob_verdict(left_data, right_data)
-            final_results["balance_knob"] = knob["balance_knob"]
-        except Exception:
+    # Read knob balance test (RS195 only). LevelTest writes the two db_chart outputs
+    # (knob_left.json / knob_right.json); the verdict is computed here so the rule
+    # lives in one testable place. Models without a knob report SKIPPED.
+    is_knob_model = bool(model) and any(k in model for k in KNOB_MODELS)
+    if not is_knob_model:
+        final_results["balance_knob"] = "SKIPPED"
+        final_results["balance_knob_left"] = "SKIPPED"
+        final_results["balance_knob_right"] = "SKIPPED"
+    else:
+        knob_left = first_match(FILE_PATTERN_KNOB_LEFT)
+        knob_right = first_match(FILE_PATTERN_KNOB_RIGHT)
+        if knob_left and knob_right:
+            try:
+                left_data = json.loads(read_text_file(knob_left))
+                right_data = json.loads(read_text_file(knob_right))
+                knob = knob_verdict(left_data, right_data)
+                final_results["balance_knob"] = knob["balance_knob"]
+                final_results["balance_knob_left"] = knob["left"]
+                final_results["balance_knob_right"] = knob["right"]
+            except Exception:
+                final_results["balance_knob"] = missing
+                final_results["balance_knob_left"] = missing
+                final_results["balance_knob_right"] = missing
+        else:
             final_results["balance_knob"] = missing
-    elif args.some and "balance_knob" not in final_results:
-        final_results["balance_knob"] = missing
+            final_results["balance_knob_left"] = missing
+            final_results["balance_knob_right"] = missing
 
     # Daily station calibration verdict (produced by LevelTest via
     # station_calibration.py). Stamped into every DUT record so the shift's
     # calibration status rides along with the XML upload.
     _stamp_station_calibration(final_results, missing)
+
+    # Structured playback summary (sweep + RS195 knob takes), tallied per unit.
+    _build_audio_test(final_results, missing)
 
     # Add timestamps if available
     try:

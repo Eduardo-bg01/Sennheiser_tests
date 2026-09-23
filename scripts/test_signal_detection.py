@@ -6,6 +6,7 @@ No frameworks, plain asserts. Exits non-zero on failure.
 """
 import json
 import math
+import os
 import random
 import struct
 import sys
@@ -292,9 +293,11 @@ def test_get_final_results_stamps_station(tmp):
         getFinalResults._stamp_station_calibration(final, "SKIPPED")
         assert final["station_calibration"] == "FAIL"
 
-        (tmp / "station_calibration.json").write_text(json.dumps({"station_calibration": "PASS"}), encoding="utf-8")
+        (tmp / "station_calibration.json").write_text(
+            json.dumps({"station_calibration": "PASS", "time": "2026-09-23T06:00:00Z"}), encoding="utf-8")
         getFinalResults._stamp_station_calibration(final, "SKIPPED")
         assert final["station_calibration"] == "PASS"
+        assert final["station_calibration_time"] == "2026-09-23T06:00:00Z"
 
         (tmp / "station_calibration.json").write_text("not json", encoding="utf-8")
         getFinalResults._stamp_station_calibration(final, "SKIPPED")
@@ -308,6 +311,116 @@ def test_converter_station_calib_flips(_):
     assert xml_result({"station_calibration": "PASS"}) == "PASS"
     names = subtest_names({"station_calibration": "FAIL"})
     assert "station_calibration" in names
+
+
+def _write_aggregation_inputs(tmp, model, knob_plays=True, sweep_ok=True, station_fail=False):
+    (tmp / "serial.txt").write_text("SN00315588", encoding="utf-8")
+    (tmp / "hearingPass.txt").write_text("True", encoding="utf-8")
+    (tmp / "Prueba_001.txt").write_text(f"Dispositivo: {model}\nConexión Bluetooth: PASS\n", encoding="utf-8")
+    left = -24.31 if sweep_ok else -24.31
+    right = -25.02 if sweep_ok else -30.00
+    (tmp / "results.json").write_text(json.dumps({"measurements": [
+        {"channel": "Left", "dbfs": left, "peak_dbfs": -6.12},
+        {"channel": "Right", "dbfs": right, "peak_dbfs": -6.88},
+    ]}), encoding="utf-8")
+    plays = [{"title": "audioSweep", "recorded": "recorded.wav", "duration_sec": 40.0}]
+    if knob_plays:
+        (tmp / "knob_left.json").write_text(json.dumps({"signal_present": True, "channel_active": "left",
+            "measurements": [{"channel": "Left", "dbfs": -20.0}, {"channel": "Right", "dbfs": -45.0}]}), encoding="utf-8")
+        (tmp / "knob_right.json").write_text(json.dumps({"signal_present": True, "channel_active": "right",
+            "measurements": [{"channel": "Left", "dbfs": -46.0}, {"channel": "Right", "dbfs": -21.0}]}), encoding="utf-8")
+        plays += [
+            {"title": "karmaPolice", "recorded": "recorded_knob_left.wav", "duration_sec": 10.0},
+            {"title": "karmaPolice", "recorded": "recorded_knob_right.wav", "duration_sec": 7.0},
+        ]
+    (tmp / "audio_plays.json").write_text(json.dumps({"plays": plays}), encoding="utf-8")
+    verdict = "FAIL" if station_fail else "PASS"
+    (tmp / "station_calibration.json").write_text(
+        json.dumps({"station_calibration": verdict, "time": "2026-09-23T06:00:00Z"}), encoding="utf-8")
+
+
+def test_aggregation_rs195(tmp):
+    prev = os.getcwd()
+    os.chdir(tmp)
+    try:
+        _write_aggregation_inputs(tmp, "RS195")
+        getFinalResults.main()
+        fr = json.loads((tmp / "final_results.json").read_text(encoding="utf-8"))
+        assert fr["model"] == "RS195"
+        assert fr["station_calibration"] == "PASS"
+        assert fr["station_calibration_time"] == "2026-09-23T06:00:00Z"
+        assert fr["balance_knob"] == "PASS"
+        assert fr["balance_knob_left"] == "PASS"
+        assert fr["balance_knob_right"] == "PASS"
+        assert fr["audio_test"] == {"runs": 3, "passed": 3, "result": "PASS"}
+    finally:
+        os.chdir(prev)
+
+
+def test_aggregation_non_knob(tmp):
+    prev = os.getcwd()
+    os.chdir(tmp)
+    try:
+        _write_aggregation_inputs(tmp, "MOMENTUM TW 4", knob_plays=False)
+        getFinalResults.main()
+        fr = json.loads((tmp / "final_results.json").read_text(encoding="utf-8"))
+        assert fr["model"] == "MOMENTUM TW 4"
+        assert fr["balance_knob"] == "SKIPPED"
+        assert fr["balance_knob_left"] == "SKIPPED"
+        assert fr["balance_knob_right"] == "SKIPPED"
+        assert fr["audio_test"] == {"runs": 1, "passed": 1, "result": "PASS"}
+    finally:
+        os.chdir(prev)
+
+
+def test_aggregation_audio_test_fail(tmp):
+    prev = os.getcwd()
+    os.chdir(tmp)
+    try:
+        _write_aggregation_inputs(tmp, "RS195", sweep_ok=False)
+        getFinalResults.main()
+        fr = json.loads((tmp / "final_results.json").read_text(encoding="utf-8"))
+        assert fr["audio_test"] == {"runs": 3, "passed": 2, "result": "FAIL"}
+        assert fr["balance"] == "FAIL"
+        assert fr["balance_knob"] == "PASS"  # knob takes still fine
+    finally:
+        os.chdir(prev)
+
+
+def test_aggregation_audio_test_missing(tmp):
+    prev = os.getcwd()
+    os.chdir(tmp)
+    try:
+        _write_aggregation_inputs(tmp, "RS195")
+        (tmp / "audio_plays.json").unlink()
+        getFinalResults.main()
+        fr = json.loads((tmp / "final_results.json").read_text(encoding="utf-8"))
+        assert fr["audio_test"] == "SKIPPED"  # neutral, like the other missing tests
+    finally:
+        os.chdir(prev)
+
+
+def test_converter_schema(_):
+    data = {
+        "serial": "SN1",
+        "model": "RS195",
+        "station_calibration": "PASS",
+        "station_calibration_time": "2026-09-23T06:00:00Z",
+        "balance_knob_left": "PASS",
+        "balance_knob_right": "PASS",
+        "audio_test": {"runs": 3, "passed": 3, "result": "PASS"},
+    }
+    root = converter.build_xml(data)
+    rec = root.find("./xDoc/record")
+    assert rec.find("PartNumber").text == "RS195"
+    assert "model=RS195" in rec.find("MiscInfo").text
+    assert "station_calibration=PASS@2026-09-23T06:00:00Z" in rec.find("MiscInfo").text
+    assert "audio_test=3/3 PASS" in rec.find("MiscInfo").text
+    names = subtest_names(data)
+    assert {"balance_knob_left", "balance_knob_right", "audio_test"} <= names
+    assert xml_result(data) == "PASS"
+    fail_data = dict(data, audio_test={"runs": 3, "passed": 2, "result": "FAIL"})
+    assert xml_result(fail_data) == "FAIL"
 
 
 def main():

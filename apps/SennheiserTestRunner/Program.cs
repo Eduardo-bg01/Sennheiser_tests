@@ -126,7 +126,7 @@ static class Program
 
     static void CleanOldFiles()
     {
-        foreach (var pattern in new[] { "Prueba_*", "results.json", "MicroTest_*", "test_results*", "hearingPass*", "recorded*", "final_results*", "tiempo*", "diferen*", "knob_*" })
+        foreach (var pattern in new[] { "Prueba_*", "results.json", "MicroTest_*", "test_results*", "hearingPass*", "recorded*", "final_results*", "tiempo*", "diferen*", "knob_*", "audio_plays*" })
         {
             foreach (var f in System.IO.Directory.GetFiles(BaseDir, pattern))
             {

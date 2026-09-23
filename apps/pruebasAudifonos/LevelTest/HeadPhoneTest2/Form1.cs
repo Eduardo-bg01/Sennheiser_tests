@@ -43,6 +43,17 @@ namespace HeadPhoneTest2
         private string stationConfigPath;
         private bool check1Pass = true;
 
+        // Per-unit playback log (audio_plays.json): drives the audio_test summary
+        // in final_results.json. Never written during station calibration.
+        private List<PlayRecord> audioPlays;
+
+        private class PlayRecord
+        {
+            public string title { get; set; }
+            public string recorded { get; set; }
+            public double duration_sec { get; set; }
+        }
+
         private System.Windows.Forms.Timer timer;
         private int seconds = 5;
         private int seconds2 = 40;
@@ -236,6 +247,37 @@ namespace HeadPhoneTest2
             return null;
         }
 
+        private void AddPlay(string title, string recorded, double durationSec)
+        {
+            if (stationCalibrationMode)
+                return;
+            audioPlays ??= new List<PlayRecord>();
+            audioPlays.Add(new PlayRecord { title = title, recorded = recorded, duration_sec = durationSec });
+            WriteAudioPlays();
+        }
+
+        private void RemoveKnobPlays()
+        {
+            if (audioPlays == null)
+                return;
+            audioPlays.RemoveAll(p => p.recorded.ToLower().Contains("knob"));
+            WriteAudioPlays();
+        }
+
+        private void WriteAudioPlays()
+        {
+            try
+            {
+                File.WriteAllText("audio_plays.json",
+                    JsonSerializer.Serialize(new { plays = audioPlays },
+                    new JsonSerializerOptions { WriteIndented = true }));
+            }
+            catch
+            {
+                // ponytail: play log is best-effort; a write failure must not fail the test
+            }
+        }
+
         private bool IsNoVolumeModel()
         {
             string device = Environment.GetEnvironmentVariable("DEVICE_NAME") ?? "";
@@ -299,6 +341,8 @@ namespace HeadPhoneTest2
                 outputDevice.PlaybackStopped += stopActions;
                 playAudio("audioSweep");
                 startRecording();
+                audioPlays?.Clear();
+                AddPlay("audioSweep", "recorded.wav", audioFile?.TotalTime.TotalSeconds ?? 40.0);
                 content2.Visible = false;
                 content3.Visible = false;
                 content4.Visible = false;
@@ -1015,6 +1059,8 @@ namespace HeadPhoneTest2
                 try { if (File.Exists(f)) File.Delete(f); } catch { }
             }
 
+            RemoveKnobPlays();
+
             MessageBox.Show(
                 "Prueba de perilla de balance (RS195).\r\n\r\n" +
                 "1. Gire la perilla COMPLETAMENTE a la IZQUIERDA (hasta el tope).\r\n" +
@@ -1049,6 +1095,8 @@ namespace HeadPhoneTest2
             try
             {
                 startRecording(take1 ? "recorded_knob_left.wav" : "recorded_knob_right.wav");
+                AddPlay("karmaPolice", take1 ? "recorded_knob_left.wav" : "recorded_knob_right.wav",
+                    take1 ? KnobSegment1Seconds : KnobSegment2Seconds);
             }
             catch (Exception ex)
             {

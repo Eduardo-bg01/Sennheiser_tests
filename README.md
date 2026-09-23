@@ -199,6 +199,7 @@ AudioTest writes `hearingPassResults.txt` containing `True` or `False`
 | Field | Source | Values |
 |---|---|---|
 | `serial` | serial.txt | text |
+| `model` | Prueba_*.txt (`Dispositivo:` line) | device model text |
 | `distorsion` | hearingPassResults.txt | PASS / FAIL / N/A |
 | `audio_fail` | derived | present only when `distorsion == FAIL` |
 | `left_dbfs`, `left_peak`, `right_dbfs`, `right_peak` | results.json | numbers |
@@ -208,14 +209,28 @@ AudioTest writes `hearingPassResults.txt` containing `True` or `False`
 | `deteccion_senal` | results.json `signal_present` | PASS / FAIL |
 | `bluetooth`, `play_pausa`, `anterior`, `siguiente`, `subir_volumen`, `bajar_volumen` | Prueba_*.txt | PASS / FAIL / N/A |
 | `resultado_mic` | MicroTest_*.txt | PASS / FAIL / N/A |
+| `balance_knob` | knob_left+knob_right.json (RS195 only) | PASS / FAIL / N/A / SKIPPED |
+| `balance_knob_left`, `balance_knob_right` | per-take verdicts (RS195 only) | PASS / FAIL / N/A / SKIPPED |
+| `audio_test` | audio_plays.json (LevelTest log) | `{runs, passed, result}` object |
 | `station_calibration` | station_calibration.json | PASS / FAIL / N/A |
+| `station_calibration_time` | station_calibration.json `time` | ISO-8601 UTC |
 | `StartTime`, `EndTime` | tiempo1/tiempo2.txt | UTC timestamps |
 
 ### Overall PASS/FAIL rule
 
 `converter.py` marks the record **FAIL** if any string-valued field equals
-`FAIL`. `N/A` is neutral by design (model-exempt or disabled tests). Numeric
-fields are informational; their pass/fail logic lives in `getFinalResults.py`.
+`FAIL`, or if the `audio_test` object reports `result: FAIL`. `N/A` (and
+`SKIPPED`, e.g. knob tests on models without a balance knob) is neutral by
+design. Numeric fields are informational; their pass/fail logic lives in
+`getFinalResults.py`.
+
+The DUT record `PartNumber` is filled with the device `model`, and `MiscInfo`
+carries a compact trace for the backend:
+`model=<model>; station_calibration=<PASS/FAIL>@<ISO-8601 UTC>; audio_test=<passed>/<runs> <result>`.
+`audio_test` logs every recorded playback from LevelTest (the sweep, plus the
+two RS195 knob takes); `runs` counts them and `passed` requires each one's own
+verdict to pass. The station-calibration `tone_1khz` play is excluded because
+it happens in a separate, pre-serial LevelTest instance.
 
 ## Scripts
 
