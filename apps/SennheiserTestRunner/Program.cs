@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Globalization;
+using System.Text.Json;
 
 namespace SennheiserTestRunner;
 
@@ -37,6 +39,8 @@ static class Program
 
             KillOldProcesses();
             CleanOldFiles();
+
+            RunDailyStationCalibration();
 
             LaunchRefurbishTool();
 
@@ -129,6 +133,101 @@ static class Program
                 try { System.IO.File.Delete(f); } catch { }
             }
         }
+    }
+
+    // Daily station calibration gate (TV Listeners). Runs the 4-check golden-unit
+    // verification via LevelTest (STATION_CALIB=1) whenever station_calibration.json
+    // is missing, FAIL, or older than calibration_max_age_hours (config, default 12h,
+    // UTC). On failure the pipeline is locked with exit code 6.
+    static void RunDailyStationCalibration()
+    {
+        if (StationCalibrationCurrent())
+        {
+            Log("[STATION CALIB] PASS verificada y vigente - sin recalibrar");
+            return;
+        }
+
+        Log("[STATION CALIB] Calibración de estación requerida (ausente, FAIL o vencida). Iniciando 4 pasos...");
+
+        Environment.SetEnvironmentVariable("STATION_CALIB", "1");
+        try
+        {
+            using var form = new HeadPhoneTest2.Form1();
+            form.ShowDialog();
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("STATION_CALIB", null);
+        }
+
+        if (StationCalibrationCurrent())
+        {
+            Log("[STATION CALIB] PASS - estación liberada para producción");
+            return;
+        }
+
+        Log("[STATION CALIB] FAIL - estación BLOQUEADA", isError: true);
+        MessageBox.Show(
+            "ESTACIÓN NO LIBERADA.\r\n\r\n" +
+            "ACCIÓN ANTE FALLA: Detener liberación, revisar ambiente, posicionamiento, " +
+            "conexiones USB, configuración de REW y nivel de salida.\r\n" +
+            "Corregir, registrar y repetir desde CHECK 1.\r\n\r\n" +
+            "No se liberará la estación hasta que la calibración pase.",
+            "Calibración de estación - LIBERACIÓN BLOQUEADA",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Error);
+        Environment.Exit(6);
+    }
+
+    static bool StationCalibrationCurrent()
+    {
+        var file = Path.Combine(BaseDir, "station_calibration.json");
+        if (!File.Exists(file))
+            return false;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(file));
+            var root = doc.RootElement;
+            if (!root.TryGetProperty("station_calibration", out var verdict) || verdict.GetString() != "PASS")
+                return false;
+
+            string timeStr = root.TryGetProperty("time", out var timeProp) ? timeProp.GetString() ?? "" : "";
+            if (string.IsNullOrWhiteSpace(timeStr) || !DateTimeOffset.TryParse(
+                    timeStr, null,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                    out var calibTime))
+            {
+                return false;
+            }
+
+            return (DateTimeOffset.UtcNow - calibTime).TotalHours <= CalibrationMaxAgeHours();
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    static double CalibrationMaxAgeHours()
+    {
+        const double defaultHours = 12;
+        foreach (var path in new[] { Path.Combine(BaseDir, "scripts", "config.json"), Path.Combine(BaseDir, "config.json") })
+        {
+            if (!File.Exists(path))
+                continue;
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(path));
+                if (doc.RootElement.TryGetProperty("calibration_max_age_hours", out var v) && v.ValueKind == JsonValueKind.Number)
+                    return v.GetDouble();
+            }
+            catch
+            {
+                // ignore unreadable config, fall back to default
+            }
+        }
+        return defaultHours;
     }
 
     static void ShowBluetoothConnectPrompt()

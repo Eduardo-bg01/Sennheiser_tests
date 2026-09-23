@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import converter
 import db_chart
 import getFinalResults
+import station_calibration
 
 SAMPLE_RATE = 44100
 
@@ -208,6 +209,105 @@ def test_analyze_audio_levels(_):
     ]
     res = getFinalResults.analyze_audio_levels(bad)
     assert res["balance"] == "FAIL" and res["clipping"] == "FAIL"
+
+
+def _golden(results, signal=True):
+    return {"signal_present": signal, "measurements": results}
+
+
+def _quiet_room():
+    return {"left_dbfs": -52.1, "right_dbfs": -51.8}
+
+
+STATIC_GOLDEN = {"golden_left_dbfs": -33.0, "golden_right_dbfs": -34.0}
+
+
+def test_station_verdict_pass(_):
+    v = station_calibration.station_verdict(
+        _golden([{"channel": "Left", "dbfs": -33.2}, {"channel": "Right", "dbfs": -34.3}]),
+        _quiet_room(), STATIC_GOLDEN)
+    assert v["station_calibration"] == "PASS"
+    assert all(c["pass"] for c in v["checks"].values())
+
+
+def test_station_verdict_off_tolerance(_):
+    v = station_calibration.station_verdict(
+        _golden([{"channel": "Left", "dbfs": -28.0}, {"channel": "Right", "dbfs": -34.1}]),
+        _quiet_room(), STATIC_GOLDEN)
+    assert v["station_calibration"] == "FAIL"
+    assert not v["checks"]["check2_left"]["pass"]
+    assert "check2" in v["reason"]
+
+
+def test_station_verdict_unbalanced(_):
+    v = station_calibration.station_verdict(
+        _golden([{"channel": "Left", "dbfs": -33.0}, {"channel": "Right", "dbfs": -30.0}]),
+        _quiet_room(), STATIC_GOLDEN)
+    assert v["station_calibration"] == "FAIL"
+    assert not v["checks"]["check3_right"]["pass"]
+    assert not v["checks"]["check4_balance"]["pass"]
+
+
+def test_station_verdict_gates(_):
+    good = _golden([{"channel": "Left", "dbfs": -33.2}, {"channel": "Right", "dbfs": -34.3}])
+    # Goldens not configured -> locked no matter how good the take is.
+    v = station_calibration.station_verdict(good, _quiet_room(), {})
+    assert v["station_calibration"] == "FAIL"
+    assert "golden_left_dbfs" in v["reason"]
+    # Noisy room -> locked even when the golden matches.
+    v = station_calibration.station_verdict(good, {"left_dbfs": -25.0, "right_dbfs": -25.0}, STATIC_GOLDEN)
+    assert v["station_calibration"] == "FAIL"
+    assert not v["checks"]["check1_ambient"]["pass"]
+    # No signal on the golden take -> locked.
+    v = station_calibration.station_verdict(
+        _golden([{"channel": "Left", "dbfs": -33.2}, {"channel": "Right", "dbfs": -34.3}], signal=False),
+        _quiet_room(), STATIC_GOLDEN)
+    assert v["station_calibration"] == "FAIL"
+    for name in ("check2_left", "check3_right", "check4_balance"):
+        assert not v["checks"][name]["pass"]
+
+
+def test_station_state_write(tmp):
+    out = tmp / "station_calibration.json"
+    (tmp / "config.json").write_text(json.dumps(STATIC_GOLDEN), encoding="utf-8")
+    (tmp / "calibracion.txt").write_text(json.dumps(_quiet_room()), encoding="utf-8")
+    (tmp / "results.json").write_text(
+        json.dumps(_golden([{"channel": "Left", "dbfs": -33.2}, {"channel": "Right", "dbfs": -34.3}])),
+        encoding="utf-8")
+    station_calibration.run(["--results", str(tmp / "results.json"),
+                             "--baseline", str(tmp / "calibracion.txt"),
+                             "--config", str(tmp / "config.json"),
+                             "--out", str(out)])
+    state = json.loads(out.read_text(encoding="utf-8"))
+    assert state["station_calibration"] == "PASS"
+    assert "time" in state and state["time"].endswith("Z")
+
+
+def test_get_final_results_stamps_station(tmp):
+    original = getFinalResults.FILE_PATTERN_STATION_CALIB
+    try:
+        getFinalResults.FILE_PATTERN_STATION_CALIB = str(tmp / "station_calibration.json")
+        (tmp / "station_calibration.json").write_text(json.dumps({"station_calibration": "FAIL"}), encoding="utf-8")
+        final = {"distorsion": "PASS"}
+        getFinalResults._stamp_station_calibration(final, "SKIPPED")
+        assert final["station_calibration"] == "FAIL"
+
+        (tmp / "station_calibration.json").write_text(json.dumps({"station_calibration": "PASS"}), encoding="utf-8")
+        getFinalResults._stamp_station_calibration(final, "SKIPPED")
+        assert final["station_calibration"] == "PASS"
+
+        (tmp / "station_calibration.json").write_text("not json", encoding="utf-8")
+        getFinalResults._stamp_station_calibration(final, "SKIPPED")
+        assert final["station_calibration"] == "SKIPPED"
+    finally:
+        getFinalResults.FILE_PATTERN_STATION_CALIB = original
+
+
+def test_converter_station_calib_flips(_):
+    assert xml_result({"station_calibration": "FAIL"}) == "FAIL"
+    assert xml_result({"station_calibration": "PASS"}) == "PASS"
+    names = subtest_names({"station_calibration": "FAIL"})
+    assert "station_calibration" in names
 
 
 def main():

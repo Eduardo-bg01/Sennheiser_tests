@@ -19,6 +19,7 @@ FILE_PATTERN_BLUETOOTH = "Prueba_*"
 FILE_PATTERN_MICROPHONE = "MicroTest_*"
 FILE_PATTERN_TIME_START = "tiempo1.txt"
 FILE_PATTERN_TIME_END = "tiempo2.txt"
+FILE_PATTERN_STATION_CALIB = "station_calibration.json"
 
 # Audio measurement thresholds
 CHANNEL_BALANCE_THRESHOLD = 2  # dB difference acceptable
@@ -56,6 +57,19 @@ def first_match(pattern):
     """Return first file matching glob pattern, or None."""
     matches = glob.glob(pattern)
     return matches[0] if matches else None
+
+def _stamp_station_calibration(final_results, missing):
+    """Copy the station calibration verdict into final_results (best-effort)."""
+    station_file = first_match(FILE_PATTERN_STATION_CALIB)
+    if station_file:
+        try:
+            station = json.loads(read_text_file(station_file))
+            value = str(station.get("station_calibration", "")).upper()
+            final_results["station_calibration"] = value if value in (RESULT_PASS, RESULT_FAIL) else missing
+        except Exception:
+            final_results["station_calibration"] = missing
+    else:
+        final_results["station_calibration"] = missing
 
 def read_text_file(path):
     """Read text file with fallback encodings."""
@@ -297,7 +311,12 @@ def main():
             final_results["balance_knob"] = missing
     elif args.some and "balance_knob" not in final_results:
         final_results["balance_knob"] = missing
-    
+
+    # Daily station calibration verdict (produced by LevelTest via
+    # station_calibration.py). Stamped into every DUT record so the shift's
+    # calibration status rides along with the XML upload.
+    _stamp_station_calibration(final_results, missing)
+
     # Add timestamps if available
     try:
         t1 = read_ms_file(FILE_PATTERN_TIME_START)

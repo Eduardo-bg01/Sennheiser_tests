@@ -9,8 +9,10 @@ result to the cloud API.
 ## Test pipeline
 
 ```
-run.bat
+run.bat  (SennheiserTestRunner.exe is the active orchestrator)
   |
+  |-- [daily] Station calibration (LevelTest /STATION_CALIB=1) -> station_calibration.json
+  |           Golden-unit verification, 4 pasos; estación bloqueada hasta PASS
   |-- [daily] Ambient calibration (LevelTest /CALIBRATION=1) -> calibracion.txt
   |
   |-- AskForSerial2 ............ serial.txt
@@ -24,7 +26,7 @@ run.bat
   |       |- db_chart.py -> results.json (+ signal-presence verdict)
   |       '- red on-screen warning if only ambient noise was captured
   |
-  |-- getFinalResults.py ....... final_results.json
+  |-- getFinalResults.py ....... final_results.json (includes station_calibration)
   '- converter.py .............. XML upload (overall PASS/FAIL)
 ```
 
@@ -78,6 +80,59 @@ ambient noise" detectable automatically.
 
 > The baseline is written by LevelTest running with `CALIBRATION=1`; run.bat sets
 > this automatically. Do not launch it manually unless you know why.
+
+## Daily station calibration (TV Listeners)
+
+Before production, `SennheiserTestRunner` verifies the station against a
+**Golden Unit** (known-good headphone) so a drifted bench can't pass bad units.
+It runs automatically at startup whenever `station_calibration.json` is
+missing, contains `FAIL`, or is older than `calibration_max_age_hours`
+(default `12 h`, compared as ISO-8601 UTC). On **any** failure the station is
+locked (runner exits with code **6**) and production does not start until the
+operator fixes the root cause and repeats from CHECK 1.
+
+| Paso | Check | Verdict rule |
+|---|---|---|
+| 1 | Ambiente: nada en las copas, sin DUT, 30 s | `max(L,R) ≤ ambient_max_dbfs` |
+| 2 | Golden Unit canal I (tono 1 kHz) | `|L − golden_left_dbfs| ≤ golden_tolerance_db` |
+| 3 | Golden Unit canal D | `|R − golden_right_dbfs| ≤ golden_tolerance_db` |
+| 4 | Balance | `|L − R| ≤ balance_max_db` |
+
+- **Flow** (LevelTest en modo estación, `STATION_CALIB=1`, 4 wizards):
+  Paso 1 graba el ambiente y escribe `calibracion.txt`; los Pasos 2/3/4
+  reproducen `tone_1khz.wav` **una sola vez** a través de las copas E.A.R.S.
+  y miden los canales L y D por separado; el veredicto final lo escribe
+  `scripts/station_calibration.py` → `station_calibration.json`.
+- **Antes del Paso 2** un diálogo pide al operador conectar la Golden Unit por
+  la conexión configurada en `config.json → connection_type` (USB / Óptico /
+  Analógico / HDMI) y verificar el posicionamiento RS275/255 sobre los coples.
+- **Rendición**: cada `final_results.json` (y el XML `DataWipeResultV2` del
+  turno) lleva el campo `station_calibration`; un `FAIL` baja el registro
+  completo, así el estado de calibración queda en el historial del lote.
+- **Fallos**: diálogo/banner rojo *"ACCIÓN ANTE FALLA: Detener liberación,
+  revisar ambiente, posicionamiento, conexiones USB, configuración de REW y
+  nivel de salida. Corregir, registrar y repetir desde CHECK 1."* con opción
+  de repetir desde el Paso 1.
+- **Éxito**: *"ESTACIÓN LIBERADA - Registrar resultado e iniciar producción."*
+- **Estados**: `station_calibration.json` sigue vigente hasta envejecer más de
+  `calibration_max_age_hours`; borrar el archivo (o cambiar hardware) fuerza
+  la recalibración en el siguiente arranque.
+
+### Obtener los valores golden
+
+`golden_left_dbfs` / `golden_right_dbfs` son la medida de referencia del
+conjunto estación + Golden Unit. Configuración por estación, una vez al
+arranque de la línea (y al recambiar cualquier hardware):
+
+1. Tome una Golden Unit conocida-buena y colóquela en los coples E.A.R.S. con
+   la conexión habitual.
+2. Corra LevelTest en modo normal (`audioSweep`) y lea los niveles `I:` / `D:`
+   del resultado, o el `dbfs` de `results.json` (canales Left/Right).
+3. Escriba estos valores en `scripts/config.json`:
+   `golden_left_dbfs` y `golden_right_dbfs`.
+4. Corra `batch\build-all.bat` para copiar `config.json` a `bin\scripts\`.
+5. Ejecute la calibración de estación y confirme que pasa; si no, revise la
+   tolerancia (`golden_tolerance_db`).
 
 ## Signal presence detection ("are we hearing anything at all?")
 
@@ -153,6 +208,7 @@ AudioTest writes `hearingPassResults.txt` containing `True` or `False`
 | `deteccion_senal` | results.json `signal_present` | PASS / FAIL |
 | `bluetooth`, `play_pausa`, `anterior`, `siguiente`, `subir_volumen`, `bajar_volumen` | Prueba_*.txt | PASS / FAIL / N/A |
 | `resultado_mic` | MicroTest_*.txt | PASS / FAIL / N/A |
+| `station_calibration` | station_calibration.json | PASS / FAIL / N/A |
 | `StartTime`, `EndTime` | tiempo1/tiempo2.txt | UTC timestamps |
 
 ### Overall PASS/FAIL rule
@@ -168,7 +224,8 @@ fields are informational; their pass/fail logic lives in `getFinalResults.py`.
 | `batch/build-all.bat` | Builds all apps to `bin\` (Release). |
 | `batch/run.bat` | Orchestrates calibration + full test sequence, cleanup, aggregation, upload. |
 | `scripts/db_chart.py` | WAV analysis: RMS/peak/crest per channel, JSON out, optional `--baseline calibracion.txt`, optional PNG chart. |
-| `scripts/getFinalResults.py` | Aggregates raw outputs into `final_results.json`. |
+| `scripts/getFinalResults.py` | Aggregates raw outputs into `final_results.json` (incl. `station_calibration`). |
+| `scripts/station_calibration.py` | Golden-unit verdict (4 checks) → `station_calibration.json`; used by LevelTest and getFinalResults. |
 | `scripts/converter.py` | `final_results.json` → XML (`DataWipeResultV2`) + API upload. Stdlib only. |
 | `scripts/test_signal_detection.py` | Self-checks: `python3 scripts/test_signal_detection.py` |
 
@@ -183,9 +240,27 @@ Per-machine settings live in `scripts/config.json` (not tracked in git;
   "machine_name": "AudioTester",
   "contract": "10083",
   "test_area": "MEXICALI_R2",
-  "program": "HP_MXLR2"
+  "program": "HP_MXLR2",
+  "golden_left_dbfs": -33.0,
+  "golden_right_dbfs": -34.0,
+  "golden_tolerance_db": 3.0,
+  "balance_max_db": 2.0,
+  "ambient_max_dbfs": -30.0,
+  "connection_type": "USB",
+  "calibration_max_age_hours": 12
 }
 ```
+
+Calibration fields:
+
+| Field | Default | Meaning |
+|---|---|---|
+| `golden_left_dbfs` / `golden_right_dbfs` | — (required) | Reference L/R level of a known-good unit on this station (see "Obtener los valores golden" above). |
+| `golden_tolerance_db` | `3.0` | Max |channel − golden| deviation for Checks 2/3. |
+| `balance_max_db` | `2.0` | Max \|L − R\| for Check 4. |
+| `ambient_max_dbfs` | `-30.0` | Room-noise ceiling for Check 1 (mirrors `SIGNAL_MIN_DBFS`). |
+| `connection_type` | `USB` | Expected Golden-Unit connection shown to the operator before Check 2 (`USB`, `Óptico`, `Analógico`, `HDMI`). |
+| `calibration_max_age_hours` | `12` | Freshness window; station must be re-verified after this. |
 
 `AZURE_API_ENDPOINT` takes precedence over `endpoint`. Without either, the
 converter saves the XML but skips the upload with a warning.
@@ -194,7 +269,7 @@ converter saves the XML but skips the upload with a warning.
 
 - `apps/pruebasAudifonos/AskForSerial2` – serial entry dialog.
 - `apps/pruebasAudifonos/AudioTest` – operator listening check (writes `hearingPassResults.txt`).
-- `apps/pruebasAudifonos/LevelTest` – automatic sweep/record level test; also runs the daily ambient calibration (`CALIBRATION=1`).
+- `apps/pruebasAudifonos/LevelTest` – automatic sweep/record level test; runs the daily ambient calibration (`CALIBRATION=1`) and the station calibration (`STATION_CALIB=1`).
 - `apps/FunctionalButtonTest` – Bluetooth controls test.
 - `apps/MicroTestCloud` – microphone test (disabled by default).
 

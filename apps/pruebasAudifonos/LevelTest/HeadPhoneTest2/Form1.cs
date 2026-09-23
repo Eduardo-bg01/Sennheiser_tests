@@ -30,6 +30,19 @@ namespace HeadPhoneTest2
         private const int CalibrationSeconds = 30;
         private int seconds3;
 
+        // Modo estacion (STATION_CALIB=1): verifica diariamente la estacion con la
+        // Golden Unit. PASO 1 ruido ambiente, PASO 2 canal I, PASO 3 canal D,
+        // PASO 4 balance. El orquestador la invoca antes de liberar la estacion.
+        public bool stationCalibrationMode;
+        private double goldenLeftDbfs;
+        private double goldenRightDbfs;
+        private double goldenToleranceDb = 3.0;
+        private double balanceMaxDb = 2.0;
+        private double ambientMaxDbfs = -30.0;
+        private string connectionType = "";
+        private string stationConfigPath;
+        private bool check1Pass = true;
+
         private System.Windows.Forms.Timer timer;
         private int seconds = 5;
         private int seconds2 = 40;
@@ -167,6 +180,60 @@ namespace HeadPhoneTest2
                 btnNext.Text = "Iniciar calibración";
                 Text = "Calibración";
             }
+
+            stationCalibrationMode = Environment.GetEnvironmentVariable("STATION_CALIB") == "1";
+            if (stationCalibrationMode)
+            {
+                LoadStationConfig();
+                label1.Text = "CALIBRACIÓN DE ESTACIÓN\r\nPASO 1/4: Seleccione el dispositivo E.A.R.S.\r\n" +
+                    "Sin DUT y sin audio (esperar 30 s)";
+                btnNext.Text = "PASO 1/4: CALIBRAR AMBIENTE";
+                Text = "Calibración de estación";
+            }
+        }
+
+        private void LoadStationConfig()
+        {
+            try
+            {
+                stationConfigPath = ResolveConfigPath();
+                if (stationConfigPath == null)
+                {
+                    goldenLeftDbfs = double.NaN;
+                    goldenRightDbfs = double.NaN;
+                    return;
+                }
+                using var doc = JsonDocument.Parse(File.ReadAllText(stationConfigPath));
+                var root = doc.RootElement;
+                if (root.TryGetProperty("golden_left_dbfs", out var gl) && gl.ValueKind == JsonValueKind.Number) goldenLeftDbfs = gl.GetDouble();
+                if (root.TryGetProperty("golden_right_dbfs", out var gr) && gr.ValueKind == JsonValueKind.Number) goldenRightDbfs = gr.GetDouble();
+                if (root.TryGetProperty("golden_tolerance_db", out var tol) && tol.ValueKind == JsonValueKind.Number) goldenToleranceDb = tol.GetDouble();
+                if (root.TryGetProperty("balance_max_db", out var bal) && bal.ValueKind == JsonValueKind.Number) balanceMaxDb = bal.GetDouble();
+                if (root.TryGetProperty("ambient_max_dbfs", out var amb) && amb.ValueKind == JsonValueKind.Number) ambientMaxDbfs = amb.GetDouble();
+                if (root.TryGetProperty("connection_type", out var ct) && ct.ValueKind == JsonValueKind.String) connectionType = ct.GetString();
+            }
+            catch
+            {
+                goldenLeftDbfs = double.NaN;
+                goldenRightDbfs = double.NaN;
+            }
+        }
+
+        private string ResolveConfigPath()
+        {
+            var candidates = new List<string>
+            {
+                Path.Combine(Directory.GetCurrentDirectory(), "config.json"),
+                Path.Combine(Directory.GetCurrentDirectory(), "scripts", "config.json"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scripts", "config.json"),
+            };
+            foreach (string path in candidates)
+            {
+                if (File.Exists(path))
+                    return Path.GetFullPath(path);
+            }
+            return null;
         }
 
         private bool IsNoVolumeModel()
@@ -203,7 +270,7 @@ namespace HeadPhoneTest2
                 EnsureTimer();
                 timer.Start();
 
-                if (calibrationMode)
+                if (calibrationMode || stationCalibrationMode)
                 {
                     // Calibracion: solo se escucha el ambiente, nada se reproduce.
                     currentTimer = 3;
@@ -213,7 +280,9 @@ namespace HeadPhoneTest2
                     content3.Visible = false;
                     content4.Visible = false;
                     content6.Visible = false;
-                    lblPlay.Text = "CALIBRACIÓN: NO coloque nada en las copas\r\nEscuchando el ambiente (" + seconds3 + ")";
+                    lblPlay.Text = stationCalibrationMode
+                        ? "PASO 1/4 - CALIBRACIÓN AMBIENTAL\r\nNO coloque nada en las copas, sin DUT y sin audio (" + seconds3 + ")"
+                        : "CALIBRACIÓN: NO coloque nada en las copas\r\nEscuchando el ambiente (" + seconds3 + ")";
                     content5.Visible = true;
                     step = 2;
                     return;
@@ -239,6 +308,12 @@ namespace HeadPhoneTest2
             }
             if (step == 2)
             {
+                // Estacion: tras el ambiente, "Siguiente" pasa a la Golden Unit.
+                if (stationCalibrationMode)
+                {
+                    StartGoldenPhase();
+                    return;
+                }
                 // RS195: after the sweep results, "Siguiente" runs the balance-knob take.
                 if (isRS195 && !calibrationMode)
                 {
@@ -248,6 +323,149 @@ namespace HeadPhoneTest2
                 this.Close();
                 return;
             }
+        }
+
+        private void StartGoldenPhase()
+        {
+            string conn = string.IsNullOrWhiteSpace(connectionType)
+                ? "USB, Óptico, Analógico o HDMI"
+                : "la conexión " + connectionType;
+            MessageBox.Show(
+                "PASO 2/4 - VERIFICACIÓN CON GOLDEN UNIT\r\n\r\n" +
+                "Conecte la Golden Unit en los coples E.A.R.S. vía " + conn + ".\r\n" +
+                "Verifique el posicionamiento RS275/255 sobre los coples.\r\n" +
+                "Se reproducirá un tono de 1 kHz (~40 s). NO retire la Golden Unit.",
+                "PASO 2/4 - Golden Unit",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+
+            content6.Visible = false;
+            content5.Visible = true;
+            lblPlay.Text = "PASO 2/4 - GOLDEN UNIT\r\nReproduciendo tono 1 kHz, NO RETIRE LOS AUDIFONOS (~40 s)";
+
+            currentTimer = 2;
+            seconds2 = 40;
+            EnsureTimer();
+            timer.Start();
+
+            playAudio("tone_1khz");
+            startRecording();
+            step = 3;
+        }
+
+        private bool RunStationCalibrationScript()
+        {
+            string scriptPath = ResolvePythonScriptPath("station_calibration.py");
+            string args = "--results \"results.json\" --baseline \"calibracion.txt\" --out \"station_calibration.json\"";
+            if (stationConfigPath != null)
+                args += $" --config \"{stationConfigPath}\"";
+
+            ProcessStartInfo psi = new ProcessStartInfo();
+            psi.FileName = "python";
+            psi.Arguments = $"\"{scriptPath}\" {args}";
+            psi.RedirectStandardOutput = true;
+            psi.UseShellExecute = false;
+            psi.CreateNoWindow = true;
+
+            using (Process process = Process.Start(psi))
+            {
+                StringBuilder output = new StringBuilder();
+                while (!process.StandardOutput.EndOfStream)
+                {
+                    output.AppendLine(process.StandardOutput.ReadLine());
+                }
+                process.WaitForExit();
+                return process.ExitCode == 0;
+            }
+        }
+
+        private void ShowStationGoldenVerdict()
+        {
+            string anyFailReason = "";
+            bool scriptOk = false;
+            try
+            {
+                scriptOk = RunStationCalibrationScript();
+            }
+            catch (Exception ex)
+            {
+                anyFailReason = ex.Message;
+            }
+
+            string verdict = scriptOk && File.Exists("station_calibration.json") ? ReadStationVerdict(out anyFailReason) : "FAIL";
+
+            bool pass = verdict == "PASS";
+            bool chk2 = !double.IsNaN(goldenLeftDbfs) && signal_present == true
+                && Math.Abs(level_left - goldenLeftDbfs) <= goldenToleranceDb;
+            bool chk3 = !double.IsNaN(goldenRightDbfs) && signal_present == true
+                && Math.Abs(level_right - goldenRightDbfs) <= goldenToleranceDb;
+            bool chk4 = signal_present == true && Math.Abs(level_left - level_right) <= balanceMaxDb;
+            lblPlay.Text =
+                "PASO 1/4 AMBIENTE: " + (check1Pass ? "PASS" : "FAIL") + "  |  " +
+                "PASO 2/4 IZQ: " + (chk2 ? "PASS" : "FAIL") + "  |  " +
+                "PASO 3/4 DER: " + (chk3 ? "PASS" : "FAIL") + "  |  " +
+                "PASO 4/4 BALANCE: " + (chk4 ? "PASS" : "FAIL");
+
+            lblStatus.Text = pass
+                ? "ESTACIÓN LIBERADA - Registrar resultado e iniciar producción."
+                : "ACCIÓN ANTE FALLA: Detener liberación, revisar ambiente, posicionamiento, conexiones USB, configuración de REW y nivel de salida. Corregir, registrar y repetir desde CHECK 1.";
+            lblStatus.ForeColor = pass ? Success : Danger;
+
+            if (pass)
+            {
+                MessageBox.Show(
+                    "ESTACIÓN LIBERADA - Registrar resultado e iniciar producción.\r\n\r\n" +
+                    "Resumen: " + lblPlay.Text,
+                    "Calibración de estación",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                this.Close();
+                return;
+            }
+
+            string reason = string.IsNullOrWhiteSpace(anyFailReason)
+                ? "Verifique los valores golden_left_dbfs / golden_right_dbfs en config.json."
+                : anyFailReason;
+            DialogResult retry = MessageBox.Show(
+                "ACCIÓN ANTE FALLA: Detener liberación, revisar ambiente, posicionamiento, " +
+                "conexiones USB, configuración de REW y nivel de salida.\r\n" +
+                "Corregir, registrar y repetir desde CHECK 1.\r\n\r\n" +
+                "Resumen: " + lblPlay.Text + "\r\n\r\n" +
+                "Motivo: " + reason + "\r\n\r\n¿Repetir la calibración desde el PASO 1 (CHECK 1)?",
+                "ESTACIÓN NO LIBERADA",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+            if (retry == DialogResult.Yes)
+            {
+                check1Pass = true;
+                lblStatus.Text = "";
+                lblStatus.ForeColor = TextMuted;
+                btnNext.Text = "PASO 1/4: CALIBRAR AMBIENTE";
+                Reset();
+            }
+            else
+            {
+                this.Close();
+            }
+        }
+
+        private string ReadStationVerdict(out string reason)
+        {
+            reason = "";
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText("station_calibration.json"));
+                var root = doc.RootElement;
+                if (root.TryGetProperty("station_calibration", out var v))
+                    return v.GetString() ?? "FAIL";
+                if (root.TryGetProperty("reason", out var r))
+                    reason = r.GetString();
+            }
+            catch (Exception ex)
+            {
+                reason = ex.Message;
+            }
+            return "FAIL";
         }
 
         private void EnsureTimer()
@@ -329,6 +547,20 @@ namespace HeadPhoneTest2
 
                 this.Invoke(() =>
                 {
+                    if (stationCalibrationMode)
+                    {
+                        double ambientMax = Math.Max(payload.left_dbfs, payload.right_dbfs);
+                        check1Pass = ambientMax <= ambientMaxDbfs;
+                        lblPlay.Text = "PASO 1/4 - RUIDO AMBIENTE: " + (check1Pass ? "PASS" : "FAIL") + "\r\n" +
+                            "I: " + payload.left_dbfs + " db | D: " + payload.right_dbfs + " db  (límite " + ambientMaxDbfs + " db)";
+                        lblStatus.Text = check1Pass
+                            ? ""
+                            : "ACCIÓN ANTE FALLA: revisar ambiente, posicionamiento, conexiones USB y nivel de salida.";
+                        lblStatus.ForeColor = check1Pass ? TextMuted : Danger;
+                        btnNext.Text = "PASO 2/4: PROBAR CANALES";
+                        activateButtons();
+                        return;
+                    }
                     lblPlay.Text = "Calibración guardada:\r\nI: " + payload.left_dbfs + " db | D: " + payload.right_dbfs + " db";
                     activateButtons();
                 });
@@ -406,7 +638,9 @@ namespace HeadPhoneTest2
                 outputDevice.Dispose();
 
                 outputDevice = new WaveOutEvent();
-                if (audioTitle.StartsWith("audioSweep", StringComparison.OrdinalIgnoreCase))
+                bool attachStop = audioTitle.StartsWith("audioSweep", StringComparison.OrdinalIgnoreCase)
+                    || (stationCalibrationMode && audioTitle.StartsWith("tone_1khz", StringComparison.OrdinalIgnoreCase));
+                if (attachStop)
                     outputDevice.PlaybackStopped += stopActions;
 
                 string audioPath = ResolveAudioPath(audioTitle);
@@ -520,6 +754,11 @@ namespace HeadPhoneTest2
 
                 this.Invoke(() =>
                 {
+                    if (stationCalibrationMode)
+                    {
+                        ShowStationGoldenVerdict();
+                        return;
+                    }
                     ApplyVolumeVisibility();
                     levelDetails.Text = "I: " + Math.Round(level_left, 2) + " db | D: " + Math.Round(level_right, 2) + " db";
                     balanceDetails.Text = "Diferencia: " + Math.Round(level_diff, 2) + " db";
