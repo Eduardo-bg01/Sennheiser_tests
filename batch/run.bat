@@ -10,12 +10,6 @@ if not exist "%REFURBISH_TOOL%" set "REFURBISH_TOOL=%ROOT%bin\RefurbishToolArvat
 if not defined MAX_RETRIES set MAX_RETRIES=5
 if not defined RETRY_DELAY set RETRY_DELAY=2
 
-:: Reglas de ejecucion por modelo (automatico, ya no requiere VARIANT):
-::   - AudioTest      -> siempre se ejecuta.
-::   - MicroTestCloud -> desactivado para todos los modelos.
-::   - LevelTest      -> solo modelos de familia HD o IE (ver :detect_level_test).
-:: Para forzar la prueba de microfono en algun caso especial:
-::   set RUN_MICROPHONE=1 && bin\run.bat
 if not defined RUN_MICROPHONE set RUN_MICROPHONE=0
 if /i "%RUN_MICROPHONE%"=="1" (set "QUICK_AUDIO=0") else (if not defined QUICK_AUDIO set QUICK_AUDIO=1)
 
@@ -46,9 +40,6 @@ if not exist "%REFURBISH_TOOL%" (
     echo.
 )
 
-:: Calibracion diaria del ruido ambiente (una vez por dia, por maquina).
-:: LevelTest con CALIBRATION=1 graba 30s sin reproducir audio y guarda calibracion.txt,
-:: que db_chart.py usa como linea base para detectar "solo se escucha ruido ambiente".
 set "CALIB_NEEDED=1"
 set "CALDATE="
 set "TODAY="
@@ -67,7 +58,6 @@ if "%CALIB_NEEDED%"=="1" (
 )
 echo.
 
-:: Show Bluetooth connection instructions
 echo.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%show_bluetooth.ps1" -Mode connect
 echo.
@@ -91,9 +81,6 @@ if defined SKIP_SERIAL_PROMPT (
     )
 )
 
-:: La seleccion de dispositivo (BT o jack + modelo) la hace el operador
-:: dentro de BluetoothHeadphoneTest.exe. El reporte Prueba_*.txt que
-:: genera la app es el que usan los scripts aguas abajo.
 :SET_VOLUME_50
 echo Configurando volumen a 85%% antes de la prueba de controles...
 "%APP_DIR%VolumeHelper.exe" 85 >nul 2>&1 || echo No se pudo configurar volumen.
@@ -229,7 +216,6 @@ popd
 exit /b 0
 
 :set_audio_volume
-:: Volumen antes de la prueba de audio: 95% para modelos RS, 85% para el resto.
 set "MODEL_IS_RS=NO"
 for /f %%r in ('powershell -NoProfile -Command "if (($env:DEVICE_NAME) -replace '[^A-Za-z0-9]','').ToUpper().StartsWith('RS') { 'YES' } else { 'NO' }"') do set "MODEL_IS_RS=%%r"
 if /i "!MODEL_IS_RS!"=="YES" (set "VOLUME_PCT=95") else (set "VOLUME_PCT=85")
@@ -238,11 +224,6 @@ echo Configurando volumen a !VOLUME_PCT!%% antes de la prueba de audio...
 exit /b 0
 
 :detect_level_test
-:: LevelTest solo aplica a modelos de familia HD o IE (ej. "HD 660S2", "IE 200").
-:: Se compara el nombre normalizado (mayusculas, sin espacios/simbolos) buscando
-:: "HD" o "IE" seguido de un digito, para NO incluir por error otras familias
-:: que tambien empiezan con "HD" pero son distintas, como "HDR 175" o "HDB 630".
-:: Para agregar/quitar familias, ajusta el patron regex de abajo.
 set "RUN_LEVEL=0"
 set "LEVEL_MATCH=NO"
 for /f %%r in ('powershell -NoProfile -Command "if ((($env:DEVICE_NAME) -replace '[^A-Za-z0-9]','').ToUpper() -match '(HD|IE)[0-9]') { 'YES' } else { 'NO' }"') do set "LEVEL_MATCH=%%r"
