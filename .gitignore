@@ -32,6 +32,7 @@ diferencia_minutos.txt
 
 .venv/
 __pycache__/
+.DS_Store
 
 # Site config (may contain API endpoint/keys); edit locally, don't commit
 scripts/config.json

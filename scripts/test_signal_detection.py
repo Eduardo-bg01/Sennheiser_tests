@@ -61,7 +61,7 @@ def make_ambient(seconds=5.0, seed=7):
 
 
 def measure(samples):
-    return db_chart.measure_from_samples("Left", samples, len(samples) / SAMPLE_RATE, None)
+    return db_chart.measure_from_samples("Left", samples, len(samples) / SAMPLE_RATE)
 
 
 def stereo_of(generator):
@@ -73,8 +73,8 @@ def analyze_wav(path):
     """Run the db_chart measurement + channel_active path on a WAV file."""
     left, right, dur = db_chart.read_stereo_wav(path)
     results = [
-        db_chart.measure_from_samples("Left", left, dur, None),
-        db_chart.measure_from_samples("Right", right, dur, None),
+        db_chart.measure_from_samples("Left", left, dur),
+        db_chart.measure_from_samples("Right", right, dur),
     ]
     active, reason = db_chart.channel_active(results, None)
     return results, active, reason

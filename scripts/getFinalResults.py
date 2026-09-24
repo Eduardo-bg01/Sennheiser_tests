@@ -9,6 +9,8 @@ import json
 import os
 from datetime import datetime, timezone
 
+from common import channel_dbfs
+
 # File patterns
 FILE_PATTERN_SERIAL = "serial*"
 FILE_PATTERN_AUDIO = "hearingPass*"
@@ -178,13 +180,6 @@ def analyze_audio_levels(measurements):
     
     return results
 
-def _channel_dbfs(data, channel):
-    """Look up a channel's dBFS from a db_chart JSON payload."""
-    for m in data.get("measurements", []):
-        if str(m.get("channel", "")).lower() == channel:
-            return m.get("dbfs")
-    return None
-
 def knob_verdict(left_take, right_take):
     """Verdict for the RS195 balance knob from the two db_chart JSON payloads.
 
@@ -203,8 +198,8 @@ def knob_verdict(left_take, right_take):
             reason.append(f"toma {name}: canal activo '{active}' (se espera un solo canal)")
             continue
         muted = "right" if active == "left" else "left"
-        active_dbfs = _channel_dbfs(take, active)
-        muted_dbfs = _channel_dbfs(take, muted)
+        active_dbfs = channel_dbfs(take, active)
+        muted_dbfs = channel_dbfs(take, muted)
         sep = None if active_dbfs is None or muted_dbfs is None else active_dbfs - muted_dbfs
         if sep is not None and sep >= KNOB_SEPARATION_DB:
             verdicts[name] = RESULT_PASS

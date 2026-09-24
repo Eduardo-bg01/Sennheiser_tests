@@ -185,7 +185,7 @@ AudioTest writes `hearingPassResults.txt` containing `True` or `False`
 ```json
 {
   "measurements": [
-    { "channel": "Left",  "rms": 0.0207, "dbfs": -33.66, "dbspl": null,
+    { "channel": "Left",  "rms": 0.0207, "dbfs": -33.66,
       "peak_dbfs": -6.34, "crest_db": 27.32, "duration_sec": 40.0 },
     ...
   ],
@@ -238,7 +238,7 @@ it happens in a separate, pre-serial LevelTest instance.
 |---|---|
 | `batch/build-all.bat` | Builds all apps to `bin\` (Release). |
 | `batch/run.bat` | Orchestrates calibration + full test sequence, cleanup, aggregation, upload. |
-| `scripts/db_chart.py` | WAV analysis: RMS/peak/crest per channel, JSON out, optional `--baseline calibracion.txt`, optional PNG chart. |
+| `scripts/db_chart.py` | WAV analysis: RMS/peak/crest per channel, JSON out, optional `--baseline calibracion.txt`. |
 | `scripts/getFinalResults.py` | Aggregates raw outputs into `final_results.json` (incl. `station_calibration`). |
 | `scripts/station_calibration.py` | Golden-unit verdict (4 checks) → `station_calibration.json`; used by LevelTest and getFinalResults. |
 | `scripts/converter.py` | `final_results.json` → XML (`DataWipeResultV2`) + API upload. Stdlib only. |
@@ -293,7 +293,6 @@ converter saves the XML but skips the upload with a warning.
 - Windows 10/11 with .NET 9 SDK (WinForms apps).
 - Python 3.9+ on PATH (`python`) for aggregation, analysis, and upload.
 - miniDSP E.A.R.S. coupler (stereo USB input) and a working output device.
-- matplotlib (optional) for `resultado.png`.
 
 ## Troubleshooting
 

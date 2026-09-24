@@ -18,21 +18,13 @@ import argparse
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from common import load_baseline, load_config
+from common import load_baseline, load_config, channel_dbfs
 
 DEFAULTS = {
     "golden_tolerance_db": 3.0,
     "balance_max_db": 2.0,
     "ambient_max_dbfs": -30.0,
 }
-
-
-def channel_dbfs(results, channel):
-    for m in results.get("measurements", []):
-        if str(m.get("channel", "")).lower() == channel:
-            v = m.get("dbfs")
-            return v if isinstance(v, (int, float)) else None
-    return None
 
 
 def station_verdict(results, baseline, cfg):

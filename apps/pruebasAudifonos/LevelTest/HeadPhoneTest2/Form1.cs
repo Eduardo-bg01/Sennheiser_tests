@@ -882,13 +882,13 @@ namespace HeadPhoneTest2
 
         }
 
-        private string RunPythonScript(string wavPath) => RunPythonScript(wavPath, "results.json", "resultado.png");
+        private string RunPythonScript(string wavPath) => RunPythonScript(wavPath, "results.json");
 
-        private string RunPythonScript(string wavPath, string jsonFile, string pngFile)
+        private string RunPythonScript(string wavPath, string jsonFile)
         {
             string script = "db_chart.py";
             string scriptPath = ResolvePythonScriptPath(script);
-            string args = $"--input \"{wavPath}\" --json-out \"{jsonFile}\" --png-out \"{pngFile}\"";
+            string args = $"--input \"{wavPath}\" --json-out \"{jsonFile}\"";
 
             // Linea base del dia para detectar "solo ruido ambiente".
             string baselinePath = Path.Combine(Directory.GetCurrentDirectory(), "calibracion.txt");
@@ -920,17 +920,13 @@ namespace HeadPhoneTest2
 
         private string ResolvePythonScriptPath(string scriptName)
         {
+            string exeDir = Path.GetDirectoryName(Environment.ProcessPath) ?? AppDomain.CurrentDomain.BaseDirectory;
             var candidates = new List<string>
             {
-                scriptName,
                 Path.Combine(Directory.GetCurrentDirectory(), scriptName),
                 Path.Combine(Directory.GetCurrentDirectory(), "scripts", scriptName),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, scriptName),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scripts", scriptName),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", scriptName),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "scripts", scriptName),
-                Path.Combine(Directory.GetCurrentDirectory(), "apps", "pruebasAudifonos", scriptName),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "apps", "pruebasAudifonos", scriptName),
+                Path.Combine(exeDir, scriptName),
+                Path.Combine(exeDir, "scripts", scriptName),
             };
 
             foreach (string path in candidates)
@@ -1183,8 +1179,8 @@ namespace HeadPhoneTest2
             bool leftOk = false, rightOk = false, pass = false;
             try
             {
-                RunPythonScript("recorded_knob_left.wav", "knob_left.json", "knob_left.png");
-                RunPythonScript("recorded_knob_right.wav", "knob_right.json", "knob_right.png");
+                RunPythonScript("recorded_knob_left.wav", "knob_left.json");
+                RunPythonScript("recorded_knob_right.wav", "knob_right.json");
                 var verdict = KnobVerdict();
                 leftOk = verdict.leftOk;
                 rightOk = verdict.rightOk;

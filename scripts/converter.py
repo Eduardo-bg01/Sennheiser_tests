@@ -45,26 +45,15 @@ def load_json(path):
         return json.load(f)
 
 def find_input_file(input_arg):
-    """Find final_results.json in current or parent directories."""
+    """Locate final_results.json (explicit arg, else cwd or script dir)."""
     if input_arg:
         return input_arg
 
     target = 'final_results.json'
-    cwd = Path.cwd()
-    script_dir = Path(__file__).resolve().parent
-
-    search_roots = [cwd]
-    if script_dir != cwd:
-        search_roots.append(script_dir)
-
-    visited = set()
-    for root in search_roots:
-        if root in visited:
-            continue
-        visited.add(root)
-        for dirpath, _, filenames in os.walk(root):
-            if target in filenames:
-                return str(Path(dirpath) / target)
+    for root in (Path.cwd(), Path(__file__).resolve().parent):
+        candidate = root / target
+        if candidate.is_file():
+            return str(candidate)
 
     raise FileNotFoundError(f'Could not find {target}.')
 

@@ -45,3 +45,12 @@ def load_baseline(path):
     except Exception:
         print(f"[WARNING] Could not read baseline file: {path}. Using fixed thresholds only.")
         return None
+
+
+def channel_dbfs(payload, channel):
+    """Numeric dBFS for a channel from a db_chart JSON payload, else None."""
+    for m in payload.get("measurements", []):
+        if str(m.get("channel", "")).lower() == channel:
+            v = m.get("dbfs")
+            return v if isinstance(v, (int, float)) else None
+    return None

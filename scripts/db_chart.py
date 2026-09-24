@@ -11,7 +11,6 @@ from typing import List, Tuple
 import common
 
 MIN_DB_FLOOR = -120.0  # Minimum dB value for unrepresentable audio
-DEFAULT_CALIBRATION_SPL = 94.0  # Reference SPL for calibration
 
 # Signal-presence thresholds.
 # ponytail: provisional values until calibrated against known-good units in the field.
@@ -26,18 +25,12 @@ PCM_SCALE_16BIT = 32768.0
 PCM_SCALE_24BIT = 8388608.0
 PCM_SCALE_32BIT = 2147483648.0
 
-# Chart rendering constants
-CHART_FIGSIZE = (8, 4.5)
-CHART_DPI = 150
-ASCII_CHART_WIDTH = 50
-
 
 @dataclass
 class Measurement:
     label: str
     rms: float
     dbfs: float
-    dbspl: float | None
     peak_dbfs: float
     crest_db: float
     duration_sec: float
@@ -118,8 +111,7 @@ def read_stereo_wav(wav_path: Path) -> Tuple[List[float], List[float], float]:
 def measure_from_samples(
     label: str,
     samples: List[float],
-    duration: float,
-    calibration_offset_db: float | None
+    duration: float
 ) -> Measurement:
     """Analyze audio samples and return loudness measurements."""
 
@@ -130,13 +122,10 @@ def measure_from_samples(
     peak_dbfs = db_from_amplitude(peak)
     crest_db = peak_dbfs - dbfs
 
-    dbspl = None if calibration_offset_db is None else dbfs + calibration_offset_db
-
     return Measurement(
         label=label,
         rms=rms,
         dbfs=dbfs,
-        dbspl=dbspl,
         peak_dbfs=peak_dbfs,
         crest_db=crest_db,
         duration_sec=duration,
@@ -145,66 +134,12 @@ def measure_from_samples(
 
 def print_table(results: List[Measurement]) -> None:
     """Print results as formatted ASCII table."""
-    use_spl = any(r.dbspl is not None for r in results)
     print("\nChannel Loudness Results")
     print("-" * 90)
-    if use_spl:
-        print(f"{'Channel':<12} {'RMS':>10} {'dBFS':>10} {'dBSPL':>10} {'Peak dBFS':>12} {'Crest dB':>10} {'Sec':>8}")
-    else:
-        print(f"{'Channel':<12} {'RMS':>10} {'dBFS':>10} {'Peak dBFS':>12} {'Crest dB':>10} {'Sec':>8}")
+    print(f"{'Channel':<12} {'RMS':>10} {'dBFS':>10} {'Peak dBFS':>12} {'Crest dB':>10} {'Sec':>8}")
 
     for r in results:
-        if use_spl:
-            spl = f"{r.dbspl:0.2f}" if r.dbspl is not None else "N/A"
-            print(f"{r.label:<12} {r.rms:>10.6f} {r.dbfs:>10.2f} {spl:>10} {r.peak_dbfs:>12.2f} {r.crest_db:>10.2f} {r.duration_sec:>8.2f}")
-        else:
-            print(f"{r.label:<12} {r.rms:>10.6f} {r.dbfs:>10.2f} {r.peak_dbfs:>12.2f} {r.crest_db:>10.2f} {r.duration_sec:>8.2f}")
-
-
-def print_ascii_chart(results: List[Measurement]) -> None:
-    use_spl = all(r.dbspl is not None for r in results)
-    metric_name = "dBSPL" if use_spl else "dBFS"
-    values = [r.dbspl if use_spl else r.dbfs for r in results]
-    max_val = max(values)
-    min_val = min(values)
-
-    print(f"\nASCII Chart ({metric_name})")
-    print("-" * 78)
-
-    span = max(max_val - min_val, 1e-9)
-
-    for r, v in zip(results, values):
-        bar_len = int(((v - min_val) / span) * ASCII_CHART_WIDTH)
-        bar = "#" * bar_len
-        print(f"{r.label:<12} | {bar:<50} {v:>7.2f} {metric_name}")
-
-
-def maybe_save_png(results: List[Measurement], output_png: Path) -> None:
-    try:
-        import matplotlib.pyplot as plt
-    except Exception:
-        print(f"\n[Info] matplotlib not installed. Skipped PNG export: {output_png}")
-        return
-
-    labels = [r.label for r in results]
-    use_spl = all(r.dbspl is not None for r in results)
-    y = [r.dbspl if use_spl else r.dbfs for r in results]
-    ylabel = "dBSPL" if use_spl else "dBFS"
-
-    plt.figure(figsize=CHART_FIGSIZE)
-    bars = plt.bar(labels, y)
-    plt.title("Headphone Channel Comparison")
-    plt.ylabel(ylabel)
-    plt.grid(axis="y", alpha=0.25)
-
-    for b, v in zip(bars, y):
-        plt.text(b.get_x() + b.get_width() / 2, b.get_height(), f"{v:.2f}",
-                 ha="center", va="bottom")
-
-    plt.tight_layout()
-    plt.savefig(output_png, dpi=CHART_DPI)
-    plt.close()
-    print(f"\nSaved chart image: {output_png}")
+        print(f"{r.label:<12} {r.rms:>10.6f} {r.dbfs:>10.2f} {r.peak_dbfs:>12.2f} {r.crest_db:>10.2f} {r.duration_sec:>8.2f}")
 
 
 def build_json(results: List[Measurement], signal_present: bool, signal_reason: str, active: str) -> dict:
@@ -214,7 +149,6 @@ def build_json(results: List[Measurement], signal_present: bool, signal_reason: 
                 "channel": r.label,
                 "rms": r.rms,
                 "dbfs": r.dbfs,
-                "dbspl": r.dbspl,
                 "peak_dbfs": r.peak_dbfs,
                 "crest_db": r.crest_db,
                 "duration_sec": r.duration_sec,
@@ -308,10 +242,6 @@ def main() -> int:
         help="Path to stereo WAV capture"
     )
 
-    parser.add_argument("--calibration-dbfs", type=float, default=None,
-                        help="Measured dBFS for your calibration tone")
-    parser.add_argument("--calibration-spl", type=float, default=94.0,
-                        help="Known SPL of calibration tone (default: 94 dB SPL)")
     parser.add_argument("--baseline", type=Path, default=None,
                         help="Optional calibracion.txt with the daily ambient-noise baseline")
 
@@ -319,39 +249,17 @@ def main() -> int:
                         help="Print machine-readable JSON to stdout (for C# integration)")
     parser.add_argument("--json-out", type=Path, default=None,
                         help="Optional path to write JSON results")
-    parser.add_argument("--png-out", type=Path, default=None,
-                        help="Optional output PNG path (requires matplotlib)")
 
     args = parser.parse_args()
 
-    calibration_offset_db = None
-    if args.calibration_dbfs is not None:
-        calibration_offset_db = args.calibration_spl - args.calibration_dbfs
-
     left_samples, right_samples, duration = read_stereo_wav(args.input)
 
-    left_measure = measure_from_samples(
-        "Left",
-        left_samples,
-        duration,
-        calibration_offset_db
-    )
-
-    right_measure = measure_from_samples(
-        "Right",
-        right_samples,
-        duration,
-        calibration_offset_db
-    )
+    left_measure = measure_from_samples("Left", left_samples, duration)
+    right_measure = measure_from_samples("Right", right_samples, duration)
 
     combined_samples = [l + r for l, r in zip(left_samples, right_samples)]
 
-    both_measure = measure_from_samples(
-        "Both",
-        combined_samples,
-        duration,
-        calibration_offset_db
-    )
+    both_measure = measure_from_samples("Both", combined_samples, duration)
 
     results = [
         left_measure,
@@ -376,10 +284,6 @@ def main() -> int:
     print(f"Channel active: {active}")
 
     print_table(results)
-    print_ascii_chart(results)
-
-    if args.png_out:
-        maybe_save_png(results, args.png_out)
 
     payload = build_json(results, signal_present, signal_reason, active)
     if args.json_out:
