@@ -6,7 +6,7 @@ namespace SennheiserTestRunner;
 
 static class Program
 {
-    static string BaseDir => AppContext.BaseDirectory;
+    static string BaseDir => Path.GetDirectoryName(Environment.ProcessPath!) ?? AppContext.BaseDirectory;
     static string RootDir
     {
         get

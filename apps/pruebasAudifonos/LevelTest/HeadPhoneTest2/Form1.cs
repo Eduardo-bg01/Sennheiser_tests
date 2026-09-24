@@ -906,12 +906,12 @@ namespace HeadPhoneTest2
 
             using (Process process = Process.Start(psi))
             {
-                while (!process.StandardOutput.EndOfStream)
-                {
-                    string line = process.StandardOutput.ReadLine();
-                    output.AppendLine(line);
-                }
+                string stderr = process.StandardError.ReadToEnd();
+                output.Append(process.StandardOutput.ReadToEnd());
                 process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                    throw new Exception($"db_chart.py falló (exit {process.ExitCode}): {stderr.Trim()}");
             }
 
             return output.ToString();
