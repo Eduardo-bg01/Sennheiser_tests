@@ -108,8 +108,7 @@ if exist Prueba_*.txt (
     echo [CONTROLS] PASSED
     for /f "usebackq delims=" %%a in (`powershell -NoProfile -Command "$line = (Select-String -Path Prueba_*.txt -Pattern 'Dispositivo').Line; $name = $line.Substring($line.IndexOf(':') + 1).Trim(); Write-Output $name"`) do set "DEVICE_NAME=%%a"
     call :detect_level_test
-    echo Configurando volumen a 85%% antes de la prueba de audio...
-    "%APP_DIR%VolumeHelper.exe" 85 >nul 2>&1 || echo No se pudo configurar volumen.
+    call :set_audio_volume
     goto TEST_AUDIO
 )
 if exist "%APP_DIR%Prueba_*.txt" (
@@ -117,8 +116,7 @@ if exist "%APP_DIR%Prueba_*.txt" (
     echo [CONTROLS] PASSED
     for /f "usebackq delims=" %%a in (`powershell -NoProfile -Command "$line = (Select-String -Path Prueba_*.txt -Pattern 'Dispositivo').Line; $name = $line.Substring($line.IndexOf(':') + 1).Trim(); Write-Output $name"`) do set "DEVICE_NAME=%%a"
     call :detect_level_test
-    echo Configurando volumen a 85%% antes de la prueba de audio...
-    "%APP_DIR%VolumeHelper.exe" 85 >nul 2>&1 || echo No se pudo configurar volumen.
+    call :set_audio_volume
     goto TEST_AUDIO
 )
 if !CONTROLS_ATTEMPTS! LSS %MAX_RETRIES% (
@@ -228,6 +226,15 @@ echo.
 echo Pruebas completadas. Tiempo total: %diff_min% min
 echo.
 popd
+exit /b 0
+
+:set_audio_volume
+:: Volumen antes de la prueba de audio: 95% para modelos RS, 85% para el resto.
+set "MODEL_IS_RS=NO"
+for /f %%r in ('powershell -NoProfile -Command "if (($env:DEVICE_NAME) -replace '[^A-Za-z0-9]','').ToUpper().StartsWith('RS') { 'YES' } else { 'NO' }"') do set "MODEL_IS_RS=%%r"
+if /i "!MODEL_IS_RS!"=="YES" (set "VOLUME_PCT=95") else (set "VOLUME_PCT=85")
+echo Configurando volumen a !VOLUME_PCT!%% antes de la prueba de audio...
+"%APP_DIR%VolumeHelper.exe" !VOLUME_PCT! >nul 2>&1 || echo No se pudo configurar volumen.
 exit /b 0
 
 :detect_level_test
