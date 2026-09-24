@@ -1254,10 +1254,10 @@ namespace HeadPhoneTest2
             string leftActiveText = leftActive == "none" ? "nada" : leftActive;
             string rightActiveText = rightActive == "none" ? "nada" : rightActive;
             return (
-                "canal activo " + leftActiveText,
-                "canal activo " + rightActiveText,
                 leftStrong,
                 rightStrong,
+                "canal activo " + leftActiveText,
+                "canal activo " + rightActiveText,
                 pass,
                 string.Join("; ", reasons));
         }
