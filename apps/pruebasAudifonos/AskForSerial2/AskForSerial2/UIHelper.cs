@@ -8,44 +8,20 @@ using System.Windows.Forms;
 /// </summary>
 public static class UIHelper
 {
-    public static void StylePrimaryButton(Button btn)
-    {
-        btn.BackColor = SharedTheme.Accent;
-        btn.ForeColor = Color.White;
-        btn.FlatStyle = FlatStyle.Flat;
-        btn.FlatAppearance.BorderSize = 0;
-        btn.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
-        btn.Cursor = Cursors.Hand;
-    }
+    public static void StylePrimaryButton(Button btn) => StyleButton(btn, SharedTheme.Accent, true);
+    public static void StyleSecondaryButton(Button btn) =>
+        StyleButton(btn, SharedTheme.BgCard, false, SharedTheme.Border);
+    public static void StyleSuccessButton(Button btn) => StyleButton(btn, SharedTheme.Success, true);
+    public static void StyleDangerButton(Button btn) => StyleButton(btn, SharedTheme.Danger, true);
 
-    public static void StyleSecondaryButton(Button btn)
+    private static void StyleButton(Button btn, Color back, bool bold, Color? border = null)
     {
-        btn.BackColor = SharedTheme.BgCard;
-        btn.ForeColor = SharedTheme.TextPrimary;
+        btn.BackColor = back;
+        btn.ForeColor = back == SharedTheme.BgCard ? SharedTheme.TextPrimary : Color.White;
         btn.FlatStyle = FlatStyle.Flat;
-        btn.FlatAppearance.BorderSize = 1;
-        btn.FlatAppearance.BorderColor = SharedTheme.Border;
-        btn.Font = new Font("Segoe UI", 11F);
-        btn.Cursor = Cursors.Hand;
-    }
-
-    public static void StyleSuccessButton(Button btn)
-    {
-        btn.BackColor = SharedTheme.Success;
-        btn.ForeColor = Color.White;
-        btn.FlatStyle = FlatStyle.Flat;
-        btn.FlatAppearance.BorderSize = 0;
-        btn.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
-        btn.Cursor = Cursors.Hand;
-    }
-
-    public static void StyleDangerButton(Button btn)
-    {
-        btn.BackColor = SharedTheme.Danger;
-        btn.ForeColor = Color.White;
-        btn.FlatStyle = FlatStyle.Flat;
-        btn.FlatAppearance.BorderSize = 0;
-        btn.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+        btn.FlatAppearance.BorderSize = border.HasValue ? 1 : 0;
+        if (border.HasValue) btn.FlatAppearance.BorderColor = border.Value;
+        btn.Font = new Font("Segoe UI", 11F, bold ? FontStyle.Bold : FontStyle.Regular);
         btn.Cursor = Cursors.Hand;
     }
 

@@ -495,21 +495,7 @@ namespace MicroTestCloud
             try
             {
                 string baseName = $"MicroTest_{DateTime.Now:yyyyMMdd_HHmmss}";
-                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string currentDir = Environment.CurrentDirectory;
-                var targetPaths = new List<string>
-                {
-                    Path.Combine(baseDir, baseName + ".txt")
-                };
-
-                if (!string.Equals(baseDir.TrimEnd(Path.DirectorySeparatorChar), currentDir.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
-                {
-                    targetPaths.Add(Path.Combine(currentDir, baseName + ".txt"));
-                }
-
-                foreach (var txtPath in targetPaths)
-                {
-                    using var sw = new StreamWriter(txtPath, false, System.Text.Encoding.UTF8);
+                using var sw = new StringWriter();
                     sw.WriteLine("╔══════════════════════════════════════════════════╗");
                     sw.WriteLine("║        MICROTEST · REPORTE SIN MICRÓFONO         ║");
                     sw.WriteLine("╚══════════════════════════════════════════════════╝");
@@ -545,15 +531,29 @@ namespace MicroTestCloud
 
                     sw.WriteLine($"  Reporte generado por MicroTest · {DateTime.Now:dd/MM/yyyy HH:mm}");
                     sw.WriteLine("──────────────────────────────────────────────────");
-                }
 
-                _reportGenerated = true;
+                WriteReport(baseName + ".txt", sw.ToString());
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error en SaveReport2:\n{ex.Message}",
                     "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void WriteReport(string fileName, string content)
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string txtPath = Path.Combine(baseDir, fileName);
+            File.WriteAllText(txtPath, content, Encoding.UTF8);
+
+            string currentDir = Environment.CurrentDirectory;
+            if (!string.Equals(baseDir.TrimEnd(Path.DirectorySeparatorChar), currentDir.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
+            {
+                File.Copy(txtPath, Path.Combine(currentDir, fileName), true);
+            }
+
+            _reportGenerated = true;
         }
 
         // ══════════════════════════════════════════════════════════════
@@ -1094,7 +1094,7 @@ namespace MicroTestCloud
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            WriteFallbackReportIfMissing();
+            try { SaveFallbackReport(); } catch { /* best-effort, never block close */ }
             if (isListening) waveIn?.StopRecording();
             _speakerTone?.Stop();
             _speakerTone?.Dispose();
@@ -1105,37 +1105,19 @@ namespace MicroTestCloud
             base.OnFormClosing(e);
         }
 
-        private void WriteFallbackReportIfMissing()
-        {
-            try
-            {
-                // If the user closes the form before the normal save completes, still emit a TXT report.
-                if (_reportGenerated)
-                    return;
-
-                bool hasActivity = _logEntries.Count > 0
-                    || (_recordedStream != null && _recordedStream.Length > 0)
-                    || _testResult == "PASS"
-                    || _testResult == "FAIL";
-
-                if (!hasActivity)
-                    return;
-
-                SaveFallbackReport();
-            }
-            catch
-            {
-                // Best-effort fallback, never block close.
-            }
-        }
-
         private void SaveFallbackReport()
         {
+            if (_reportGenerated)
+                return;
+
+            bool hasActivity = _logEntries.Count > 0
+                || (_recordedStream != null && _recordedStream.Length > 0)
+                || _testResult == "PASS"
+                || _testResult == "FAIL";
+            if (!hasActivity)
+                return;
+
             string baseName = $"MicroTest_{_testStartTime:yyyyMMdd_HHmmss}";
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string txtPath = Path.Combine(baseDir, baseName + ".txt");
-            string currentDir = Environment.CurrentDirectory;
-            string currentTxtPath = Path.Combine(currentDir, baseName + ".txt");
             string resultLabel = string.IsNullOrWhiteSpace(_testResult) ? "No definido" : _testResult;
 
             var sb = new StringBuilder();
@@ -1157,14 +1139,7 @@ namespace MicroTestCloud
             sb.AppendLine("  de completar el flujo normal de guardado.");
             sb.AppendLine("──────────────────────────────────────────────────");
 
-            File.WriteAllText(txtPath, sb.ToString(), Encoding.UTF8);
-
-            if (!string.Equals(baseDir, currentDir, StringComparison.OrdinalIgnoreCase))
-            {
-                File.Copy(txtPath, currentTxtPath, true);
-            }
-
-            _reportGenerated = true;
+            WriteReport(baseName + ".txt", sb.ToString());
         }
     }
 

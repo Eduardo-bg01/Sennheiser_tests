@@ -18,44 +18,13 @@ import argparse
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from common import load_baseline, load_config
 
 DEFAULTS = {
     "golden_tolerance_db": 3.0,
     "balance_max_db": 2.0,
     "ambient_max_dbfs": -30.0,
 }
-
-
-def load_config(path=None):
-    """Read per-machine config.json. Resolution: explicit path, cwd, script dir."""
-    if path:
-        p = Path(path)
-        if p.exists():
-            return json.loads(p.read_text(encoding="utf-8"))
-        return None
-    for base in (Path.cwd(), Path(__file__).resolve().parent):
-        p = base / "config.json"
-        if p.exists():
-            try:
-                return json.loads(p.read_text(encoding="utf-8"))
-            except Exception:
-                return None
-    return None
-
-
-def load_baseline(path):
-    """Read calibracion.txt -> dict(left_dbfs, right_dbfs) or None."""
-    if not path:
-        return None
-    try:
-        data = json.loads(Path(path).read_text(encoding="utf-8"))
-        left = data.get("left_dbfs")
-        right = data.get("right_dbfs")
-        if left is None or right is None:
-            return None
-        return {"left_dbfs": left, "right_dbfs": right}
-    except Exception:
-        return None
 
 
 def channel_dbfs(results, channel):

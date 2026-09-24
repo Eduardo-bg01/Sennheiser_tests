@@ -10,12 +10,6 @@ namespace BluetoothHeadphoneTest
         // Se actualiza en Initialize() según el perfil del dispositivo.
         public int TotalTests { get; private set; } = 7; // valor inicial conservador
 
-        /// <summary>
-        /// Acceso estático al TotalTests de la instancia activa.
-        /// Usado por TestPanel para mostrar "PRUEBA X / Y" sin depender de una constante.
-        /// </summary>
-        public static int ActiveTotalTests { get; private set; } = 7;
-
         private readonly MainForm form;
         private TestPanel currentPanel;
         private List<Func<TestPanel>> _steps = new();
@@ -54,7 +48,6 @@ namespace BluetoothHeadphoneTest
             // Construir lista de pasos dinámicamente según el perfil
             _steps = BuildSteps(profile);
             TotalTests = _steps.Count;
-            ActiveTotalTests = TotalTests; // sincronizar acceso estático para los paneles
 
             // Re-registrar hotkeys
             AppCommandRouter.Unregister();
@@ -110,6 +103,7 @@ namespace BluetoothHeadphoneTest
             }
 
             var panel = _steps[index]();
+            panel.SetTotal(_steps.Count);
 
             // Wire auto-detection result
             panel.TestCompleted += (passed) => OnTestAutoCompleted(index, passed);

@@ -27,6 +27,14 @@ namespace BluetoothHeadphoneTest
         public event Action<bool> TestCompleted;
         protected void FireTestCompleted(bool passed) => TestCompleted?.Invoke(passed);
 
+        /// <summary>Show the step counter ("PRUEBA X / Y"); called by TestStepManager with the final step count.</summary>
+        public void SetTotal(int totalTests)
+        {
+            labelTestNumber.Text = testNumber > 1
+                ? $"PRUEBA {testNumber - 1} / {totalTests - 1}"
+                : $"PRUEBA {testNumber} / {totalTests - 1}";
+        }
+
         protected Panel card;
         protected Label labelTestNumber;
         protected Label labelTestName;
@@ -35,10 +43,13 @@ namespace BluetoothHeadphoneTest
         protected Label labelStatusIndicator;
         protected Panel statusBar;
 
+        protected readonly int testNumber;
+
         protected MiniPlayerWidget Player;
 
         protected TestPanel(int number, string name, string icon, bool withPlayer = false)
         {
+            testNumber = number;
             BackColor = BgDark;
             Padding = new Padding(16);
 
@@ -52,9 +63,7 @@ namespace BluetoothHeadphoneTest
             // ── Etiqueta de número de prueba (esquina superior izquierda) ───
             labelTestNumber = new Label
             {
-                Text = number > 1
-                    ? $"PRUEBA {number - 1} / {TestStepManager.ActiveTotalTests - 1}"
-                    : $"PRUEBA {number} / {TestStepManager.ActiveTotalTests - 1}",
+                Text = "",
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = AccentCyan,
                 BackColor = ColorTranslator.FromHtml("#E0F4FA"),

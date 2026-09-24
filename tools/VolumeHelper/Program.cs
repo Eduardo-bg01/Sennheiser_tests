@@ -1,4 +1,4 @@
-using AudioSwitcher.AudioApi.CoreAudio;
+using NAudio.CoreAudioApi;
 
 if (args.Length == 0 || !double.TryParse(args[0], out double volumePercent))
 {
@@ -10,8 +10,8 @@ volumePercent = Math.Max(0, Math.Min(100, volumePercent));
 
 try
 {
-    var controller = new CoreAudioController();
-    var device = controller.DefaultPlaybackDevice;
+    using var enumerator = new MMDeviceEnumerator();
+    using var device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
 
     if (device is null)
     {
@@ -19,8 +19,8 @@ try
         return 1;
     }
 
-    device.Volume = volumePercent;
-    device.Mute(false);
+    device.AudioEndpointVolume.MasterVolumeLevelScalar = (float)(volumePercent / 100.0);
+    device.AudioEndpointVolume.Mute = false;
 
     Console.WriteLine($"Set default playback volume to {volumePercent}%.");
     return 0;

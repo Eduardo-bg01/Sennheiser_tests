@@ -5,21 +5,10 @@ import argparse
 from datetime import datetime, timezone
 import os
 from pathlib import Path
+from common import load_config
 
 # Load site config from config.json (next to this script, or cwd).
 # Fields can still be overridden via env vars (AZURE_API_ENDPOINT, USERNAME).
-def load_config():
-    cfg = {}
-    for base in (Path(__file__).resolve().parent, Path.cwd()):
-        p = base / "config.json"
-        if p.exists():
-            try:
-                cfg.update(json.loads(p.read_text(encoding="utf-8")))
-            except Exception:
-                pass
-            break
-    return cfg
-
 CONFIG = load_config()
 
 API_ENDPOINT = os.getenv('AZURE_API_ENDPOINT') or CONFIG.get('endpoint') or ''

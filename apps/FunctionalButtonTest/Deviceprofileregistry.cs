@@ -17,25 +17,8 @@ namespace BluetoothHeadphoneTest
         // ════════════════════════════════════════════════════════════════════
         private static readonly List<DeviceProfile> _btProfiles = new()
         {
-            new DeviceProfile("Momentum 4")
-            {
-                HasBluetooth     = true,
-                HasPlayPause     = true,
-                HasPreviousTrack = true,
-                HasNextTrack     = true,
-                HasVolumeUp      = true,
-                HasVolumeDown    = true,
-            },
-
-            new DeviceProfile("Momentum TW 4")
-            {
-                HasBluetooth     = true,
-                HasPlayPause     = true,
-                HasPreviousTrack = true,
-                HasNextTrack     = true,
-                HasVolumeUp      = true,
-                HasVolumeDown    = true,
-            },
+            new DeviceProfile("Momentum 4"),
+            new DeviceProfile("Momentum TW 4"),
 
             // ── USB-C ────────────────────────────────────────────────────────
             new DeviceProfile("Headphones (HD 400U)")
@@ -47,43 +30,22 @@ namespace BluetoothHeadphoneTest
                 HasVolumeUp      = false,
                 HasVolumeDown    = false,
             },
-             new DeviceProfile("ACCENTUM")
+            new DeviceProfile("ACCENTUM")
             {
-                HasBluetooth     = true,
-                HasPlayPause     = true,
                 HasPreviousTrack = false,
                 HasNextTrack     = false,
-                HasVolumeUp      = true,
-                HasVolumeDown    = true,
             },
-             new DeviceProfile("ACCENTUM PLUS")
-            {
-                HasBluetooth     = true,
-                HasPlayPause     = true,
-                HasPreviousTrack = true,
-                HasNextTrack     = true,
-                HasVolumeUp      = true,
-                HasVolumeDown    = true,
-            },
-              new DeviceProfile("HDB 630")
-            {
-                HasBluetooth     = true,
-                HasPlayPause     = true,
-                HasPreviousTrack = true,
-                HasNextTrack     = true,
-                HasVolumeUp      = true,
-                HasVolumeDown    = true,
-            },
+            new DeviceProfile("ACCENTUM PLUS"),
+            new DeviceProfile("HDB 630"),
 
-                new DeviceProfile("HD 400U")
-              {
-                  HasBluetooth     = false,
-                  HasPlayPause     = true,
-                  HasPreviousTrack = false,
-                  HasNextTrack     = false,
-                  HasVolumeUp      = false,
-                  HasVolumeDown    = false,
-              },
+            new DeviceProfile("HD 400U")
+            {
+                HasBluetooth     = false,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
+            },
 
 
 

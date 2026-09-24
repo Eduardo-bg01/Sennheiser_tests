@@ -8,6 +8,7 @@ import wave
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
+import common
 
 MIN_DB_FLOOR = -120.0  # Minimum dB value for unrepresentable audio
 DEFAULT_CALIBRATION_SPL = 94.0  # Reference SPL for calibration
@@ -227,18 +228,11 @@ def build_json(results: List[Measurement], signal_present: bool, signal_reason: 
 
 
 def load_baseline(path: Path | None) -> dict | None:
-    """Load calibracion.txt (JSON with left_dbfs/right_dbfs from the daily ambient capture)."""
-    if path is None:
+    """Load calibracion.txt (daily ambient capture) as {Left, Right} dbfs."""
+    raw = common.load_baseline(path)
+    if raw is None:
         return None
-    try:
-        data = json.loads(Path(path).read_text(encoding="utf-8"))
-        baseline = {"Left": data.get("left_dbfs"), "Right": data.get("right_dbfs")}
-        if baseline["Left"] is None or baseline["Right"] is None:
-            return None
-        return baseline
-    except Exception:
-        print(f"[WARNING] Could not read baseline file: {path}. Using fixed thresholds only.")
-        return None
+    return {"Left": raw["left_dbfs"], "Right": raw["right_dbfs"]}
 
 
 def channel_signal_ok(r: Measurement, baseline: dict | None) -> tuple[bool, list[str]]:
