@@ -899,6 +899,7 @@ namespace HeadPhoneTest2
             psi.FileName = "python";
             psi.Arguments = $"\"{scriptPath}\" {args}";
             psi.RedirectStandardOutput = true;
+            psi.RedirectStandardError = true;
             psi.UseShellExecute = false;
             psi.CreateNoWindow = true;
 
