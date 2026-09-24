@@ -1,69 +1,103 @@
 # Sennheiser_tests
 
-Automated test bench for Sennheiser headphone refurbishing. A Windows batch
-orchestrator runs a sequence of .NET test apps against each unit (operator
+Automated test bench for Sennheiser headphone refurbishing. A single .NET
+orchestrator (`SennheiserTestRunner`) runs the test apps in-process — operator
 listening checks, Bluetooth controls, and an automatic level measurement via a
-miniDSP E.A.R.S. coupler), aggregates the verdicts, and uploads a single XML
+miniDSP E.A.R.S. coupler — aggregates the verdicts, and uploads a single XML
 result to the cloud API.
 
 ## Test pipeline
 
+`run.bat` is a thin launcher for `SennheiserTestRunner.exe`, which is the
+active orchestrator. It hosts the WinForms test apps as in-process forms:
+
 ```
-run.bat  (SennheiserTestRunner.exe is the active orchestrator)
+bin\run.bat  →  SennheiserTestRunner.exe
   |
-  |-- [daily] Station calibration (LevelTest /STATION_CALIB=1) -> station_calibration.json
-  |           Golden-unit verification, 4 pasos; estación bloqueada hasta PASS
-  |-- [daily] Ambient calibration (LevelTest /CALIBRATION=1) -> calibracion.txt
-  |
-  |-- AskForSerial2 ............ serial.txt
-  |-- BluetoothHeadphoneTest ... Prueba_*.txt   (controls + device model)
-  |-- AudioTest ................ hearingPassResults.txt ("True"/"False")
-  |       - operator says "No"  -> FAIL is recorded, pipeline continues,
-  |                               unit fails in the final XML
-  |-- [HD/IE models only] LevelTest
+  |-- kill stale processes; clean previous result files
+  |-- [gate] Daily station calibration (LevelTest STATION_CALIB=1, 4 pasos)
+  |           runs when station_calibration.json is missing / FAIL / vencida
+  |           (> calibration_max_age_hours); on FAIL the station is locked
+  |           and the runner exits with code 6
+  |-- RefurbishTool (external, launched if present)
+  |-- prompt Bluetooth connectado (show_bluetooth_connect.ps1)
+  |-- AskForSerial2 ............ serial.txt              (sin serial → exit 1)
+  |-- volume 50%
+  |-- BluetoothHeadphoneTest ... Prueba_*.txt   controls + device model (exit 3)
+  |-- volume 100%
+  |-- AudioTest ................ hearingPassResults.txt  (exit 2)
+  |-- MicroTestCloud ........... MicroTest_*.txt         (exit 4)
+  |-- volume 80% (MOMENTUM TW 4) / 100% (resto)
+  |-- LevelTest
   |       |- plays audioSweep through the headphones
   |       |- records the E.A.R.S. coupler mics -> recorded.wav
-  |       |- db_chart.py -> results.json (+ signal-presence verdict)
+  |       |- [RS195] balance-knob test -> knob_left.json / knob_right.json
+  |       |- db_chart.py -> results.json (+ signal-presence verdict/banner)
   |       '- red on-screen warning if only ambient noise was captured
   |
-  |-- getFinalResults.py ....... final_results.json (includes station_calibration)
+  |-- getFinalResults.py ....... final_results.json (incl. station_calibration)
   '- converter.py .............. XML upload (overall PASS/FAIL)
+      '- CleanupBluetooth + disconnect prompt; tiempo1/tiempo2.txt, diferencia_minutos.txt
 ```
+
+Each retryable stage (controls, audio, microphone, level) is attempted up to
+5 times with a 2 s wait between attempts. Runner exit codes:
+
+| Code | Meaning |
+|---|---|
+| 1 | No serial provided |
+| 2 | AudioTest failed (max retries, no `hearingPass*.txt`) |
+| 3 | Controls test failed (max retries, no `Prueba_*.txt`) |
+| 4 | Microphone test failed (max retries, no `MicroTest_*.txt`) |
+| 5 | LevelTest failed (max retries, no `results.json`) |
+| 6 | Station calibration failed — station LOCKED |
 
 ## Quick start
 
 1. **Install .NET 9 SDK** from https://aka.ms/dotnet/download
-2. **Build all projects** from the repo root:
+2. **Build** from the repo root:
    ```powershell
    batch\build-all.bat
    ```
-   This compiles all test apps to `.exe` files in `bin\` and copies `scripts\config.json` to `bin\scripts\`.
-3. **Run the full sequence**:
+   Publishes `SennheiserTestRunner.exe` (self-contained single file; embeds the
+   test apps) and `VolumeHelper.exe` into `bin\`, and copies the runtime files
+   (`run.bat`, `show_bluetooth_*.ps1`, `scripts\`, `miniDSP.jpg`, `PistaAudio\`,
+   `audio\`) there.
+3. **Run the sequence**:
    ```powershell
    bin\run.bat
    ```
-   Enter the serial when prompted, or pre-create `bin\serial.txt` and set `SKIP_SERIAL_PROMPT=1`.
+   Enter the serial when prompted (`AskForSerial2`); the runner stores it in
+   `bin\serial.txt` and reads it back.
 
 ### Environment variables
 
-| Variable | Default | Effect |
+| Variable | Used by | Effect |
 |---|---|---|
-| `RUN_MICROPHONE` | `0` | `1` enables MicroTestCloud (disabled for all models by default). |
-| `QUICK_AUDIO` | auto (`1` unless mic test enabled) | Shortens the audio clip to ~7 s. |
-| `SKIP_SERIAL_PROMPT` | unset | `1` uses existing `serial.txt` instead of the prompt app. |
-| `MAX_RETRIES` / `RETRY_DELAY` | `5` / `2` | Retry policy for each test stage. |
-| `AZURE_API_ENDPOINT` | from `config.json` | Overrides the upload endpoint. |
+| `DEVICE_NAME` | runner (set automatically), AudioTest, LevelTest | Model chosen in the controls test. Enables the RS195 knob test and the volume-neutral HD/IE handling. |
+| `QUICK_AUDIO` | AudioTest, LevelTest | `1` shortens the listening clip (~7 s). |
+| `CALIBRATION` | LevelTest | `1` runs the standalone daily-ambient calibration (manual tool; see below). |
+| `STATION_CALIB` | runner, LevelTest | Set to `1` by the runner while the 4-step station calibration runs. |
+| `AZURE_API_ENDPOINT` | converter.py | Overrides the upload endpoint. |
+| `USERNAME` | converter.py | XML `Username` (default `tester1`). |
+
+`STATION_CALIB` and `DEVICE_NAME` are managed by the orchestrator; you normally
+never set them by hand.
 
 ## Daily ambient calibration
 
-Once per day, per machine, `run.bat` measures what the station hears when
-**nothing** is playing. That baseline is what makes "the ears are only hearing
-ambient noise" detectable automatically.
+The ambient baseline (`calibracion.txt`) is what makes "the ears are only
+hearing ambient noise" detectable automatically. Normal LevelTest runs pass it
+to `db_chart.py` when present; without it, only fixed thresholds are used
+(plus an on-screen warning if the room baseline is itself loud).
 
-- **Trigger**: at startup, if `calibracion.txt` is missing, corrupt, or its
-  `date` field is not today's PC date.
-- **Operator steps**: select the E.A.R.S. input, click *Iniciar calibración*,
-  and **leave the couplers empty** while it records 30 seconds. No audio is played.
+- **Automatic refresh**: Paso 1 of the daily station calibration records 30 s
+  of the room and writes `calibracion.txt`. Because the station gate
+  recalibrates whenever the calibration expires, the baseline is kept fresh at
+  every line start.
+- **Manual standalone mode**: run LevelTest with `CALIBRATION=1`, select the
+  E.A.R.S. input, click *Iniciar calibración*, and **leave the couplers empty**
+  while it records 30 seconds. No audio is played.
 - **Output** (`calibracion.txt`, next to the other result files):
   ```json
   {
@@ -76,10 +110,9 @@ ambient noise" detectable automatically.
   }
   ```
 - **Force a recalibration** any time (bench moved, hardware swapped): delete `calibracion.txt`.
-- If calibration is cancelled or fails, testing continues with fixed thresholds only.
 
-> The baseline is written by LevelTest running with `CALIBRATION=1`; run.bat sets
-> this automatically. Do not launch it manually unless you know why.
+> LevelTest only passes the baseline to `db_chart.py` when `calibracion.txt`
+> exists; a missing/corrupt file makes it fall back to fixed thresholds.
 
 ## Daily station calibration (TV Listeners)
 
@@ -112,7 +145,8 @@ operator fixes the root cause and repeats from CHECK 1.
 - **Fallos**: diálogo/banner rojo *"ACCIÓN ANTE FALLA: Detener liberación,
   revisar ambiente, posicionamiento, conexiones USB, configuración de REW y
   nivel de salida. Corregir, registrar y repetir desde CHECK 1."* con opción
-  de repetir desde el Paso 1.
+  de repetir desde el Paso 1; si al terminar sigue sin pasar, el runner
+  bloquea la estación (exit 6).
 - **Éxito**: *"ESTACIÓN LIBERADA - Registrar resultado e iniciar producción."*
 - **Estados**: `station_calibration.json` sigue vigente hasta envejecer más de
   `calibration_max_age_hours`; borrar el archivo (o cambiar hardware) fuerza
@@ -145,7 +179,8 @@ computes per channel:
 | Crest factor | `peak_dbfs − dbfs` | sparse clicks over silence (ambient shape) |
 | Absolute floor | `dbfs` | dead rig / silent capture |
 
-The unit **fails** `deteccion_senal` when ANY channel trips one of:
+`db_chart.py` reports `signal_present = false` (and `channel_active = none`)
+when ANY channel trips one of:
 
 | Check | Threshold | Constant |
 |---|---|---|
@@ -165,18 +200,26 @@ For models without a volume check (HD 400U, HD 550/560S/569/599/600/650/660S, IE
 A sanity warning is printed if the ambient baseline itself is louder than
 −30 dBFS (background music, mic gain too high, or a bad E.A.R.S. connection).
 
+`signal_present` is **informational** in the final verdict: it drives the
+in-app banner but does not fail the record by itself. `final_results.json`
+uses `deteccion_senal` instead, which mirrors the operator's hearing verdict
+(see below) to avoid invisible FAILs for the HD/IE families.
+
 ## AudioTest verdict handling
 
-AudioTest writes `hearingPassResults.txt` containing `True` or `False`
-(operator's call). `run.bat` reads the **content**, not just the file's existence:
+AudioTest writes `hearingPassResults.txt` containing `True` or `False` (the
+operator's call). `SennheiserTestRunner` distinguishes the stage only by
+**whether the file exists** (it retries up to 5 times if no file is produced,
+then exits 2); the **content** is read by `getFinalResults.py`:
 
-- `True` → continue normally.
-- `False` → `[AUDIO] FAILED por operador`; the pipeline still runs the remaining
-  tests, but the verdict survives and the unit fails downstream.
-- File missing (crash/cancelled) → retried up to `MAX_RETRIES`.
+- `True` → `distorsion = PASS`.
+- `False` → `distorsion = FAIL`, plus a dedicated `audio_fail = FAIL` subtest
+  so an operator-rejected unit is clearly visible in the XML.
+- If the form is cancelled or closed without a verdict, AudioTest writes
+  `False` itself on close → `distorsion = FAIL`.
+- If the app crashes before writing anything, the runner retries and exits 2.
 
-`getFinalResults.py` maps the file to `distorsion` and additionally emits
-`audio_fail = FAIL` so the uploaded XML carries a dedicated failing subtest.
+`getFinalResults.py` also mirrors `distorsion` into `deteccion_senal`.
 
 ## Result files
 
@@ -190,7 +233,8 @@ AudioTest writes `hearingPassResults.txt` containing `True` or `False`
     ...
   ],
   "signal_present": false,
-  "signal_reason": "Left: factor cresta 27.3 dB > 20 dB (...); ..."
+  "signal_reason": "Left: factor cresta 27.3 dB > 20 dB (...); ...",
+  "channel_active": "both"
 }
 ```
 
@@ -200,16 +244,16 @@ AudioTest writes `hearingPassResults.txt` containing `True` or `False`
 |---|---|---|
 | `serial` | serial.txt | text |
 | `model` | Prueba_*.txt (`Dispositivo:` line) | device model text |
-| `distorsion` | hearingPassResults.txt | PASS / FAIL / N/A |
+| `distorsion` | hearingPassResults.txt (`True`→PASS, else FAIL) | PASS / FAIL / N/A |
 | `audio_fail` | derived | present only when `distorsion == FAIL` |
 | `left_dbfs`, `left_peak`, `right_dbfs`, `right_peak` | results.json | numbers |
 | `balance` | \|L−R\| ≤ 2 dB | PASS / FAIL |
 | `volume` | −30 ≤ dbfs ≤ −10 (N/A for HD 400U, HD 550/560S/569/599/600/650/660S and IE*; values still displayed without a pass/fail icon) | PASS / FAIL / N/A |
 | `clipping` | peak ≤ 0 dBFS | PASS / FAIL |
-| `deteccion_senal` | results.json `signal_present` | PASS / FAIL |
+| `deteccion_senal` | mirrors `distorsion` (operator's AudioTest verdict) | PASS / FAIL / N/A |
 | `bluetooth`, `play_pausa`, `anterior`, `siguiente`, `subir_volumen`, `bajar_volumen` | Prueba_*.txt | PASS / FAIL / N/A |
 | `resultado_mic` | MicroTest_*.txt | PASS / FAIL / N/A |
-| `balance_knob` | knob_left+knob_right.json (RS195 only) | PASS / FAIL / N/A / SKIPPED |
+| `balance_knob` | knob_left.json + knob_right.json (RS195 only) | PASS / FAIL / N/A / SKIPPED |
 | `balance_knob_left`, `balance_knob_right` | per-take verdicts (RS195 only) | PASS / FAIL / N/A / SKIPPED |
 | `audio_test` | audio_plays.json (LevelTest log) | `{runs, passed, result}` object |
 | `station_calibration` | station_calibration.json | PASS / FAIL / N/A |
@@ -236,26 +280,21 @@ it happens in a separate, pre-serial LevelTest instance.
 
 | Script | Purpose |
 |---|---|
-| `batch/build-all.bat` | Builds all apps to `bin\` (Release). |
-| `batch/run.bat` | Orchestrates calibration + full test sequence, cleanup, aggregation, upload. |
-| `scripts/db_chart.py` | WAV analysis: RMS/peak/crest per channel, JSON out, optional `--baseline calibracion.txt`. |
-| `scripts/getFinalResults.py` | Aggregates raw outputs into `final_results.json` (incl. `station_calibration`). |
+| `batch/build-all.bat` | Publishes `SennheiserTestRunner.exe`, `VolumeHelper.exe` (Release, self-contained) and copies runtime files into `bin\`. |
+| `scripts/db_chart.py` | WAV analysis: RMS/peak/crest per channel, signal-presence + `channel_active`, JSON out, optional `--baseline calibracion.txt`. |
+| `scripts/getFinalResults.py` | Aggregates raw outputs into `final_results.json` (incl. `station_calibration`, `audio_test`). |
 | `scripts/station_calibration.py` | Golden-unit verdict (4 checks) → `station_calibration.json`; used by LevelTest and getFinalResults. |
-| `scripts/converter.py` | `final_results.json` → XML (`DataWipeResultV2`) + API upload. Stdlib only. |
+| `scripts/converter.py` | `final_results.json` → XML (`DataWipeResultV2`) + API upload. Stdlib only (supports `--no-upload`). |
 | `scripts/test_signal_detection.py` | Self-checks: `python3 scripts/test_signal_detection.py` |
 
 ## Site configuration
 
-Per-machine settings live in `scripts/config.json` (not tracked in git;
-`build-all.bat` copies it to `bin\scripts\`):
+Per-machine settings live in `scripts/config.json` (gitignored; `build-all.bat`
+copies it to `bin\scripts\`):
 
 ```json
 {
   "endpoint": "https://.../api/DataWipeResult?code=...",
-  "machine_name": "AudioTester",
-  "contract": "10083",
-  "test_area": "MEXICALI_R2",
-  "program": "HP_MXLR2",
   "golden_left_dbfs": -33.0,
   "golden_right_dbfs": -34.0,
   "golden_tolerance_db": 3.0,
@@ -270,8 +309,9 @@ Calibration fields:
 
 | Field | Default | Meaning |
 |---|---|---|
+| `endpoint` | — | API upload URL (overridable via `AZURE_API_ENDPOINT`). |
 | `golden_left_dbfs` / `golden_right_dbfs` | — (required) | Reference L/R level of a known-good unit on this station (see "Obtener los valores golden" above). |
-| `golden_tolerance_db` | `3.0` | Max |channel − golden| deviation for Checks 2/3. |
+| `golden_tolerance_db` | `3.0` | Max \|channel − golden\| deviation for Checks 2/3. |
 | `balance_max_db` | `2.0` | Max \|L − R\| for Check 4. |
 | `ambient_max_dbfs` | `-30.0` | Room-noise ceiling for Check 1 (mirrors `SIGNAL_MIN_DBFS`). |
 | `connection_type` | `USB` | Expected Golden-Unit connection shown to the operator before Check 2 (`USB`, `Óptico`, `Analógico`, `HDMI`). |
@@ -282,16 +322,26 @@ converter saves the XML but skips the upload with a warning.
 
 ## Included apps
 
+- `apps/SennheiserTestRunner` – the orchestrator: station-calibration gate,
+  serial entry, controls/audio/microphone/level sequence, aggregation and
+  upload. References all other apps and hosts their forms in-process.
+- `apps/FunctionalButtonTest` – Bluetooth controls test (`BluetoothHeadphoneTest`),
+  includes the device-selection dialog.
 - `apps/pruebasAudifonos/AskForSerial2` – serial entry dialog.
 - `apps/pruebasAudifonos/AudioTest` – operator listening check (writes `hearingPassResults.txt`).
-- `apps/pruebasAudifonos/LevelTest` – automatic sweep/record level test; runs the daily ambient calibration (`CALIBRATION=1`) and the station calibration (`STATION_CALIB=1`).
-- `apps/FunctionalButtonTest` – Bluetooth controls test.
-- `apps/MicroTestCloud` – microphone test (disabled by default).
+- `apps/pruebasAudifonos/LevelTest` – automatic sweep/record level test, RS195
+  balance-knob test, ambient calibration (`CALIBRATION=1`) and station
+  calibration (`STATION_CALIB=1`).
+- `apps/MicroTestCloud` – microphone test (always run by the orchestrator).
+- `tools/VolumeHelper` – sets the default playback volume; used by the runner.
 
 ## Requirements
 
-- Windows 10/11 with .NET 9 SDK (WinForms apps).
-- Python 3.9+ on PATH (`python`) for aggregation, analysis, and upload.
+- Windows 10/11 with .NET 9 SDK (WinForms apps; the runner is self-contained
+  `win-x64` single-file).
+- Python 3.9+ on `PATH` (`python`) for analysis and aggregation
+  (`db_chart.py`, `getFinalResults.py`, `converter.py`, `station_calibration.py`).
+  The runner installs the `requests` package on demand.
 - miniDSP E.A.R.S. coupler (stereo USB input) and a working output device.
 
 ## Troubleshooting
@@ -299,7 +349,9 @@ converter saves the XML but skips the upload with a warning.
 | Symptom | Likely cause / fix |
 |---|---|
 | Red "no se está detectando suficiente audio" banner | Headphones not playing or not seated on the couplers; check Windows output device and volume. |
-| `deteccion_senal: FAIL` but audio audibly plays | Baseline stale or thresholds too tight — recalibrate, then tune constants in `db_chart.py`. |
+| `signal_present` false but audio audibly plays | Baseline stale or thresholds too tight — recalibrate, then tune constants in `db_chart.py`. |
 | Calibration warning about loud ambient | Background music, mic gain too high, or E.A.R.S. disconnected. Fix before testing. |
-| Unit uploaded as FAIL unexpectedly | Inspect `final_results.json`: some subtest is exactly `FAIL` (including `deteccion_senal` / `audio_fail`). |
+| Unit uploaded as FAIL unexpectedly | Inspect `final_results.json`: some subtest is exactly `FAIL` (including `distorsion`/`audio_fail`/`station_calibration`). |
+| Runner exits with code 6 | Station calibration FAILED — the bench is locked until the operator fixes the root cause and the Golden-Unit checks pass again. |
+| Runner exits with code 2/3/4/5 | The stage could not produce its result file after 5 retries; check the app's dialog (crashed/cancelled) in `runner_log.txt`. |
 | Upload status: FAILED (no endpoint) | Set `endpoint` in `scripts/config.json` or `AZURE_API_ENDPOINT`. |
