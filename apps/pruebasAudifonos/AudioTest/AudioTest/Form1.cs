@@ -42,21 +42,17 @@ namespace AudioTest
             Environment.GetEnvironmentVariable("QUICK_AUDIO") == "1";
 
         // Ciclo de repeticiones de la prueba auditiva, una por cada tipo de conexion fisica.
-        // - RS 255 y RS 275: 3 conexiones (USB, Optico, Analogico).
-        // - RS 195: 2 conexiones (Optico, Analogico) - no tiene entrada USB.
+        // - Modelos RS: base de 2 conexiones (Optico, Analogico); al terminar se pregunta
+        //   si el modelo dispone de entrada HDMI y, de existir, se agrega una 3a prueba.
         // - El resto de los modelos: flujo de una sola prueba, sin cambios.
-        private static readonly string[] FullConnectionTypes = { "1. USB", "2. �ptico", "3. Anal�gico 3.5" };
-        private static readonly string[] FullConnectionFileSuffixes = { "USB", "Optico", "Analogico" };
-        private static readonly string[] NoUsbConnectionTypes = { "1. �ptico", "2. Anal�gico 3.5" };
-        private static readonly string[] NoUsbConnectionFileSuffixes = { "Optico", "Analogico" };
-
-        private static readonly string[] FullCycleModels = { "rs255", "rs275" };
-        private static readonly string[] NoUsbCycleModels = { "rs195" };
+        private static readonly string[] BaseRsConnectionTypes = { "1. �ptico", "2. Anal�gico 3.5" };
+        private static readonly string[] BaseRsConnectionFileSuffixes = { "Optico", "Analogico" };
 
         private int connectionIndex = 0;
+        private bool hdmiAsked;
         private readonly bool isRSModel;
-        private readonly string[] ConnectionTypes;
-        private readonly string[] ConnectionFileSuffixes;
+        private string[] ConnectionTypes;
+        private string[] ConnectionFileSuffixes;
         private Label? connectionInfoLabel;
         private readonly List<HearingRunSummary> connectionResults = new List<HearingRunSummary>();
 
@@ -76,17 +72,11 @@ namespace AudioTest
             string device = Environment.GetEnvironmentVariable("DEVICE_NAME") ?? "";
             string norm = new string(device.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
 
-            if (FullCycleModels.Any(m => norm.Contains(m)))
+            if (norm.StartsWith("rs", StringComparison.Ordinal))
             {
                 isRSModel = true;
-                ConnectionTypes = FullConnectionTypes;
-                ConnectionFileSuffixes = FullConnectionFileSuffixes;
-            }
-            else if (NoUsbCycleModels.Any(m => norm.Contains(m)))
-            {
-                isRSModel = true;
-                ConnectionTypes = NoUsbConnectionTypes;
-                ConnectionFileSuffixes = NoUsbConnectionFileSuffixes;
+                ConnectionTypes = BaseRsConnectionTypes;
+                ConnectionFileSuffixes = BaseRsConnectionFileSuffixes;
             }
             else
             {
@@ -231,9 +221,41 @@ namespace AudioTest
                 }
                 else
                 {
+                    if (!hdmiAsked)
+                    {
+                        hdmiAsked = true;
+                        var answ = MessageBox.Show(
+                            "Se completaron las pruebas base (" + string.Join(", ", BaseRsConnectionTypes) + ").\r\n\r\n" +
+                            "Este modelo dispone de entrada HDMI?",
+                            "Conexion adicional",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Question);
+                        if (answ == DialogResult.Yes)
+                        {
+                            ConnectionTypes = new[]
+                            {
+                                BaseRsConnectionTypes[0],
+                                BaseRsConnectionTypes[1],
+                                "3. HDMI"
+                            };
+                            ConnectionFileSuffixes = new[]
+                            {
+                                BaseRsConnectionFileSuffixes[0],
+                                BaseRsConnectionFileSuffixes[1],
+                                "HDMI"
+                            };
+                            connectionIndex++;
+                            UpdateConnectionInfoLabel();
+                            ResetForNextConnection();
+                            return;
+                        }
+                    }
+
                     SaveConnectionSummary();
+                    var connNames = string.Join(", ", ConnectionTypes);
                     MessageBox.Show(
-                        "Se completaron las pruebas para las 3 conexiones (USB, �ptico y Anal�gico 3.5).\r\n\r\n" +
+                        "Se completaron las pruebas para las " + ConnectionTypes.Length +
+                        " conexiones (" + connNames + ").\r\n\r\n" +
                         "Resumen guardado en tests_conexiones.json",
                         "Ciclo de pruebas completo",
                         MessageBoxButtons.OK,
