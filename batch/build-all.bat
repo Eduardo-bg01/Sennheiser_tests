@@ -1,7 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set "ROOT=%~dp0"
+rem build-all.bat lives in the batch directory, so the repository root is its parent.
+set "ROOT=%~dp0..\"
 set "BIN_DIR=%ROOT%bin"
 set "DOTNET=dotnet"
 set "RUNTIME_ID=win-x64"
