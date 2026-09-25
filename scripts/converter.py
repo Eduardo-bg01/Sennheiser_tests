@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 # Load site config from config.json (next to this script, or cwd).
-# Fields can still be overridden via env vars (AZURE_API_ENDPOINT, USERNAME).
+# Fields can still be overridden via env vars (AZURE_`API_ENDPOINT, USERNAME).
 def load_config():
     cfg = {}
     for base in (Path(__file__).resolve().parent, Path.cwd()):

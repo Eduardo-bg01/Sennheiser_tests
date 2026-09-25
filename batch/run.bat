@@ -59,6 +59,8 @@ if "%CALIB_NEEDED%"=="1" (
 echo.
 
 echo.
+:: Corporate GPO can block unsigned scripts; clear the "downloaded from internet" mark once.
+powershell -NoProfile -Command "Unblock-File -LiteralPath '%ROOT%show_bluetooth.ps1' -ErrorAction SilentlyContinue"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%show_bluetooth.ps1" -Mode connect
 echo.
 

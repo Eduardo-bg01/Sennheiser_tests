@@ -41,49 +41,59 @@ namespace AudioTest
         private readonly bool quickVariant =
             Environment.GetEnvironmentVariable("QUICK_AUDIO") == "1";
 
-        // Ciclo de repeticiones de la prueba auditiva, una por cada tipo de conexion fisica.
-        // - Modelos RS: base de 2 conexiones (Optico, Analogico); al terminar se pregunta
-        //   si el modelo dispone de entrada HDMI y, de existir, se agrega una 3a prueba.
+        // Ciclo de la prueba auditiva: una repeticion por cada tipo de conexion fisica.
+        // - RS 255 / RS 275: base de 3 conexiones (USB, Optico, Analogico) y ademas puerto HDMI.
+        // - RS 195: base de 2 conexiones (Optico, Analogico), sin USB ni HDMI.
         // - El resto de los modelos: flujo de una sola prueba, sin cambios.
-        private static readonly string[] BaseRsConnectionTypes = { "1. �ptico", "2. Anal�gico 3.5" };
-        private static readonly string[] BaseRsConnectionFileSuffixes = { "Optico", "Analogico" };
+        // El ultimo slot del ciclo es la PRUEBA DE MODOS DE AUDIO: 60 s, divididos en 30 s de
+        // escucha normal + 30 s cambiando de modo. En 255/275 se pregunta por el HDMI; en el
+        // 195 corre sobre la conexion que ya tiene puesta el operador.
+        // ponytail: fallback = RS no listado (p. ej. RS 120-W) -> 2 base + pregunta por HDMI.
+        private static readonly Dictionary<string, (string[] Base, bool HasHdmi)> RsPlans = new()
+        {
+            ["rs195"] = (new[] { "Óptico", "Analógico 3.5" }, false),
+            ["rs255"] = (new[] { "USB", "Óptico", "Analógico 3.5" }, true),
+            ["rs275"] = (new[] { "USB", "Óptico", "Analógico 3.5" }, true),
+        };
+        private static readonly (string[] Base, bool HasHdmi) DefaultRsPlan =
+            (new[] { "Óptico", "Analógico 3.5" }, true);
+
+        // ponytail: 1 min = la duracion que pidio el operador para la prueba de modos.
+        // Si hay que ampliarla, cambia este par de constantes y nada mas.
+        private const int ModesTestSeconds = 60;
+        private const int ModesPhaseSeconds = 30;
 
         private int connectionIndex = 0;
+        private int modesTestIndex = -1;
         private bool hdmiAsked;
         private readonly bool isRSModel;
-        private string[] ConnectionTypes;
-        private string[] ConnectionFileSuffixes;
+        private readonly bool hasHdmiPort;
+        private string[] ConnectionTypes = Array.Empty<string>();
+        private string[] ConnectionFileSuffixes = Array.Empty<string>();
         private Label? connectionInfoLabel;
         private readonly List<HearingRunSummary> connectionResults = new List<HearingRunSummary>();
 
         // Nombre de archivo separado por conexion (solo modelos con ciclo); el resto de los
         // modelos usa el nombre de siempre.
         private string RecordedAudioPath() => isRSModel
-            ? $"ear_microphone_capture_{ConnectionFileSuffixes[connectionIndex]}.wav"
+            ? $"ear_microphone_capture_{ConnectionFileSuffixes[connectionIndex].Replace(" ", "")}.wav"
             : recordedAudioPath;
 
         public Form1()
         {
-            if (quickVariant)
-            {
-                seconds = 7;
-            }
-
             string device = Environment.GetEnvironmentVariable("DEVICE_NAME") ?? "";
             string norm = new string(device.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
 
-            if (norm.StartsWith("rs", StringComparison.Ordinal))
+            isRSModel = norm.StartsWith("rs", StringComparison.Ordinal);
+            var plan = RsPlans.TryGetValue(norm, out var found) ? found : DefaultRsPlan;
+            hasHdmiPort = isRSModel && plan.HasHdmi;
+
+            if (isRSModel)
             {
-                isRSModel = true;
-                ConnectionTypes = BaseRsConnectionTypes;
-                ConnectionFileSuffixes = BaseRsConnectionFileSuffixes;
+                SetConnections(plan.Base);
             }
-            else
-            {
-                isRSModel = false;
-                ConnectionTypes = Array.Empty<string>();
-                ConnectionFileSuffixes = Array.Empty<string>();
-            }
+
+            seconds = ListenSeconds();
 
             InitializeComponent();
             ApplyCohesiveTheme();
@@ -112,12 +122,32 @@ namespace AudioTest
 
         private void UpdateConnectionInfoLabel()
         {
-            if (connectionInfoLabel == null)
+            // ponytail: los modelos sin ciclo (ConnectionTypes vacio) no tienen etiqueta;
+            // sin este guardia el ctor lanzaba IndexOutOfRangeException y el app no abria.
+            if (connectionInfoLabel == null || !isRSModel)
                 return;
 
-            connectionInfoLabel.Text = "Tipo de conexi�n: " + ConnectionTypes[connectionIndex] +
+            connectionInfoLabel.Text = "Tipo de conexión: " + ConnectionTypes[connectionIndex] +
                 "   (prueba " + (connectionIndex + 1) + " de " + ConnectionTypes.Length + ")";
         }
+
+        // Ultimo slot del ciclo (solo RS): 60 s en vez de la ventana normal de escucha.
+        private bool IsModesTest => connectionIndex == modesTestIndex;
+
+        // Una sola lista por modelo: el texto con numero se arma aqui, no a mano.
+        private void SetConnections(params string[] names)
+        {
+            ConnectionFileSuffixes = names;
+            ConnectionTypes = names.Select((n, i) => (i + 1) + ". " + n).ToArray();
+        }
+
+        private void AddModesTest(string name)
+        {
+            SetConnections(ConnectionFileSuffixes.Append(name).ToArray());
+            modesTestIndex = ConnectionFileSuffixes.Length - 1;
+        }
+
+        private int ListenSeconds() => IsModesTest ? ModesTestSeconds : (quickVariant ? 7 : 15);
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
@@ -137,10 +167,10 @@ namespace AudioTest
                 if (isRSModel && connectionIndex == 0)
                 {
                     MessageBox.Show(
-                        "Se probar� la siguiente entrada:\r\n\r\n" +
+                        "Se probará la siguiente entrada:\r\n\r\n" +
                         ConnectionTypes[0] +
-                        "\r\n\r\nAseg�rese de que los aud�fonos est�n conectados de esta forma antes de continuar.",
-                        "Iniciar prueba de conexi�n",
+                        "\r\n\r\nAsegúrese de que los audífonos estén conectados de esta forma antes de continuar.",
+                        "Iniciar prueba de conexión",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
                 }
@@ -204,75 +234,104 @@ namespace AudioTest
                     passed = passed,
                 });
 
-                if (connectionIndex < ConnectionTypes.Length - 1)
+                if (connectionIndex < ConnectionFileSuffixes.Length - 1)
                 {
                     connectionIndex++;
-                    MessageBox.Show(
-                        "Cambie el tipo de conexi�n de los aud�fonos a:\r\n\r\n" +
-                        ConnectionTypes[connectionIndex] +
-                        "\r\n\r\nUna vez conectado, presione OK para continuar con la siguiente prueba.",
-                        "Cambiar tipo de conexi�n",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
-
+                    ShowNextConnectionPrompt();
                     UpdateConnectionInfoLabel();
                     ResetForNextConnection();
                     return;
                 }
-                else
+
+                // Ultima conexion de la lista: queda la prueba de modos de audio, si este
+                // modelo la tiene pendiente (pregunta HDMI en 255/275, automatica en el 195).
+                if (TryAddModesTest())
                 {
-                    if (!hdmiAsked)
-                    {
-                        hdmiAsked = true;
-                        var answ = MessageBox.Show(
-                            "Se completaron las pruebas base (" + string.Join(", ", BaseRsConnectionTypes) + ").\r\n\r\n" +
-                            "Este modelo dispone de entrada HDMI?",
-                            "Conexion adicional",
-                            MessageBoxButtons.YesNo,
-                            MessageBoxIcon.Question);
-                        if (answ == DialogResult.Yes)
-                        {
-                            ConnectionTypes = new[]
-                            {
-                                BaseRsConnectionTypes[0],
-                                BaseRsConnectionTypes[1],
-                                "3. HDMI"
-                            };
-                            ConnectionFileSuffixes = new[]
-                            {
-                                BaseRsConnectionFileSuffixes[0],
-                                BaseRsConnectionFileSuffixes[1],
-                                "HDMI"
-                            };
-                            connectionIndex++;
-                            UpdateConnectionInfoLabel();
-                            ResetForNextConnection();
-                            return;
-                        }
-                    }
-
-                    SaveConnectionSummary();
-                    var connNames = string.Join(", ", ConnectionTypes);
-                    MessageBox.Show(
-                        "Se completaron las pruebas para las " + ConnectionTypes.Length +
-                        " conexiones (" + connNames + ").\r\n\r\n" +
-                        "Resumen guardado en tests_conexiones.json",
-                        "Ciclo de pruebas completo",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
-
-                    File.WriteAllText("hearingPassResults.txt", passed.ToString());
-                    Application.Exit();
+                    ShowNextConnectionPrompt();
+                    UpdateConnectionInfoLabel();
+                    ResetForNextConnection();
                     return;
                 }
+
+                SaveConnectionSummary();
+                var connNames = string.Join(", ", ConnectionTypes);
+                MessageBox.Show(
+                    "Se completaron las pruebas para las " + ConnectionTypes.Length +
+                    " conexiones (" + connNames + ").\r\n\r\n" +
+                    "Resumen guardado en tests_conexiones.json",
+                    "Ciclo de pruebas completo",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
+                File.WriteAllText("hearingPassResults.txt", passed.ToString());
+                Application.Exit();
+                return;
             }
+        }
+
+        // Agrega la prueba de modos de audio al final del ciclo si este modelo la tiene
+        // pendiente. En 255/275 se pregunta por el HDMI; en el 195 (sin puerto) corre sobre
+        // la conexion que ya tiene puesta el operador. Devuelve si se agrego.
+        private bool TryAddModesTest()
+        {
+            if (hdmiAsked)
+                return false;
+            hdmiAsked = true;
+
+            if (hasHdmiPort)
+            {
+                var answ = MessageBox.Show(
+                    "Se completaron las pruebas base (" + string.Join(", ", ConnectionTypes) + ").\r\n\r\n" +
+                    "¿Este modelo dispone de entrada HDMI?" +
+                    "\r\n\r\nLa prueba dura 1 minuto: 30 s de escucha normal y 30 s de modos de audio.",
+                    "Conexión adicional",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+                if (answ != DialogResult.Yes)
+                    return false;
+                AddModesTest("HDMI + modos de audio");
+            }
+            else
+            {
+                AddModesTest("Modos de audio");
+            }
+
+            connectionIndex++;
+            return true;
+        }
+
+        private void ShowNextConnectionPrompt()
+        {
+            if (IsModesTest)
+            {
+                MessageBox.Show(
+                    (hasHdmiPort
+                        ? "Conecte los audífonos por HDMI.\r\n\r\n"
+                        : "Deje los audífonos conectados como están.\r\n\r\n") +
+                    "La prueba dura 1 minuto:\r\n" +
+                    "- Primeros 30 s: escuche normalmente.\r\n" +
+                    "- Últimos 30 s: pruebe los modos de audio del dispositivo.\r\n\r\n" +
+                    "Presione OK para comenzar.",
+                    "Prueba de modos de audio",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                return;
+            }
+
+            MessageBox.Show(
+                "Cambie el tipo de conexión de los audífonos a:\r\n\r\n" +
+                ConnectionTypes[connectionIndex] +
+                "\r\n\r\nUna vez conectado, presione OK para continuar con la siguiente prueba.",
+                "Cambiar tipo de conexión",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
         }
 
         private void ResetForNextConnection()
         {
             step = 1;
             passed = false;
-            seconds = quickVariant ? 7 : 15;
+            seconds = ListenSeconds();
 
             if (timer != null)
             {
@@ -314,7 +373,7 @@ namespace AudioTest
                 sb.AppendLine();
                 foreach (var r in connectionResults)
                 {
-                    sb.AppendLine("Conexi�n: " + r.connection);
+                    sb.AppendLine("Conexión: " + r.connection);
                     sb.AppendLine("  Resultado: " + (r.passed ? "PASS" : "FAIL"));
                     sb.AppendLine();
                 }
@@ -329,11 +388,16 @@ namespace AudioTest
         private void Timer_Tick(object? sender, EventArgs e)
         {
             seconds--;
-            label2.Text = "Preste atencion al audio (" + seconds + ")";
+            // La prueba de modos de audio parte en dos: 30 s de escucha normal + 30 s cambiando de modo.
+            label2.Text = IsModesTest && seconds == ModesPhaseSeconds
+                ? "Pruebe los modos de audio del dispositivo (" + ModesPhaseSeconds + ")"
+                : "Preste atención al audio (" + seconds + ")";
 
             if (seconds <= 0)
             {
-                label2.Text = "Escucha el audio de forma clara y sin distorsion?";
+                label2.Text = IsModesTest
+                    ? "El audio fue claro y los modos de audio funcionan correctamente?"
+                    : "Escucha el audio de forma clara y sin distorsión?";
                 btnPass.Enabled = true;
                 btnFail.Enabled = true;
                 btnFail.Visible = true;
