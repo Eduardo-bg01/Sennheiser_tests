@@ -124,15 +124,37 @@ static class Program
         }
     }
 
-    static void CleanOldFiles()
+    // Returns false if anything survived. A caller that then reads a result file
+    // would be reading the PREVIOUS run's verdict and calling it this attempt's,
+    // so every call site must check. Callers that ignore the result reintroduce the
+    // false-passed bug this whole change exists to close, on the one path where the
+    // file is locked (Explorer preview, editor, antivirus) instead of merely stale.
+    static bool Purge(params string[] patterns)
     {
-        foreach (var pattern in new[] { "Prueba_*", "results.json", "MicroTest_*", "test_results*", "hearingPass*", "recorded*", "final_results*", "tiempo*", "diferen*", "knob_*", "audio_plays*" })
+        bool clean = true;
+        foreach (var pattern in patterns)
         {
             foreach (var f in System.IO.Directory.GetFiles(BaseDir, pattern))
             {
-                try { System.IO.File.Delete(f); } catch { }
+                try { System.IO.File.Delete(f); }
+                catch { clean = false; }
             }
         }
+        return clean;
+    }
+
+    static void CleanOldFiles()
+    {
+        // serial* must be here too. GetSerial() used to return whatever serial.txt
+        // survived from the previous unit, so a cancelled serial dialog stamped unit B
+        // with unit A's serial. main's run.bat deleted serial* too, but behind a
+        // SKIP_SERIAL_PROMPT escape hatch that no longer exists in this tree, so
+        // deleting unconditionally removes nothing real. GetSerial also fails closed.
+        // Return value deliberately ignored: nothing reads a result file before each
+        // stage purges again, so a survivor here is re-checked at that point.
+        Purge("Prueba_*", "results.json", "MicroTest_*", "test_results*", "hearingPass*",
+              "recorded*", "final_results*", "tiempo*", "diferen*", "knob_*", "audio_plays*",
+              "serial*");
     }
 
     // Daily station calibration gate (TV Listeners). Runs the 4-check golden-unit
@@ -246,11 +268,23 @@ static class Program
 
     static string? GetSerial()
     {
+        // Fail closed. A cancelled dialog writes nothing, so any serial.txt still on
+        // disk at this point is the previous unit's. CleanOldFiles purges serial* at
+        // startup, but build-all.bat:49 seeds bin\serial.txt from the repo root and
+        // anything can drop a file in before this runs — so clear it again here. Any
+        // file that exists after the dialog closed was therefore written by the dialog.
+        // If the purge fails, that reasoning does not hold: a locked serial.txt from the
+        // previous unit would survive the cancelled dialog and be stamped on this one.
+        if (!Purge("serial*")) return null;
+
         using var form = new AskForSerial2.Form1();
         form.ShowDialog();
 
         var serialFile = Path.Combine(BaseDir, "serial.txt");
-        return File.Exists(serialFile) ? File.ReadAllText(serialFile).Trim() : null;
+        if (!File.Exists(serialFile)) return null;
+
+        var serial = File.ReadAllText(serialFile).Trim();
+        return string.IsNullOrWhiteSpace(serial) ? null : serial;
     }
 
     static string? RunControlsTest()
@@ -281,12 +315,21 @@ static class Program
             Environment.SetEnvironmentVariable("DEVICE_NAME", model);
             Log($"DEVICE_NAME set to: {model}");
 
+            // Required, not hygiene: WriteFallbackReportIfMissing (MainForm.cs:78) returns
+            // early when a Prueba_*.txt already exists, so a file left by attempt N-1 both
+            // satisfies WaitForFile instantly and suppresses the report for this attempt.
+            if (!Purge("Prueba_*.txt"))
+            {
+                Log("[CONTROLS] report from a previous attempt is locked and could not be deleted; retrying", isError: true);
+                continue;
+            }
+
             using var mainForm = new BluetoothHeadphoneTest.MainForm();
             mainForm.Session.SelectedDevice = selectForm.SelectedDevice;
             mainForm.ShowDialog();
 
             var resultFile = WaitForFile("Prueba_*.txt", 5);
-            if (resultFile is not null)
+            if (resultFile is not null && ControlsReportPassed(resultFile))
             {
                 Log("[CONTROLS] PASSED");
                 string? deviceName = ParseDeviceName(resultFile);
@@ -308,10 +351,16 @@ static class Program
         {
             Log($"Audio test attempt {attempt}/{MaxRetries}...");
 
+            if (!Purge("hearingPass*"))
+            {
+                Log("[AUDIO] report from a previous attempt is locked and could not be deleted; retrying", isError: true);
+                continue;
+            }
             using var form = new AudioTest.Form1();
             form.ShowDialog();
 
-            if (System.IO.Directory.GetFiles(BaseDir, "hearingPass*.txt").Length > 0)
+            var audioFile = WaitForFile("hearingPass*.txt", 5);
+            if (audioFile is not null && FileVerdict(audioFile) == Verdict.Pass)
             {
                 Log("[AUDIO] PASSED");
                 Log("Setting volume to 100% before microphone test...");
@@ -332,14 +381,36 @@ static class Program
         {
             Log($"Microphone test attempt {attempt}/{MaxRetries}...");
 
+            // Only the report, not the recording: the .wav is the operator's only
+            // diagnostic for a failed attempt. Still leaves exactly one .txt and one
+            // .wav, so getFinalResults.py's unsorted MicroTest_* glob has one of each
+            // to choose between (that ambiguity is tracked separately, see UAT test 5).
+            if (!Purge("MicroTest_*.txt"))
+            {
+                Log("[MICROPHONE] report from a previous attempt is locked and could not be deleted; retrying", isError: true);
+                continue;
+            }
             using var form = new MicroTestCloud.Form1();
             form.ShowDialog();
 
             var resultFile = WaitForFile("MicroTest_*.txt", 5);
             if (resultFile is not null)
             {
-                Log("[MICROPHONE] PASSED");
-                return;
+                switch (FileVerdict(resultFile))
+                {
+                    case Verdict.Pass:
+                        Log("[MICROPHONE] PASSED");
+                        return;
+                    case Verdict.NotApplicable:
+                        // The operator's "EL DISPOSITIVO NO TIENE MICROFONO" button
+                        // (MicroTestCloud/Form1.cs:471-479) writes "Resultado : N/A" and
+                        // closes. That is a deliberate decision about the hardware, not a
+                        // test failure, and it released the unit before the verdict was
+                        // read at all. Keep releasing it: holding a mic-less unit for a
+                        // deliberate N/A would need a test-procedure change to authorize.
+                        Log("[MICROPHONE] N/A - device declared mic-less by operator, releasing unit");
+                        return;
+                }
             }
 
             Log($"[MICROPHONE] FAILED - attempt {attempt}/{MaxRetries}");
@@ -458,6 +529,66 @@ static class Program
         }
         catch { }
         return null;
+    }
+
+    enum Verdict { Pass, Fail, NotApplicable }
+
+    // The stage apps always write a result file, even on cancel — AudioTest writes
+    // False, MicroTestCloud writes "Resultado : No definido". Existence is therefore
+    // not a verdict; read the verdict.
+    //
+    // Three states, not two: MicroTestCloud also writes "Resultado : N/A" when the
+    // operator declares the device mic-less. Verdict vocabulary is set at
+    // MicroTestCloud/Form1.cs:1380 (PASS), :1391 (FAIL), :1406 (No definido) and
+    // :478/:504 (N/A) — all ASCII, so an exact match is safe and a substring test
+    // is not needed. See REVIEW-WORKTREE.md WR-07: an earlier comment here claimed
+    // the accented "PASÓ" / "FALLÓ" and was fiction.
+    //
+    // This is NOT the same rule getFinalResults.py applies (:341), which is
+    // substring-based and has an unguarded parts[2] that raises IndexError on a
+    // malformed line. The two can disagree; that gap is tracked separately.
+    static Verdict FileVerdict(string path)
+    {
+        try
+        {
+            var text = File.ReadAllText(path);
+
+            if (text.Trim().Equals("True", StringComparison.OrdinalIgnoreCase))
+                return Verdict.Pass;   // AudioTest writes True/False verbatim
+
+            foreach (var line in text.Split('\n'))
+            {
+                if (!line.Contains("Resultado", StringComparison.Ordinal)) continue;
+                var parts = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length <= 2) continue;
+                var value = parts[2];
+                if (value.Equals("N/A", StringComparison.OrdinalIgnoreCase)) return Verdict.NotApplicable;
+                return value.Equals("PASS", StringComparison.OrdinalIgnoreCase) ? Verdict.Pass : Verdict.Fail;
+            }
+        }
+        catch { }
+
+        return Verdict.Fail;
+    }
+
+    // Controls writes a summary line "  Resultado final: APROBADO  (3/3)  •  N/A: 0"
+    // (FunctionalButtonTest/TestSession.cs, BuildReportText). AllPassed is false unless
+    // every applicable record is Pass, so a check left Pending by a cancelled form makes
+    // the line read FALLIDO. That token is the whole verdict — the per-check rows are
+    // for humans.
+    static bool ControlsReportPassed(string path)
+    {
+        try
+        {
+            foreach (var line in File.ReadAllLines(path))
+            {
+                if (!line.Contains("Resultado final", StringComparison.OrdinalIgnoreCase)) continue;
+                return line.Contains("APROBADO", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+        catch { }
+
+        return false;
     }
 
     static string? WaitForFile(string pattern, int maxSeconds)
