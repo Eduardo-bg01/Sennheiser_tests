@@ -337,8 +337,9 @@ namespace HeadPhoneTest2
                 currentTimer = 2;
                 seconds2 = 40;
 
-                outputDevice.PlaybackStopped -= stopActions;
-                outputDevice.PlaybackStopped += stopActions;
+                // Attach/detach of stopActions is playAudio's job (see the -= inside it).
+                // This pair operated on the outgoing device, which playAudio immediately
+                // disposes and replaces, so the += bound to a device that was never used.
                 playAudio("audioSweep");
                 startRecording();
                 audioPlays?.Clear();
@@ -481,7 +482,10 @@ namespace HeadPhoneTest2
                 MessageBoxIcon.Warning);
             if (retry == DialogResult.Yes)
             {
-                check1Pass = true;
+                // Do not force check1Pass here. Reset() rewinds to step 0, so the ambient
+                // capture re-runs and FinishCalibration reassigns check1Pass (:597) from
+                // the measurement. Forcing it true reported a failed CHECK 1 as PASS on
+                // every retry after the first.
                 lblStatus.Text = "";
                 lblStatus.ForeColor = TextMuted;
                 btnNext.Text = "PASO 1/4: CALIBRAR AMBIENTE";
@@ -500,10 +504,14 @@ namespace HeadPhoneTest2
             {
                 using var doc = JsonDocument.Parse(File.ReadAllText("station_calibration.json"));
                 var root = doc.RootElement;
+                // Read reason BEFORE the early return. station_calibration.py always
+                // writes a specific reason (:118) — e.g. "golden_left_dbfs/... sin
+                // configurar en config.json". Returning on station_calibration first
+                // discarded it, so the operator only ever saw the generic fallback.
+                if (root.TryGetProperty("reason", out var r) && r.ValueKind == JsonValueKind.String)
+                    reason = r.GetString() ?? "";
                 if (root.TryGetProperty("station_calibration", out var v))
                     return v.GetString() ?? "FAIL";
-                if (root.TryGetProperty("reason", out var r))
-                    reason = r.GetString();
             }
             catch (Exception ex)
             {
@@ -678,6 +686,12 @@ namespace HeadPhoneTest2
         {
             try
             {
+                // Must precede Stop(). Stop() raises PlaybackStopped, and stopActions is
+                // still attached from the previous playback, so without this the handler
+                // re-enters here: it calls stopRecording() and spawns db_chart.py while
+                // recorded.wav is mid-replacement, before NAudio has written the RIFF
+                // header on Dispose. That is the "not a WAVE file" crash.
+                outputDevice.PlaybackStopped -= stopActions;
                 outputDevice.Stop();
                 outputDevice.Dispose();
 
@@ -780,6 +794,10 @@ namespace HeadPhoneTest2
         {
             if (outputDevice != null)
             {
+                // Same invariant as playAudio: stopActions must not be attached when
+                // Stop() is called, or it re-enters. Reset() and FinishKnobTake() both
+                // route through here, so this closes the hazard for every caller.
+                outputDevice.PlaybackStopped -= stopActions;
                 outputDevice.Stop();
                 audioFile?.Dispose();
                 audioFile = null;
