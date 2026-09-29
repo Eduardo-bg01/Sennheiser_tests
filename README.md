@@ -289,8 +289,15 @@ it happens in a separate, pre-serial LevelTest instance.
 
 ## Site configuration
 
-Per-machine settings live in `scripts/config.json` (gitignored; `build-all.bat`
-copies it to `bin\scripts\`):
+Per-machine settings live in `scripts/config.json` (`build-all.bat` copies it to
+`bin\scripts\`).
+
+> **This file is tracked in git, not gitignored.** The `.gitignore` entry for it is
+> inert because the file was already committed (added in `42477f8`). Keep `endpoint`
+> blank unless the endpoint is meant to be shared, and do not commit a real
+> `golden_left_dbfs` / `golden_right_dbfs` from one bench — a seeded reference
+> written here is copied to every station by `build-all.bat`. Each station seeds its
+> own copy in `bin\scripts\config.json`.
 
 ```json
 {

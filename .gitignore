@@ -34,7 +34,10 @@ diferencia_minutos.txt
 __pycache__/
 .DS_Store
 
-# Site config (may contain API endpoint/keys); edit locally, don't commit
+# Site config may contain an API endpoint/key and a per-station calibration
+# reference. The entry below is INERT: this file was committed in 42477f8 and
+# .gitignore does not apply to already-tracked files. Untrack it with
+# `git rm --cached scripts/config.json` before relying on the ignore.
 scripts/config.json
 
 .log

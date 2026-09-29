@@ -428,10 +428,22 @@ static class Program
         {
             Log($"Level test attempt {attempt}/{MaxRetries}...");
 
+            // Required, not hygiene: the daily station calibration runs BEFORE this stage
+            // and FinishCalibration writes results.json into the same directory, so without
+            // this purge the level test reported PASSED on a fresh unit with zero operator
+            // action. A failed attempt N also leaves the file, which made attempt N+1 pass
+            // the instant its form closed.
+            if (!Purge("results.json"))
+            {
+                Log("[LEVELS] results.json from a previous stage is locked and could not be deleted; retrying", isError: true);
+                continue;
+            }
+
             using var form = new HeadPhoneTest2.Form1();
             form.ShowDialog();
 
-            if (File.Exists(Path.Combine(BaseDir, "results.json")))
+            var resultFile = WaitForFile("results.json", 5);
+            if (resultFile is not null && LevelTestPassed(resultFile))
             {
                 Log("[LEVELS] PASSED");
                 return;
@@ -585,6 +597,59 @@ static class Program
                 if (!line.Contains("Resultado final", StringComparison.OrdinalIgnoreCase)) continue;
                 return line.Contains("APROBADO", StringComparison.OrdinalIgnoreCase);
             }
+        }
+        catch { }
+
+        return false;
+    }
+
+    // results.json is db_chart.py's per-capture output, and db_chart writes it for the
+    // AMBIENT station calibration too — so its mere existence means nothing. The level
+    // verdict is the same three checks getFinalResults.py:165-179 computes, with the same
+    // thresholds (getFinalResults.py:28-31). Reading them here rather than inventing a
+    // second rule keeps the two from disagreeing on the same unit.
+    const double LevelBalanceDb = 2.0;    // CHANNEL_BALANCE_THRESHOLD
+    const double LevelVolumeMin = -30.0;   // VOLUME_MIN
+    const double LevelVolumeMax = -10.0;   // VOLUME_MAX
+    const double LevelClippingDb = 0.0;    // CLIPPING_THRESHOLD
+
+    static bool LevelTestPassed(string path)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            if (!doc.RootElement.TryGetProperty("measurements", out var list))
+                return false;
+
+            double? left = null, right = null, leftPeak = null, rightPeak = null;
+            foreach (var m in list.EnumerateArray())
+            {
+                if (m.TryGetProperty("channel", out var ch) && m.TryGetProperty("dbfs", out var db))
+                {
+                    if (ch.GetString() == "Left") left = db.GetDouble();
+                    else if (ch.GetString() == "Right") right = db.GetDouble();
+                }
+                if (m.TryGetProperty("peak_dbfs", out var pk))
+                {
+                    if (m.TryGetProperty("channel", out var c2) && c2.GetString() == "Left") leftPeak = pk.GetDouble();
+                    else if (m.TryGetProperty("channel", out var c3) && c3.GetString() == "Right") rightPeak = pk.GetDouble();
+                }
+            }
+
+            // A capture with no real signal has no L/R to judge; signal_present is
+            // db_chart's own verdict and is the honest gate for "was anything captured".
+            if (doc.RootElement.TryGetProperty("signal_present", out var sp)
+                && sp.ValueKind == JsonValueKind.False)
+                return false;
+
+            if (left is null || right is null || leftPeak is null || rightPeak is null)
+                return false;
+
+            bool balance = Math.Abs(right.Value - left.Value) <= LevelBalanceDb;
+            bool volume = left.Value >= LevelVolumeMin && left.Value <= LevelVolumeMax
+                       && right.Value >= LevelVolumeMin && right.Value <= LevelVolumeMax;
+            bool clipping = Math.Max(leftPeak.Value, rightPeak.Value) <= LevelClippingDb;
+            return balance && volume && clipping;
         }
         catch { }
 

@@ -40,8 +40,14 @@ namespace HeadPhoneTest2
         private double goldenToleranceDb = 3.0;
         private double balanceMaxDb = 2.0;
         private double ambientMaxDbfs = -30.0;
+        // Plausibility band for SEEDING a reference, deliberately wider than the -33/-34
+        // dBFS documented example (README.md:298) so a legitimately louder bench can seed,
+        // but far from clipping so a 10 dB-off or saturated take is refused. This is a
+        // sanity bound, not a calibration target — the real tolerance is goldenToleranceDb.
+        private const double GoldenMinDbfs = -45.0;
+        private const double GoldenMaxDbfs = -8.0;
         private string connectionType = "";
-        private string stationConfigPath;
+        private string? stationConfigPath;
         private bool check1Pass = true;
 
         // Per-unit playback log (audio_plays.json): drives the audio_test summary
@@ -63,7 +69,7 @@ namespace HeadPhoneTest2
         WaveOutEvent outputDevice = new WaveOutEvent();
         WaveInEvent waveIn = new WaveInEvent();
         WaveStream? audioFile;
-        WaveFileWriter writer;
+        WaveFileWriter? writer;
 
         public double peak_right;
         public double peak_left;
@@ -233,12 +239,17 @@ namespace HeadPhoneTest2
 
         private string ResolveConfigPath()
         {
+            // BaseDirectory first: it is the deployed copy, and it is the same target
+            // SaveGoldenReference writes. The CWD candidates came first and could resolve
+            // to a DIFFERENT file than the one just written, so a seeded reference was
+            // reloaded from an unseeded file. They also let a dev run rooted at the
+            // repository read the git-tracked scripts/config.json.
             var candidates = new List<string>
             {
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scripts", "config.json"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json"),
                 Path.Combine(Directory.GetCurrentDirectory(), "config.json"),
                 Path.Combine(Directory.GetCurrentDirectory(), "scripts", "config.json"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scripts", "config.json"),
             };
             foreach (string path in candidates)
             {
@@ -453,8 +464,29 @@ namespace HeadPhoneTest2
             // completes the pair, which is the only way out of a partial config.
             if (double.IsNaN(goldenLeftDbfs) || double.IsNaN(goldenRightDbfs))
             {
+                // signal_present alone only means "louder than -30 dBFS", so it accepts a
+                // clipped take, a gain-trimmed bench or the wrong output device. The extra
+                // gates are what stop a bad take from becoming the station's ground truth:
+                //   - plausibility band: the documented reference is -33/-34 dBFS
+                //     (README.md:298); a 10 dB-off bench is not a reference,
+                //   - never seed a clipped take (peak < 0),
+                //   - CHECK 1 must have passed, or room noise is baked into the reference.
+                bool levelPlausible = level_left >= GoldenMinDbfs && level_left <= GoldenMaxDbfs
+                                   && level_right >= GoldenMinDbfs && level_right <= GoldenMaxDbfs;
                 bool takeClean = signal_present == true
+                    && check1Pass
+                    && levelPlausible
+                    && peak < 0
                     && Math.Abs(level_left - level_right) <= balanceMaxDb;
+
+                string whySeedRefused =
+                    (signal_present != true) ? "no se detectó señal válida"
+                  : !check1Pass ? "el ambiente de CHECK 1 no pasó (ruido de fondo alto)"
+                  : !levelPlausible ? "el nivel medido (" + Math.Round(level_left, 1) + "/" + Math.Round(level_right, 1)
+                                      + " dBFS) está fuera del rango plausible "
+                                      + GoldenMinDbfs + ".." + GoldenMaxDbfs + " dBFS"
+                  : !(peak < 0) ? "la toma está saturada (clipping)"
+                  : "los canales no están balanceados";
 
                 if (!takeClean)
                 {
@@ -462,15 +494,16 @@ namespace HeadPhoneTest2
                         "PRIMERA CALIBRACIÓN - SIN REFERENCIA\r\n\r\n" +
                         "No hay valores de referencia (golden_left_dbfs / golden_right_dbfs) en config.json, " +
                         "así que se necesita una medición limpia para crearlos.\r\n\r\n" +
-                        "No se detectó una señal válida, por lo que NO se puede capturar la referencia. " +
-                        "Corrija la ruta de audio y repita.\r\n\r\n" +
+                        "Motivo por el que NO se captura la referencia:\r\n  " + whySeedRefused + "\r\n\r\n" +
+                        "Persistir una toma incorrecta haría que la estación validara contra una referencia falsa. " +
+                        "Corrija y repita.\r\n\r\n" +
                         SignalDiagnostic(),
                         "Calibración de estación - REFERENCIA NO CAPTURADA",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning);
-                    lblStatus.Text = "REFERENCIA NO CAPTURADA: sin señal válida. Revise la ruta de audio y repita desde CHECK 1.";
+                    lblStatus.Text = "REFERENCIA NO CAPTURADA: " + whySeedRefused + ". Corrija y repita desde CHECK 1.";
                     lblStatus.ForeColor = Danger;
-                    lblPlay.Text = "PASO 2/4 - GOLDEN UNIT: SIN SEÑAL (referencia no capturada)";
+                    lblPlay.Text = "PASO 2/4 - GOLDEN UNIT: REFERENCIA NO CAPTURADA (" + whySeedRefused + ")";
                     OfferStationRetry();
                     return;
                 }
@@ -631,17 +664,31 @@ namespace HeadPhoneTest2
         {
             try
             {
-                string path = stationConfigPath
-                    ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
+                // Write ONLY the deployed copy. ResolveConfigPath's candidate 2 is the
+                // repository's own scripts/config.json, which IS git-tracked (added in
+                // 42477f8) even though .gitignore:38 still claims otherwise — seeding there
+                // would commit one bench's E.A.R.S. levels and build-all.bat:46 would then
+                // ship them to every other station.
+                string deployed = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scripts", "config.json");
+                string path = File.Exists(deployed)
+                    ? deployed
+                    : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
 
-                JsonObject config = File.Exists(path)
+                JsonObject? config = File.Exists(path)
                     ? JsonNode.Parse(File.ReadAllText(path)) as JsonObject
                     : null;
                 if (config == null) config = new JsonObject();
 
                 config["golden_left_dbfs"] = Math.Round(left, 2);
                 config["golden_right_dbfs"] = Math.Round(right, 2);
-                File.WriteAllText(path, config.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+
+                // Write-then-rename: a torn write into this file would make
+                // common.load_config silently return {}, which drops the upload endpoint
+                // and makes the run report vanish without an error.
+                string tmp = path + ".tmp";
+                File.WriteAllText(tmp, config.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                if (File.Exists(path)) File.Delete(path);
+                File.Move(tmp, path);
 
                 stationConfigPath = path;
                 LoadStationConfig();
