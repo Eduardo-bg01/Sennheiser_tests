@@ -3,6 +3,7 @@ using NAudio.Wave;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace HeadPhoneTest2
 {
@@ -439,6 +440,85 @@ namespace HeadPhoneTest2
 
             string verdict = scriptOk && File.Exists("station_calibration.json") ? ReadStationVerdict(out anyFailReason) : "FAIL";
 
+            // ---- Bootstrap / seed mode ------------------------------------------------
+            // With no golden reference configured there is nothing to compare against, so
+            // checks 2/3/4 can never pass and a fresh station is permanently blocked. When
+            // the reference is missing, capture it instead of failing: a take only qualifies
+            // if signal is actually present and the two channels balance. Capturing ambient
+            // noise as "golden" would poison every later daily check, so a no-signal take is
+            // refused rather than seeded.
+            // Seed when the reference is INCOMPLETE, not just absent: station_calibration.py
+            // :65 requires both golden values to be numbers (golden_ok), so a half-filled
+            // config can never pass either. Re-seeding overwrites the one stale value and
+            // completes the pair, which is the only way out of a partial config.
+            if (double.IsNaN(goldenLeftDbfs) || double.IsNaN(goldenRightDbfs))
+            {
+                bool takeClean = signal_present == true
+                    && Math.Abs(level_left - level_right) <= balanceMaxDb;
+
+                if (!takeClean)
+                {
+                    MessageBox.Show(
+                        "PRIMERA CALIBRACIÓN - SIN REFERENCIA\r\n\r\n" +
+                        "No hay valores de referencia (golden_left_dbfs / golden_right_dbfs) en config.json, " +
+                        "así que se necesita una medición limpia para crearlos.\r\n\r\n" +
+                        "No se detectó una señal válida, por lo que NO se puede capturar la referencia. " +
+                        "Corrija la ruta de audio y repita.\r\n\r\n" +
+                        SignalDiagnostic(),
+                        "Calibración de estación - REFERENCIA NO CAPTURADA",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    lblStatus.Text = "REFERENCIA NO CAPTURADA: sin señal válida. Revise la ruta de audio y repita desde CHECK 1.";
+                    lblStatus.ForeColor = Danger;
+                    lblPlay.Text = "PASO 2/4 - GOLDEN UNIT: SIN SEÑAL (referencia no capturada)";
+                    OfferStationRetry();
+                    return;
+                }
+
+                DialogResult seed = MessageBox.Show(
+                    "PRIMERA CALIBRACIÓN - CAPTURAR REFERENCIA\r\n\r\n" +
+                    "No hay referencia en config.json. Se capturará con esta medición:\r\n\r\n" +
+                    "  IZQ: " + Math.Round(level_left, 2) + " dBFS\r\n" +
+                    "  DER: " + Math.Round(level_right, 2) + " dBFS\r\n\r\n" +
+                    "Verifique que la Golden Unit está bien conectada y posicionada en los coples " +
+                    "E.A.R.S. y que el tono se oye con claridad en ambos lados.\r\n\r\n" +
+                    "¿Guardar estos valores como referencia y repetir para verificar?",
+                    "Calibración de estación - CAPTURAR REFERENCIA",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (seed != DialogResult.Yes)
+                {
+                    this.Close();
+                    return;
+                }
+
+                if (!SaveGoldenReference(level_left, level_right))
+                {
+                    // SaveGoldenReference already reported the error. Do not leave the
+                    // operator stranded on the result screen: offer the standard retry.
+                    OfferStationRetry();
+                    return;
+                }
+
+                lblStatus.Text = "Referencia guardada. Repita la calibración para verificar y liberar la estación.";
+                lblStatus.ForeColor = TextMuted;
+                lblPlay.Text = "REFERENCIA CAPTURADA - IZQ: " + Math.Round(level_left, 2)
+                             + " dB | DER: " + Math.Round(level_right, 2) + " dB";
+                MessageBox.Show(
+                    "Referencia guardada en config.json.\r\n\r\n" +
+                    "golden_left_dbfs = " + Math.Round(goldenLeftDbfs, 2) + "\r\n" +
+                    "golden_right_dbfs = " + Math.Round(goldenRightDbfs, 2) + "\r\n\r\n" +
+                    "La estación sigue bloqueada: la calibración aún no ha pasado.\r\n" +
+                    "Repita desde CHECK 1 para comparar contra la referencia y liberar la estación.",
+                    "Calibración de estación - REFERENCIA GUARDADA",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                OfferStationRetry();
+                return;
+            }
+            // ---- End bootstrap / seed mode --------------------------------------------
+
             bool pass = verdict == "PASS";
             bool chk2 = !double.IsNaN(goldenLeftDbfs) && signal_present == true
                 && Math.Abs(level_left - goldenLeftDbfs) <= goldenToleranceDb;
@@ -471,30 +551,50 @@ namespace HeadPhoneTest2
             string reason = string.IsNullOrWhiteSpace(anyFailReason)
                 ? "Verifique los valores golden_left_dbfs / golden_right_dbfs en config.json."
                 : anyFailReason;
+            string diagnostics = signal_present == true ? "" : "\r\n\r\n" + SignalDiagnostic();
             DialogResult retry = MessageBox.Show(
                 "ACCIÓN ANTE FALLA: Detener liberación, revisar ambiente, posicionamiento, " +
                 "conexiones USB, configuración de REW y nivel de salida.\r\n" +
                 "Corregir, registrar y repetir desde CHECK 1.\r\n\r\n" +
                 "Resumen: " + lblPlay.Text + "\r\n\r\n" +
-                "Motivo: " + reason + "\r\n\r\n¿Repetir la calibración desde el PASO 1 (CHECK 1)?",
+                "Motivo: " + reason + diagnostics + "\r\n\r\n¿Repetir la calibración desde el PASO 1 (CHECK 1)?",
                 "ESTACIÓN NO LIBERADA",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Warning);
             if (retry == DialogResult.Yes)
             {
-                // Do not force check1Pass here. Reset() rewinds to step 0, so the ambient
-                // capture re-runs and FinishCalibration reassigns check1Pass (:597) from
-                // the measurement. Forcing it true reported a failed CHECK 1 as PASS on
-                // every retry after the first.
-                lblStatus.Text = "";
-                lblStatus.ForeColor = TextMuted;
-                btnNext.Text = "PASO 1/4: CALIBRAR AMBIENTE";
-                Reset();
+                ResetStationForRetry();
             }
             else
             {
                 this.Close();
             }
+        }
+
+        // Shared by the seed path and the normal failure path: ask whether to rewind to
+        // CHECK 1, and either reset for another pass or close. Reset() rewinds to step 0,
+        // so the ambient capture re-runs and FinishCalibration reassigns check1Pass from
+        // the measurement. Forcing check1Pass true here reported a failed CHECK 1 as PASS
+        // on every retry after the first.
+        private void OfferStationRetry()
+        {
+            DialogResult retry = MessageBox.Show(
+                "¿Repetir la calibración desde el PASO 1 (CHECK 1)?",
+                "Calibración de estación",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+            if (retry == DialogResult.Yes)
+                ResetStationForRetry();
+            else
+                this.Close();
+        }
+
+        private void ResetStationForRetry()
+        {
+            lblStatus.Text = "";
+            lblStatus.ForeColor = TextMuted;
+            btnNext.Text = "PASO 1/4: CALIBRAR AMBIENTE";
+            Reset();
         }
 
         private string ReadStationVerdict(out string reason)
@@ -518,6 +618,58 @@ namespace HeadPhoneTest2
                 reason = ex.Message;
             }
             return "FAIL";
+        }
+
+        // Capture the measured golden-unit levels into config.json so the station has a
+        // reference to compare against. Without this the station could never pass its
+        // first calibration: checks 2/3/4 compare against golden_* values that only exist
+        // after a measurement — a bootstrap deadlock. Writes into the already-resolved
+        // config.json (creating it beside the exe if absent) and re-reads so the retry
+        // compares against the value just seeded. JsonNode does the parse/merge/serialize;
+        // the other keys in the file (endpoint) are preserved untouched.
+        private bool SaveGoldenReference(double left, double right)
+        {
+            try
+            {
+                string path = stationConfigPath
+                    ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
+
+                JsonObject config = File.Exists(path)
+                    ? JsonNode.Parse(File.ReadAllText(path)) as JsonObject
+                    : null;
+                if (config == null) config = new JsonObject();
+
+                config["golden_left_dbfs"] = Math.Round(left, 2);
+                config["golden_right_dbfs"] = Math.Round(right, 2);
+                File.WriteAllText(path, config.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+
+                stationConfigPath = path;
+                LoadStationConfig();
+                return !double.IsNaN(goldenLeftDbfs) && !double.IsNaN(goldenRightDbfs);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "No se pudo guardar la referencia en config.json:\r\n" + ex.Message,
+                    "Calibración de estación", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        // db_chart's own reason ("X dBFS < piso absoluto -30 dBFS", SNR, crest) is the only
+        // thing that says WHICH signal check tripped; the dialog used to drop it, forcing
+        // the operator to read results.json by hand. Device names matter because a
+        // no-signal take is almost always the wrong input/output device.
+        private string SignalDiagnostic()
+        {
+            string inName = comboBoxIn.SelectedIndex >= 0 && comboBoxIn.SelectedIndex < comboBoxIn.Items.Count
+                ? comboBoxIn.SelectedItem?.ToString() ?? "?" : "?";
+            string outName = comboBoxOut.SelectedIndex >= 0 && comboBoxOut.SelectedIndex < comboBoxOut.Items.Count
+                ? comboBoxOut.SelectedItem?.ToString() ?? "?" : "?";
+            string why = string.IsNullOrWhiteSpace(signal_reason) ? "(sin detalle)" : signal_reason;
+            return "Dispositivo de entrada: " + inName + "\r\n" +
+                   "Dispositivo de salida: " + outName + "\r\n" +
+                   "Detalle de la señal: " + why;
         }
 
         private void EnsureTimer()
@@ -660,6 +812,13 @@ namespace HeadPhoneTest2
             if (File.Exists(recordingPath))
                 File.Delete(recordingPath);
 
+            // The combo selection was captured into inputIndex but never applied: with no
+            // DeviceNumber, WaveInEvent records device 0, so the E.A.R.S. reference mic the
+            // operator picked was ignored and the recorder captured the wrong input. That
+            // is why the 1 kHz tone was audible but signal_present came back false.
+            // Must be set before StartRecording().
+            waveIn.DeviceNumber = inputIndex;
+
             waveIn.WaveFormat = new WaveFormat(44100, 16, 2);
             writer = new WaveFileWriter(recordingPath, waveIn.WaveFormat);
 
@@ -696,6 +855,10 @@ namespace HeadPhoneTest2
                 outputDevice.Dispose();
 
                 outputDevice = new WaveOutEvent();
+                // Same defect as waveIn.DeviceNumber: the output combo was read into
+                // outputIndex and then dropped, so playback always used device 0. Must be
+                // set before Init().
+                outputDevice.DeviceNumber = outputIndex;
                 bool attachStop = audioTitle.StartsWith("audioSweep", StringComparison.OrdinalIgnoreCase)
                     || (stationCalibrationMode && audioTitle.StartsWith("tone_1khz", StringComparison.OrdinalIgnoreCase));
                 if (attachStop)
