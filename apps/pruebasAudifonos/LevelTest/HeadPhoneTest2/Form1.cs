@@ -158,7 +158,23 @@ namespace HeadPhoneTest2
             }
 
             if (comboBoxIn.Items.Count > 0)
-                comboBoxIn.SelectedIndex = earsIndex >= 0 ? earsIndex : 0;
+            {
+                if (earsIndex >= 0)
+                {
+                    comboBoxIn.SelectedIndex = earsIndex;
+                }
+                else
+                {
+                    // No E.A.R.S mic found. Selecting index 0 silently recorded the wrong
+                    // input, so say so instead — the operator has to pick deliberately.
+                    comboBoxIn.SelectedIndex = 0;
+                    WarnDeviceSelection("ENTRADA",
+                        "No se encontró ningún micrófono E.A.R.S.\r\n\r\n" +
+                        "Seleccione en ENTRADA el micrófono del coupler E.A.R.S. " +
+                        "Si deja otra cosa seleccionada se grabará el dispositivo equivocado " +
+                        "y la calibración fallará.");
+                }
+            }
         }
 
         private void LoadOutputDevices()
@@ -178,11 +194,57 @@ namespace HeadPhoneTest2
             }
 
             if (comboBoxOut.Items.Count > 0)
-                comboBoxOut.SelectedIndex = btIndex >= 0 ? btIndex : 0;
+            {
+                if (btIndex >= 0)
+                {
+                    comboBoxOut.SelectedIndex = btIndex;
+                }
+                else
+                {
+                    // This silent index-0 fallback is what selected a personal headset
+                    // ("Headphones (ROG CLAVIS)") on a bench whose Golden Unit hangs off a
+                    // USB-C adapter. The tone played to the operator's ears, the E.A.R.S mic
+                    // heard silence, and every run failed at PASO 2. A USB adapter never
+                    // matches the Bluetooth/MOMENTUM/E.A.R.S name filter above, so the filter
+                    // cannot help here — the operator must choose.
+                    comboBoxOut.SelectedIndex = 0;
+                    WarnDeviceSelection("SALIDA",
+                        "No se encontró un dispositivo de salida reconocible.\r\n\r\n" +
+                        "Seleccione en SALIDA el dispositivo donde está conectada la Golden Unit: " +
+                        "el adaptador USB-C, el DAC USB o el DSP.\r\n\r\n" +
+                        "NO seleccione unos audífonos personales: el tono debe salir por la " +
+                        "Golden Unit, no a sus orejas.");
+                }
+            }
+        }
+
+        // Fires when a device could not be auto-detected. Guarded to once per process: on a
+        // bench whose Golden Unit hangs off a USB-C adapter the name filter never matches,
+        // so without the guard this would pop a modal on every single form load. The device
+        // list is appended so the operator can see the real name of their adapter instead
+        // of guessing.
+        private static bool _deviceWarningShown;
+
+        private void WarnDeviceSelection(string label, string message)
+        {
+            if (_deviceWarningShown) return;
+            _deviceWarningShown = true;
+            MessageBox.Show(
+                message + "\r\n\r\n" + ListDevices(),
+                "Verificar dispositivos - " + label,
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            // Set in code, not in the designer: the original labels ("Dispositivo DSP" /
+            // "Audifonos") described the wrong thing and cost a full calibration cycle to
+            // diagnose. "Audifonos" in particular read as "the headphones under test",
+            // which made selecting a personal headset look correct.
+            label2.Text = "ENTRADA — micrófono E.A.R.S. (se graba aquí)";
+            label3.Text = "SALIDA — audio hacia la Golden Unit (conecte el cable aquí)";
+
             LoadInputDevices();
             LoadOutputDevices();
             pictureBox1.Image = null;
@@ -390,7 +452,11 @@ namespace HeadPhoneTest2
             MessageBox.Show(
                 "PASO 2/4 - VERIFICACIÓN CON GOLDEN UNIT\r\n\r\n" +
                 "Conecte la Golden Unit en los coples E.A.R.S. vía " + conn + ".\r\n" +
-                "Verifique el posicionamiento RS275/255 sobre los coples.\r\n" +
+                "Verifique el posicionamiento RS275/255 sobre los coples.\r\n\r\n" +
+                "ATENCIÓN - revise la lista SALIDA: el tono debe salir por el adaptador o " +
+                "amplificador donde está conectada la Golden Unit. Si SALIDA apunta a unos " +
+                "audífonos personales, usted oirá el tono pero el micrófono E.A.R.S. " +
+                "grabará silencio y este paso fallará.\r\n\r\n" +
                 "Se reproducirá un tono de 1 kHz (~40 s). NO retire la Golden Unit.",
                 "PASO 2/4 - Golden Unit",
                 MessageBoxButtons.OK,
@@ -716,7 +782,34 @@ namespace HeadPhoneTest2
             string why = string.IsNullOrWhiteSpace(signal_reason) ? "(sin detalle)" : signal_reason;
             return "Dispositivo de entrada: " + inName + "\r\n" +
                    "Dispositivo de salida: " + outName + "\r\n" +
-                   "Detalle de la señal: " + why;
+                   "Detalle de la señal: " + why + "\r\n\r\n" +
+                   ListDevices();
+        }
+
+        // Full inventory of what Windows offers, with the current selection marked. The
+        // combos were filled in device-index order and are never sorted or reordered, so
+        // their items are already the whole device list — no second NAudio query needed.
+        // This is what lets the operator find the real name of their USB-C adapter.
+        private string ListDevices()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("Dispositivos de ENTRADA disponibles:");
+            AppendDevices(sb, comboBoxIn);
+            sb.AppendLine();
+            sb.AppendLine("Dispositivos de SALIDA disponibles:");
+            AppendDevices(sb, comboBoxOut);
+            return sb.ToString().TrimEnd();
+        }
+
+        private static void AppendDevices(StringBuilder sb, ComboBox combo)
+        {
+            if (combo.Items.Count == 0)
+            {
+                sb.AppendLine("  (ninguno)");
+                return;
+            }
+            for (int i = 0; i < combo.Items.Count; i++)
+                sb.AppendLine("  " + (i == combo.SelectedIndex ? "[x] " : "[  ] ") + combo.Items[i]);
         }
 
         private void EnsureTimer()
