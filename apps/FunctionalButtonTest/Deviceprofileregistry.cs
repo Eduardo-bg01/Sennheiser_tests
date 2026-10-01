@@ -108,20 +108,34 @@ namespace BluetoothHeadphoneTest
         //  MODELOS JACK 3.5 MM Y GENÉRICOS
         //  Aparecen en Windows como "Headphone (Realtek(R) Audio)",
         //  "Speakers/Headphones", "Headphones", etc.
-        //  El nombre aquí es el nombre comercial que el operador elige.
+        //  El nombre aquí es la etiqueta que elige el operador y lo que queda
+        //  escrito en "Dispositivo :" del reporte.
         //  Orden: agrupado por familia (HD, HDR, RS, IE) porque el operador
         //  elige por familia y las pruebas son iguales dentro de cada bloque.
+        //
+        //  ATENCIÓN: agrupar por familia es válido porque el nombre del modelo
+        //  NUNCA viaja al XML (converter.py solo sube serial + resultados), y
+        //  las demas apps solo lo leen como interruptor de comportamiento:
+        //  run.bat (HD|IE)[0-9] y prefijo RS, AudioTest (prefijo rs).
+        //  Ese mismo criterio de prefijo hace imposible que estas etiquetas se
+        //  desincronicen de las demas apps — antes habia 3 listas de modelos
+        //  sin volumen que habia que mantener a mano y ya se habian separado.
         // ════════════════════════════════════════════════════════════════════
         private static readonly string[] JackModelNames = new[]
         {
-            "HD 550", "HD 560S", "HD 569", "HD 599", "HD 600", "HD 650", "HD 660S2", "HD 400U",
+            "HD 550 / 560S / 569 / 599 / 600 / 650 / 660S2",
+            "HD 400U",
             "HDR 175",
-            "RS 120-W", "RS 195", "RS 255", "RS 275",
-            "IE 200", "IE 600", "IE 900",
+            "RS 120-W",
+            "RS 195",
+            "RS 255",
+            "RS 275",
+            "IE 200 / 600 / 900",
         };
 
-        // Modelos jack cuyo cable tiene botón de Play / Pausa.
-        // El resto de la lista no tiene botones: solo se prueban en audio y niveles.
+        // Etiquetas jack cuyo cable tiene botón de Play / Pausa.
+        // El resto no tiene botones: solo se prueban en audio y niveles.
+        // HD 400U va aparte del grupo HD justamente por esto.
         private static readonly HashSet<string> JackWithPlayPause =
             new() { "HD 400U" };
 

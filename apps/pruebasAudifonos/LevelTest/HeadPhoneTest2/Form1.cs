@@ -54,10 +54,9 @@ namespace HeadPhoneTest2
 
         private Label signalWarnLabel;
 
-        // Modelos sin prueba de volumen visible (solo balance y clipping).
-        // Debe coincidir exactamente con MODELS_WITHOUT_VOLUME en
-        // scripts/getFinalResults.py (normalizado: minusculas, solo alfanumericos).
-        private static readonly string[] NoVolumeModels = { "hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", "hd660s2", "hd400u"  };
+        // Volume no aplica a ningun HD ni IE (solo balance y clipping). Mismo
+        // criterio que getFinalResults.py: un prefijo no puede desincronizarse
+        // de una lista de nombres.
         private bool hideVolume;
 
         public Form1()
@@ -155,7 +154,9 @@ namespace HeadPhoneTest2
         {
             string device = Environment.GetEnvironmentVariable("DEVICE_NAME") ?? "";
             string norm = new string(device.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
-            return NoVolumeModels.Contains(norm) || norm.StartsWith("ie");
+            // "hdr175" empieza con "hd" pero nunca llega aqui: LevelTest solo
+            // se ejecuta si DEVICE_NAME cumple (HD|IE)[0-9] en run.bat.
+            return norm.StartsWith("hd") || norm.StartsWith("ie");
         }
 
         private void ApplyVolumeVisibility()

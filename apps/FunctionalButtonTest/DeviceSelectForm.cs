@@ -71,8 +71,10 @@ namespace BluetoothHeadphoneTest
                 .Select(r => r.Name)
                 .ToList();
 
+            // Texto corto a proposito: el label es AutoSize dentro de un panel de
+            // ancho maximo 600px, asi que una linea larga se corta a la mitad.
             return applicable.Count == 0
-                ? $"\"{modelName}\" — sin pruebas de botones (solo audio y niveles)"
+                ? $"\"{modelName}\" — sin pruebas de botones"
                 : $"\"{modelName}\" — pruebas de botones: {string.Join(", ", applicable)}";
         }
 

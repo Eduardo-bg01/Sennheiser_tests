@@ -40,11 +40,6 @@ BT_FIELD_VOLUME_DOWN = "Bajar Volumen"
 # Microphone result field name
 MIC_FIELD_RESULT = "Resultado"
 
-# Models whose volume result is not applicable (reported as N/A, hidden from UI)
-# Must match the registry in Deviceprofileregistry.cs exactly (normalized:
-# lowercase, alphanumeric only). Do NOT use substring matching here.
-MODELS_WITHOUT_VOLUME = {"hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", "hd660s2", "hd400u"}
-
 # All possible Bluetooth and level fields
 BT_RESULT_FIELDS = ["bluetooth", "play_pausa", "anterior", "siguiente", "subir_volumen", "bajar_volumen"]
 LEVEL_RESULT_FIELDS = ["left_dbfs", "left_peak", "right_dbfs", "right_peak", "balance", "volume", "clipping", "deteccion_senal"]
@@ -198,8 +193,13 @@ def main():
             audio_analysis["deteccion_senal"] = final_results["distorsion"]
         else:
             audio_analysis["deteccion_senal"] = missing
+        # Volume es N/A para TODOS los HD e IE: audifonos analogicos sin control
+        # de volumen propio que medir. Un prefijo no puede desincronizarse de una
+        # lista de nombres, que es como se separaron antes hd660s vs "HD 660S2".
+        # "hdr175" empieza con "hd" pero nunca llega aqui: results.json solo lo
+        # escribe LevelTest, que run.bat solo lanza si DEVICE_NAME cumple (HD|IE)[0-9].
         model = normalize_model(read_device_model(btfile))
-        if model in MODELS_WITHOUT_VOLUME or model.startswith("ie"):
+        if model.startswith("hd") or model.startswith("ie"):
             audio_analysis["volume"] = "N/A"
         final_results.update(audio_analysis)
     elif args.some:
