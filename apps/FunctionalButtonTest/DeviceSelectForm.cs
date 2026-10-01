@@ -180,15 +180,20 @@ namespace BluetoothHeadphoneTest
                 Location = new Point(8, 8)
             };
 
-            // Seleccionar el primer modelo dispara SelectedIndexChanged, que ya
-            // refresca el hint; solo hace falta engancharlo después de existir el label.
+            // El SelectedIndex = 0 inicial dispara SelectedIndexChanged -> UpdateButtons()
+            // -> btnStart, que todavía NO existe durante InitUI (se crea más abajo).
+            // Por eso el handler se engancha DESPUÉS de la selección inicial y el
+            // hint del primer modelo se pinta explícitamente.
+            if (comboJackModel.Items.Count > 0)
+                comboJackModel.SelectedIndex = 0;
+
             comboJackModel.SelectedIndexChanged += (s, e) =>
             {
                 lblJackModel.Text = ModelTestHint();
                 UpdateButtons();
             };
-            if (comboJackModel.Items.Count > 0)
-                comboJackModel.SelectedIndex = 0;
+
+            lblJackModel.Text = ModelTestHint();
 
             panelJackModel.Controls.AddRange(new Control[] { lblJackModel, comboJackModel });
 

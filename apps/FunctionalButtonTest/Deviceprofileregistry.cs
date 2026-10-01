@@ -13,7 +13,9 @@ namespace BluetoothHeadphoneTest
     {
         // ════════════════════════════════════════════════════════════════════
         //  MODELOS CON NOMBRE PROPIO (Bluetooth, USB-C, USB-A)
-        //  El nombre debe coincidir exactamente con el que aparece en Windows.
+        //  El nombre debe ser el que aparece en Windows. GetProfile tolera que
+        //  Windows lo reporte con un sufijo/ prefijo distinto ("X (Refurb)") y
+        //  aun así cae en el perfil correcto.
         // ════════════════════════════════════════════════════════════════════
         private static readonly List<DeviceProfile> _btProfiles = new()
         {
@@ -164,7 +166,14 @@ namespace BluetoothHeadphoneTest
 
         /// <summary>
         /// Busca el perfil en _btProfiles por nombre.
-        /// Si no está registrado devuelve un perfil genérico con todo habilitado.
+        /// 1) Coincidencia exacta (case-insensitive): el caso normal.
+        /// 2) Si no hay exacta, coincidencia por subcadena quedándose con la MÁS
+        ///    LARGA. Cubre los equipos donde Windows reporta el dispositivo con otro
+        ///    nombre ("Momentum 4 (Refurb)", "ACCENTUM PLUS usado"...).
+        ///    Gana la más larga porque "ACCENTUM" es subcadena de "ACCENTUM PLUS"
+        ///    y esos dos perfiles NO tienen los mismos botones.
+        /// Si no hay ninguna, devuelve un perfil genérico con todo habilitado, que
+        /// es la falla segura en un banco de refaccion: nunca se salta una prueba.
         /// </summary>
         public static DeviceProfile GetProfile(string modelName)
         {
@@ -174,6 +183,17 @@ namespace BluetoothHeadphoneTest
             foreach (var p in _btProfiles)
                 if (p.ModelName.Equals(modelName, System.StringComparison.OrdinalIgnoreCase))
                     return p;
+
+            DeviceProfile best = null;
+            foreach (var p in _btProfiles)
+            {
+                if (modelName.IndexOf(p.ModelName, System.StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+                if (best == null || p.ModelName.Length > best.ModelName.Length)
+                    best = p;
+            }
+            if (best != null)
+                return best;
 
             return new DeviceProfile(modelName);
         }
