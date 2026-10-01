@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace BluetoothHeadphoneTest
@@ -25,7 +26,12 @@ namespace BluetoothHeadphoneTest
             this.form = form;
         }
 
-        public void Initialize()
+        /// <summary>
+        /// Prepara la secuencia de pruebas. Devuelve false si el modelo no tiene
+        /// ninguna prueba aplicable: en ese caso ya escribió el reporte y cerró
+        /// la ventana, y el llamador no debe tocar más controles.
+        /// </summary>
+        public bool Initialize()
         {
             form.Session.Reset();
 
@@ -51,6 +57,18 @@ namespace BluetoothHeadphoneTest
 
             form.Session.ApplyProfile(profile);
 
+            // Un modelo sin pruebas aplicables (jack sin botones: HD, IE, RS...)
+            // no tiene nada que mostrar. Se registra el reporte y se cierra para
+            // que run.bat siga con AudioTest, en vez de mostrar una pantalla
+            // inteira de N/A. El reporte se escribe aquí porque en este camino
+            // nunca se construye el SummaryPanel.
+            if (!form.Session.Records.Any(r => r.IsApplicable))
+            {
+                form.Session.SaveReport();
+                form.Close();
+                return false;
+            }
+
             // Construir lista de pasos dinámicamente según el perfil
             _steps = BuildSteps(profile);
             TotalTests = _steps.Count;
@@ -60,6 +78,7 @@ namespace BluetoothHeadphoneTest
             AppCommandRouter.Unregister();
             AppCommandRouter.Register(form.Handle);
             ShowTest(0);
+            return true;
         }
 
         /// <summary>

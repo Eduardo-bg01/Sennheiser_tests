@@ -226,6 +226,10 @@ echo Configurando volumen a !VOLUME_PCT!%% antes de la prueba de audio...
 exit /b 0
 
 :detect_level_test
+REM Solo las familias HD e IE se miden en LevelTest. HDR y RS (inalambricos /
+REM de TV con base) quedan fuera a proposito: no hay jack que medir, y
+REM getFinalResults.py deja sus campos de nivel como N/A.
+REM NO "arreglar" este regex para incluirlos sin revisar antes LevelTest.
 set "RUN_LEVEL=0"
 set "LEVEL_MATCH=NO"
 for /f %%r in ('powershell -NoProfile -Command "if ((($env:DEVICE_NAME) -replace '[^A-Za-z0-9]','').ToUpper() -match '(HD|IE)[0-9]') { 'YES' } else { 'NO' }"') do set "LEVEL_MATCH=%%r"

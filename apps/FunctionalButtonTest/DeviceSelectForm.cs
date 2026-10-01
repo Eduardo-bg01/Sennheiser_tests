@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace BluetoothHeadphoneTest
@@ -52,6 +53,27 @@ namespace BluetoothHeadphoneTest
             _jackModels.Clear();
             foreach (var p in DeviceProfileRegistry.GetWiredProfiles())
                 _jackModels.Add(p.ModelName);
+        }
+
+        /// <summary>
+        /// Texto de la etiqueta sobre el combo: qué pruebas de botones corren
+        /// para el modelo elegido. Sin esto el operador no tiene forma de saber
+        /// si el modelo que tiene en la mano hace algo o no.
+        /// Reusa TestSession.BuildRecords para no duplicar la lista de nombres.
+        /// </summary>
+        private string ModelTestHint()
+        {
+            if (comboJackModel?.SelectedItem is not string modelName)
+                return "Modelo del audífono (Jack):";
+
+            var applicable = TestSession.BuildRecords(DeviceProfileRegistry.GetJackProfile(modelName))
+                .Where(r => r.IsApplicable)
+                .Select(r => r.Name)
+                .ToList();
+
+            return applicable.Count == 0
+                ? $"\"{modelName}\" — sin pruebas de botones (solo audio y niveles)"
+                : $"\"{modelName}\" — pruebas de botones: {string.Join(", ", applicable)}";
         }
 
         // ── Construcción de UI ─────────────────────────────────────────────────
@@ -136,15 +158,8 @@ namespace BluetoothHeadphoneTest
                 e.Graphics.DrawRectangle(pen, 0, 0, panelJackModel.Width - 1, panelJackModel.Height - 1);
             };
 
-            lblJackModel = new Label
-            {
-                Text = "Modelo del audífono (Jack):",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                ForeColor = AccentBlue,
-                AutoSize = true,
-                Location = new Point(8, 8)
-            };
-
+            // El combo se crea primero: lblJackModel usa ModelTestHint(), que
+            // lee el modelo ya seleccionado.
             comboJackModel = new ComboBox
             {
                 DropDownStyle = ComboBoxStyle.DropDownList,
@@ -155,9 +170,25 @@ namespace BluetoothHeadphoneTest
             };
             foreach (var m in _jackModels)
                 comboJackModel.Items.Add(m);
+
+            lblJackModel = new Label
+            {
+                Text = ModelTestHint(),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = AccentBlue,
+                AutoSize = true,
+                Location = new Point(8, 8)
+            };
+
+            // Seleccionar el primer modelo dispara SelectedIndexChanged, que ya
+            // refresca el hint; solo hace falta engancharlo después de existir el label.
+            comboJackModel.SelectedIndexChanged += (s, e) =>
+            {
+                lblJackModel.Text = ModelTestHint();
+                UpdateButtons();
+            };
             if (comboJackModel.Items.Count > 0)
                 comboJackModel.SelectedIndex = 0;
-            comboJackModel.SelectedIndexChanged += (s, e) => UpdateButtons();
 
             panelJackModel.Controls.AddRange(new Control[] { lblJackModel, comboJackModel });
 

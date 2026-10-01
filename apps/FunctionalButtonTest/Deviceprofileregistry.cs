@@ -107,18 +107,27 @@ namespace BluetoothHeadphoneTest
         //  Aparecen en Windows como "Headphone (Realtek(R) Audio)",
         //  "Speakers/Headphones", "Headphones", etc.
         //  El nombre aquí es el nombre comercial que el operador elige.
+        //  Orden: agrupado por familia (HD, HDR, RS, IE) porque el operador
+        //  elige por familia y las pruebas son iguales dentro de cada bloque.
         // ════════════════════════════════════════════════════════════════════
         private static readonly string[] JackModelNames = new[]
         {
-            "HD 550", "HD 560S", "HD 569", "HD 599", "HD 600", "HD 650", "HD 660S2",
-            "HDR 175", "RS 120-W", "RS 195", "RS 255", "RS 275", "IE 200", "IE 600", "IE 900", "HD 400U",
+            "HD 550", "HD 560S", "HD 569", "HD 599", "HD 600", "HD 650", "HD 660S2", "HD 400U",
+            "HDR 175",
+            "RS 120-W", "RS 195", "RS 255", "RS 275",
+            "IE 200", "IE 600", "IE 900",
         };
+
+        // Modelos jack cuyo cable tiene botón de Play / Pausa.
+        // El resto de la lista no tiene botones: solo se prueban en audio y niveles.
+        private static readonly HashSet<string> JackWithPlayPause =
+            new() { "HD 400U" };
 
         private static readonly List<DeviceProfile> _jackProfiles =
             JackModelNames.Select(name => new DeviceProfile(name)
             {
                 HasBluetooth     = false,
-                HasPlayPause     = name == "HD 400U",
+                HasPlayPause     = JackWithPlayPause.Contains(name),
                 HasPreviousTrack = false,
                 HasNextTrack     = false,
                 HasVolumeUp      = false,
@@ -174,14 +183,26 @@ namespace BluetoothHeadphoneTest
         /// </summary>
         public static DeviceProfile GetJackProfile(string jackModelName)
         {
-            if (string.IsNullOrWhiteSpace(jackModelName))
-                return new DeviceProfile("(jack genérico)") { HasBluetooth = false };
+            string name = string.IsNullOrWhiteSpace(jackModelName)
+                ? "(jack genérico)"
+                : jackModelName;
 
             foreach (var p in _jackProfiles)
-                if (p.ModelName.Equals(jackModelName, System.StringComparison.OrdinalIgnoreCase))
+                if (p.ModelName.Equals(name, System.StringComparison.OrdinalIgnoreCase))
                     return p;
 
-            return new DeviceProfile(jackModelName) { HasBluetooth = false };
+            // Un modelo jack desconocido NO hereda los flags true por defecto de
+            // DeviceProfile: se trata como "sin pruebas de botones", que es lo
+            // seguro para un audífono alambrico.
+            return new DeviceProfile(name)
+            {
+                HasBluetooth     = false,
+                HasPlayPause     = false,
+                HasPreviousTrack = false,
+                HasNextTrack     = false,
+                HasVolumeUp      = false,
+                HasVolumeDown    = false,
+            };
         }
 
         /// <summary>

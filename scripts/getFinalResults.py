@@ -41,7 +41,9 @@ BT_FIELD_VOLUME_DOWN = "Bajar Volumen"
 MIC_FIELD_RESULT = "Resultado"
 
 # Models whose volume result is not applicable (reported as N/A, hidden from UI)
-MODELS_WITHOUT_VOLUME = {"hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", "hd660s", "hd400u"}
+# Must match the registry in Deviceprofileregistry.cs exactly (normalized:
+# lowercase, alphanumeric only). Do NOT use substring matching here.
+MODELS_WITHOUT_VOLUME = {"hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", "hd660s2", "hd400u"}
 
 # All possible Bluetooth and level fields
 BT_RESULT_FIELDS = ["bluetooth", "play_pausa", "anterior", "siguiente", "subir_volumen", "bajar_volumen"]
@@ -197,7 +199,7 @@ def main():
         else:
             audio_analysis["deteccion_senal"] = missing
         model = normalize_model(read_device_model(btfile))
-        if any(m in model for m in MODELS_WITHOUT_VOLUME) or model.startswith("ie"):
+        if model in MODELS_WITHOUT_VOLUME or model.startswith("ie"):
             audio_analysis["volume"] = "N/A"
         final_results.update(audio_analysis)
     elif args.some:

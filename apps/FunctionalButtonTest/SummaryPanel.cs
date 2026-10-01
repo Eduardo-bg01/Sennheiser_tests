@@ -1,6 +1,5 @@
 using System;
 using System.Drawing;
-using System.IO;
 using System.Windows.Forms;
 
 namespace BluetoothHeadphoneTest
@@ -32,7 +31,7 @@ namespace BluetoothHeadphoneTest
             var duration = DateTime.Now - session.StartTime;
 
             // Guardar reporte automáticamente en el escritorio
-            AutoSaveTxtReport(session, passed, passCount, duration);
+            session.SaveReport();
 
             // ── Scrollable card ──────────────────────────────────────────────
             var scroll = new Panel
@@ -230,30 +229,6 @@ namespace BluetoothHeadphoneTest
             };
             btn.FlatAppearance.BorderSize = 0;
             return btn;
-        }
-
-        // ── Auto-guardado en escritorio ──────────────────────────────────────
-        private void AutoSaveTxtReport(TestSession session, bool passed,
-                                       int passCount, TimeSpan duration)
-        {
-            try
-            {
-                string baseFolder = AppDomain.CurrentDomain.BaseDirectory;
-                string currentFolder = Directory.GetCurrentDirectory();
-                string fileName = $"Prueba_{session.SelectedDevice?.Name ?? "BT"}_{session.StartTime:yyyyMMdd_HHmm}.txt";
-                string baseFilePath = Path.Combine(baseFolder, fileName);
-                string currentFilePath = Path.Combine(currentFolder, fileName);
-
-                string report = session.BuildReportText();
-
-                File.WriteAllText(baseFilePath, report, System.Text.Encoding.UTF8);
-
-                if (!string.Equals(baseFilePath, currentFilePath, StringComparison.OrdinalIgnoreCase))
-                {
-                    File.WriteAllText(currentFilePath, report, System.Text.Encoding.UTF8);
-                }
-            }
-            catch { /* Si falla el guardado, continuar sin interrumpir */ }
         }
     }
 }

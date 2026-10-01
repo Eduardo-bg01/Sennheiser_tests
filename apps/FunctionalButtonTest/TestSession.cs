@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace BluetoothHeadphoneTest
@@ -50,9 +51,10 @@ namespace BluetoothHeadphoneTest
 
         /// <summary>
         /// Siempre crea los 6 Records en el mismo orden.
-        /// Los que no aplican al perfil se marcan como NotApplicable desde el inicio.
+        /// Los que no aplican al perfil se marcan como NotApplicable.
+        /// Visible para la UI, que muestra el set de pruebas del modelo elegido.
         /// </summary>
-        private static List<TestRecord> BuildRecords(DeviceProfile p)
+        internal static List<TestRecord> BuildRecords(DeviceProfile p)
         {
             return new List<TestRecord>
             {
@@ -160,6 +162,33 @@ namespace BluetoothHeadphoneTest
             sb.AppendLine($"  Resultado final: {(AllPassed ? "APROBADO" : "FALLIDO")}  ({passCount}/{totalApplicable})  •  N/A: {naCount}");
 
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Escribe el reporte Prueba_*.txt en la carpeta de la app y en la actual.
+        /// Única fuente de escritura del reporte: la usan el resumen y el cierre
+        /// de la app. Nunca lanza: un fallo al guardar no debe interrumpir la
+        /// prueba ni impedir que run.bat continúe.
+        /// </summary>
+        public void SaveReport()
+        {
+            try
+            {
+                string name = GetDisplayName();
+                foreach (char c in Path.GetInvalidFileNameChars())
+                    name = name.Replace(c, '_');
+
+                string fileName = $"Prueba_{name}_{StartTime:yyyyMMdd_HHmm}.txt";
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                string currentDir = Directory.GetCurrentDirectory();
+                string basePath = Path.Combine(baseDir, fileName);
+
+                File.WriteAllText(basePath, BuildReportText(), Encoding.UTF8);
+
+                if (!string.Equals(baseDir, currentDir, StringComparison.OrdinalIgnoreCase))
+                    File.Copy(basePath, Path.Combine(currentDir, fileName), true);
+            }
+            catch { /* Si falla el guardado, continuar sin interrumpir */ }
         }
     }
 }

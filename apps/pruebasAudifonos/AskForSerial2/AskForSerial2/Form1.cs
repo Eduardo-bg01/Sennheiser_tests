@@ -32,16 +32,32 @@ namespace AskForSerial2
 
         private void button1_Click(object sender, EventArgs e)
         {
-            serial = textBox1.Text;
-            if (string.IsNullOrWhiteSpace(serial))
+            // Trim antes de validar. Se guarda como texto: nunca se convierte a
+            // numero, para no perder los ceros a la izquierda (0364031120).
+            serial = textBox1.Text.Trim();
+
+            if (serial.Length == 0)
             {
-                MessageBox.Show("Ingrese un serial valido.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Ingrese el numero de serie del producto.",
+                    "Serial requerido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                textBox1.Focus();
+                return;
             }
-            else
+
+            // Equivale a ^\d{10}$|^\d{12}$: 10 o 12 digitos, nada mas.
+            if (serial.Length is not (10 or 12) || !serial.All(char.IsDigit))
             {
-                File.WriteAllText(SERIAL_FILE, serial.Trim());
-                Application.Exit();
+                MessageBox.Show(
+                    "El serial debe tener 10 o 12 digitos, solo numeros.\n\n" +
+                    "No use espacios, guiones ni otros caracteres.",
+                    "Serial invalido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                textBox1.Focus();
+                textBox1.SelectAll();
+                return;
             }
+
+            File.WriteAllText(SERIAL_FILE, serial);
+            Application.Exit();
         }
 
         private void ApplyCohesiveTheme()

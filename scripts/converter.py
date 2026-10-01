@@ -94,9 +94,11 @@ def build_xml(data):
     ET.SubElement(rec,'EndTime').text = end_time
     ET.SubElement(rec,'MachineName').text = DEFAULTS['MachineName']
 
+    # PEND = el operador nunca completo esa prueba (cierre forzado, crash, power loss).
+    # No es PASS: una prueba incompleta no puede subirse como aprobada.
     overall = 'PASS'
     for k,v in data.items():
-        if k!='serial' and isinstance(v,str) and v.upper()=='FAIL':
+        if k!='serial' and isinstance(v,str) and v.upper() in ('FAIL','PEND'):
             overall='FAIL'
             break
     ET.SubElement(rec,'Result').text = overall

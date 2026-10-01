@@ -20,8 +20,10 @@ namespace BluetoothHeadphoneTest
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            stepManager.Initialize();
-            UpdateOperatorPanel();
+            // Initialize devuelve false si el modelo no tiene pruebas aplicables:
+            // ya escribió el reporte y cerró la ventana, no hay panel que pintar.
+            if (stepManager.Initialize())
+                UpdateOperatorPanel();
         }
 
         /// <summary>
@@ -76,6 +78,12 @@ namespace BluetoothHeadphoneTest
             base.OnFormClosed(e);
         }
 
+        /// <summary>
+        /// Red de seguridad: si la app se cierra sin llegar al resumen (crash,
+        /// cierre forzado), escribe el reporte igual. Solo si hubo actividad real
+        /// — si el operador no empezó a probar, no se escribe nada para que
+        /// run.bat reintente el Launch de la app.
+        /// </summary>
         private void WriteFallbackReportIfMissing()
         {
             try
@@ -100,25 +108,7 @@ namespace BluetoothHeadphoneTest
                 if (!hasActivity)
                     return;
 
-                string displayName = _session.GetDisplayName();
-                string deviceName = displayName;
-                foreach (char c in Path.GetInvalidFileNameChars())
-                {
-                    deviceName = deviceName.Replace(c, '_');
-                }
-
-                string fileName = $"Prueba_{deviceName}_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
-                string filePath = Path.Combine(baseDir, fileName);
-                string currentDir = Environment.CurrentDirectory;
-
-                string report = _session.BuildReportText();
-
-                File.WriteAllText(filePath, report, System.Text.Encoding.UTF8);
-
-                if (!string.Equals(baseDir, currentDir, StringComparison.OrdinalIgnoreCase))
-                {
-                    File.Copy(filePath, Path.Combine(currentDir, fileName), true);
-                }
+                _session.SaveReport();
             }
             catch
             {

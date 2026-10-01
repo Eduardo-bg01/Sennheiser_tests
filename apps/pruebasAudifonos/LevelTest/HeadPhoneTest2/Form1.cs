@@ -54,8 +54,10 @@ namespace HeadPhoneTest2
 
         private Label signalWarnLabel;
 
-        // Modelos sin prueba de volumen visible (solo balance y clipping)
-        private static readonly string[] NoVolumeModels = { "hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", "hd660s", "hd400u"  };
+        // Modelos sin prueba de volumen visible (solo balance y clipping).
+        // Debe coincidir exactamente con MODELS_WITHOUT_VOLUME en
+        // scripts/getFinalResults.py (normalizado: minusculas, solo alfanumericos).
+        private static readonly string[] NoVolumeModels = { "hd550", "hd560s", "hd569", "hd599", "hd600", "hd650", "hd660s2", "hd400u"  };
         private bool hideVolume;
 
         public Form1()
@@ -153,7 +155,7 @@ namespace HeadPhoneTest2
         {
             string device = Environment.GetEnvironmentVariable("DEVICE_NAME") ?? "";
             string norm = new string(device.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
-            return NoVolumeModels.Any(m => norm.Contains(m)) || norm.StartsWith("ie");
+            return NoVolumeModels.Contains(norm) || norm.StartsWith("ie");
         }
 
         private void ApplyVolumeVisibility()
